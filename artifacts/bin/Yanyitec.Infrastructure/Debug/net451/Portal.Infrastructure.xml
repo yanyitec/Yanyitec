@@ -1,0 +1,270 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Portal.Infrastructure</name>
+    </assembly>
+    <members>
+        <member name="T:Yanyitec.IRWLocker">
+            <summary>
+            读写锁的抽象接口
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.EnterReadLock">
+            <summary>
+            进入读锁临界区
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.ExitReadLock">
+            <summary>
+            退出读锁临界区
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.EnterWriteLock">
+            <summary>
+            进入写锁临界区
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.ExitWriteLock">
+            <summary>
+            退出写锁临界区
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.UpgradeToWriteLock">
+            <summary>
+            升级到写锁临界区
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.DowngradeToReadLock">
+            <summary>
+            降级到读锁
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.ExitLock">
+            <summary>
+            退出锁保护临界区
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.ReadCritical">
+            <summary>
+            usage: 
+            using(locker.ReadCritical()){...}
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.WriteCritical">
+            <summary>
+            usage: 
+            using(locker.WriteCritical()){...}
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:Yanyitec.Compilation.ICompiler">
+            <summary>
+            编译器
+            </summary>
+        </member>
+        <member name="M:Yanyitec.Compilation.ICompiler.AddReferenceFromFile(System.String)">
+            <summary>
+            从assembly文件中添加引用
+            </summary>
+            <param name="filename"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.Compilation.ICompiler.AddReferenceFromType(System.Type)">
+            <summary>
+            根据某个类型添加引用
+            </summary>
+            <param name="filename"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.Compilation.ICompiler.AddReferenceFromAssembly(System.Reflection.Assembly)">
+            <summary>
+            加载某个assembly作为引用
+            </summary>
+            <param name="assembly"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.Compilation.ICompiler.AddCode(System.String)">
+            <summary>
+            添加代码
+            </summary>
+            <param name="code"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.Compilation.ICompiler.Parse">
+            <summary>
+            解析出语法树
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="F:Yanyitec.Injecting.CreationKinds.RuntimeNew">
+            <summary>
+            会在运行期创建
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.CreationKinds.Singleon">
+            <summary>
+            单例，每次CreateInstance只会得到一个值。
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.CreationKinds.Group">
+            <summary>
+            容器，createInstance根本不能使用
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.CreationKinds.Config">
+            <summary>
+            配置项，会在运行期查找合适的项
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.CreationKinds.Constant">
+            <summary>
+            固定值，在Register时就规定好了值(可能由constantValue传入，或者在SetItem时就运行instanceFactory)
+            
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.CreationKinds.NewOnce">
+            <summary>
+            每次创建只创建一次
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.CreationKinds.NewOnlyOnce">
+            <summary>
+            全局的只创建一次
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.CreationKinds.AlwaysNew">
+            <summary>
+            总是重新创建
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.CreationKinds.Create">
+            <summary>
+            动态创建.生成的代码不是new T(),而是 dependentItem.CreateInstance();
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.CreationKinds.Agency">
+            <summary>
+            创建代理,从AgencyItem创建
+            </summary>
+        </member>
+        <member name="M:Yanyitec.JQuery.Filter.Check(Yanyitec.Dom.IHtmlElement,Yanyitec.Dom.IHtmlElement)">
+            <summary>
+            检查是否符合要求
+            </summary>
+            <param name="elem">要检查的元素</param>
+            <param name="root">根元素context，检查到这里为止。如果是null就表示检查整个document</param>
+            <returns>下一次检查的元素，null表示检查失败，不用再检查</returns>
+        </member>
+        <member name="M:Yanyitec.JQuery.Selector.GenChildFilter(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="expression"></param>
+            <exception cref="T:System.NotSupportedException"></exception>
+            <returns></returns>
+        </member>
+        <member name="T:Yanyitec.JQuery.AttributeFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.ChildFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.ClassFilter">
+            <summary>
+            .success
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.DescendantFilter">
+            <summary>
+            div .error
+            descendant selector
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.GroupFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.IdFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.MultFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.NthChildFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.NthOfTypeFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.PseudoChildFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.PseudoFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.TagFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="M:Yanyitec.Mvc.IInputData.GetContextValue(System.Type)">
+            <summary>
+            根据类型得到上下文相关变量的值
+            </summary>
+            <param name="type"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.Runtime.Artifact.GetResource(System.String)">
+            <summary>
+            获取资源
+            </summary>
+            <param name="name"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.Runtime.Artifact.GetResourceText(System.String)">
+            <summary>
+            获取资源字符串
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.IArtifact.GetResource(System.String)">
+            <summary>
+            获取资源
+            </summary>
+            <param name="name"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.IArtifact.GetResourceText(System.String,System.Text.Encoding)">
+            <summary>
+            获取资源字符串
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.Testing.TestClassInfo.RunMethods(System.String,System.Collections.Generic.IDictionary{System.String,Yanyitec.Testing.AssertException})">
+            <summary>
+            运行类的测试方法
+            </summary>
+            <param name="methodName">null 表示所有的方法， 可以用 like表达式</param>
+            <param name="result">方法名，结果</param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>
