@@ -23,7 +23,7 @@ namespace Yanyitec.Storaging
 
         IStorage Root { get; }
 
-        bool WatchingSubdirectories { get; set; }
+        
 
         string ToString();
     }

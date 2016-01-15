@@ -20,7 +20,7 @@ namespace Yanyitec.Mvc
         SortedDictionary<string, IModule> Modules { get; set; }
 
         public void Init() {
-            this.SharePath.OnChange += Storage_OnChange;
+            //this.SharePath.OnChange += Storage_OnChange;
         }
 
         private void Storage_OnChange(IStorageItem sender, StorageChangeEventArgs e)

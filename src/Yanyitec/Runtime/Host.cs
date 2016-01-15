@@ -18,8 +18,8 @@ namespace Yanyitec.Runtime
         IDirectory ModDir { get; set; }
 
         void InitWatching() {
-            ModDir.WatchingSubdirectories = false;
-            ModDir.OnChange += ModDir_OnChange;
+            //ModDir.WatchingSubdirectories = false;
+            //ModDir.OnChange += ModDir_OnChange;
         }
 
         private void ModDir_OnChange(IStorageItem sender, StorageChangeEventArgs e)
@@ -30,13 +30,13 @@ namespace Yanyitec.Runtime
             }
             else if (e.ChangeType == StorageChangeTypes.Renamed) {
                 ModuleInfo info = null;
-                if (_moduleInfos.TryGetValue(e.OldItem.Name, out info)){
-                    if (info != null)
-                    {
-                        _moduleInfos.Add(e.Item.Name, info);
-                        info.Name = e.Item.Name;
-                    }
-                }
+                //if (_moduleInfos.TryGetValue(e.OldItem.Name, out info)){
+                //    if (info != null)
+                //    {
+                //        _moduleInfos.Add(e.Item.Name, info);
+                //        info.Name = e.Item.Name;
+                //    }
+                //}
                 
             }
         }
