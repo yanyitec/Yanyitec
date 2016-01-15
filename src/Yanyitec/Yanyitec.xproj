@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">14.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+  </PropertyGroup>
+  <Import Project="$(VSToolsPath)\DNX\Microsoft.DNX.Props" Condition="'$(VSToolsPath)' != ''" />
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>dfc3d6d5-567b-49cc-b262-816d176bdcc4</ProjectGuid>
+    <RootNamespace>Yanyitec</RootNamespace>
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'=='' ">..\..\artifacts\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
+    <OutputPath Condition="'$(OutputPath)'=='' ">..\..\artifacts\bin\$(MSBuildProjectName)\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SchemaVersion>2.0</SchemaVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <ProduceOutputsOnBuild>True</ProduceOutputsOnBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <DnxInvisibleCompile Include="DependenceInject\DependentItem.cs" />
+    <DnxInvisibleCompile Include="DependenceInject\GroupItem.cs" />
+    <DnxInvisibleCompile Include="DependenceInject\v0.0.1.0\CreateInstanceFuncGenerator.cs" />
+    <DnxInvisibleCompile Include="DependenceInject\v0.0.1.0\CreationKinds.cs" />
+    <DnxInvisibleCompile Include="DependenceInject\v0.0.1.0\CreationKindsExtesion.cs" />
+    <DnxInvisibleCompile Include="DependenceInject\v0.0.1.0\DIContainer.cs" />
+    <DnxInvisibleCompile Include="DependenceInject\v0.0.1.0\InjectableAttribute.cs" />
+    <DnxInvisibleCompile Include="DependenceInject\v0.0.1.0\Injection.cs" />
+    <DnxInvisibleCompile Include="DependenceInject\v0.0.1.0\Injection.static.cs" />
+    <DnxInvisibleCompile Include="DependenceInject\v0.0.1.0\ItemCollection.cs" />
+    <DnxInvisibleCompile Include="DependenceInject\v0.0.1.0\RegisterResults.cs" />
+    <DnxInvisibleCompile Include="DependenceInject\v0.0.1.0\TypeProvider.cs" />
+  </ItemGroup>
+  <Import Project="$(VSToolsPath)\DNX\Microsoft.DNX.targets" Condition="'$(VSToolsPath)' != ''" />
+</Project>

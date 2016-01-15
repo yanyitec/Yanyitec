@@ -1,0 +1,316 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace Yanyitec.DependenceInject
+{
+    using System.Reflection;
+    public partial class Injection 
+    {
+
+        public Injection(Injection parent, CreationKinds creationKind, string name, TypeProvider injectionType, object constantValue, Func<object> instanceFactory)
+            :this(parent,name)
+        {
+
+            this.InnerReset(creationKind, injectionType, constantValue, instanceFactory);
+            
+            
+            if (injectionType != null && constantValue != null) {
+                if (!injectionType.GetAppointedType().IsAssignableFrom(constantValue.GetType())) {
+                    throw new ArgumentException("constantValue's type can not convert to injecitontype[" + injectionType.FullName + "]");
+                }
+            }
+            
+            
+        }
+
+
+        public Injection(Injection parent, string name) {
+            this.Parent = parent;
+            this.Name = name;
+            this.Root = this.Parent == null ? (this as DIContainer) : this.Parent.Root;
+        }
+
+        void InnerReset(CreationKinds? creationKind, TypeProvider injectionType, object constantValue, Func<object> instanceFactory) {
+            if(creationKind!=null)this.CreationKind = creationKind.Value;
+            if(injectionType!=null)this.InjectionType = injectionType;
+            if(constantValue!=null)this.ConstantValue = constantValue== NullValue? null : constantValue;
+            if(instanceFactory!=null)this.InstanceFactory = instanceFactory;
+            this.CreateInstanceFunc = null;
+        }
+
+
+
+        #region 参数都放在类上面
+        public string Name { get; private set; }
+        protected internal Func<object> InstanceFactory { get; private set; }
+
+        protected internal object ConstantValue { get; private set; }
+
+        public TypeProvider InjectionType { get; protected set; }
+
+        
+
+        public CreationKinds CreationKind { get; private set; }
+
+        public System.Threading.ReaderWriterLockSlim AsyncLocker {
+            get { return this.Root.AsyncLocker; }
+        }
+        #endregion
+
+        
+        
+        #region 是一个 type activator
+
+        
+
+        protected internal Func<object> CreateInstanceFunc { get; set; }
+        public object CreateInstance()
+        {
+            this.AsyncLocker.EnterUpgradeableReadLock();
+            try {
+                if (this.CreateInstanceFunc == null) {
+                    this.AsyncLocker.EnterWriteLock();
+                    try {
+                        if (this.CreateInstanceFunc == null) {
+                            var generator = new CreateInstanceFuncGenerator(this);
+                            this.CreateInstanceFunc = generator.GenFunc();
+                        }
+                        
+                    } finally {
+                        this.AsyncLocker.ExitWriteLock();
+                    }
+                    
+                }
+                return this.CreateInstanceFunc();
+            } finally {
+                this.AsyncLocker.ExitUpgradeableReadLock();
+            }
+        }
+
+        /// <summary>
+        /// 注意:该函数没有锁保护
+        /// </summary>
+        protected internal void ResetCreateInstanceFunc()
+        {
+            if (this.CreationKind == CreationKinds.Constant)
+            {
+                if (this.InstanceFactory != null)
+                {
+                    var constValue = this.InstanceFactory();
+                    this.CreateInstanceFunc = () => constValue;
+                }
+                else
+                {
+                    this.CreateInstanceFunc = () => this.ConstantValue;
+                }
+                return;
+            }
+
+            var generator = new CreateInstanceFuncGenerator(this);
+            if (this.CreationKind == CreationKinds.NewOnlyOnce)
+            {
+                this.CreateInstanceFunc = generator.NewOnlyOnce();
+            }
+            else if (this.CreationKind== CreationKinds.Config) {
+                var item = this.FindDepedenceItem(this.Name,true);
+                if (item == null)
+                {
+                    this.CreateInstanceFunc = () => this.ConstantValue;
+                }
+                else {
+                    this.CreateInstanceFunc = () => item.CreateInstance();
+                }
+            }
+            else {
+                this.CreateInstanceFunc = generator.GenFunc();
+            }
+
+        }
+
+        /// <summary>
+        /// 注意，该函数没有locker保护
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        protected internal Injection FindDepedenceItem(string name, bool excludeSelf=true) {
+            Injection result = null;
+            if (this._items.TryGetValue(name, out result)) return result;
+            var p = this.Parent;
+            while (p != null) {
+                if (this._items.TryGetValue(name, out result)) if(!excludeSelf || result!=this)return result;
+                p = p.Parent;
+            }
+            return result;
+        }
+        #endregion
+
+
+        #region 是一棵树
+
+        protected readonly ItemCollection _itemCollection = new ItemCollection();
+
+        public IEnumerator<Injection> NamedItemEnumerator
+        {
+            get { return _itemCollection.NamedItemEnumerator; }
+        }
+
+        public IEnumerator<Injection> TypedItemEnumerator
+        {
+            get { return _itemCollection.TypedItemEnumerator; }
+        }
+
+        public DIContainer Root { get; private set; }
+
+        public Injection Parent
+        {
+            get;
+            private set;
+        }
+
+        public Injection GetItem(string name,bool includeTypename = true) {
+            this.Root.AsyncLocker.EnterReadLock();
+            try
+            {
+                return this._itemCollection.GetByName(name, includeTypename);
+            }
+            finally
+            {
+                this.Root.AsyncLocker.EnterReadLock();
+            }
+        }
+
+        public Injection GetItem(Type type, bool includeNamedItems = true)
+        {
+            this.Root.AsyncLocker.EnterReadLock();
+            try
+            {
+                return this._itemCollection.GetByType(type, includeNamedItems);
+            }
+            finally
+            {
+                this.Root.AsyncLocker.EnterReadLock();
+            }
+        }
+
+        public Injection Lookup(string name, bool includeTypename=true)
+        {
+            this.Root.AsyncLocker.EnterReadLock();
+            try {
+                return this.InternalLookup(name, includeTypename);
+            } finally {
+                this.Root.AsyncLocker.EnterReadLock();
+            }
+        }
+
+        Injection InternalLookup(string name,bool includeTypename=true) {
+            Injection result = this._itemCollection.GetByName(name, includeTypename);
+            if (result!=null) return result;
+            var enumerator = this._itemCollection.NamedItemEnumerator;
+            while (enumerator.MoveNext()) {
+                result = enumerator.Current.InternalLookup(name,includeTypename);
+                if (result != null) return result;
+            }
+
+            enumerator = this._itemCollection.TypedItemEnumerator;
+            while (enumerator.MoveNext())
+            {
+                result = enumerator.Current.InternalLookup(name, includeTypename);
+                if (result != null) return result;
+            }
+
+            return null;
+        }
+
+        public Injection Lookup(Type tokenType, bool includeNamedItems = true)
+        {
+            return this.InternalLookup(tokenType, includeNamedItems);
+        }
+
+        Injection InternalLookup(Type tokenType, bool includeNamedItems = true)
+        {
+            Injection result = this._itemCollection.GetByType(tokenType, includeNamedItems);
+            if (result != null) return result;
+            var enumerator = this._itemCollection.TypedItemEnumerator;
+            while (enumerator.MoveNext())
+            {
+                result = enumerator.Current.InternalLookup(tokenType, includeNamedItems);
+                if (result != null) return result;
+            }
+            enumerator = this._itemCollection.NamedItemEnumerator;
+            while (enumerator.MoveNext())
+            {
+                result = enumerator.Current.InternalLookup(tokenType, includeNamedItems);
+                if (result != null) return result;
+            }
+
+
+            return null;
+        }
+
+        #endregion
+
+        #region add
+
+
+
+        public RegisterResults SetItem(CreationKinds creationKind,string name,Type injectionType, object value,  Func<object> instanceFactory, bool replaceIfExisted = true) {
+            this.Root.AsyncLocker.EnterUpgradeableReadLock();
+            try
+            {
+                Injection exited = null;
+                if (_items.TryGetValue(name, out exited))
+                {
+                    if (!replaceIfExisted) return RegisterResults.Existed;
+                }
+                this.Root.AsyncLocker.EnterWriteLock();
+                try
+                {
+                    var item = this.Root.CreateInjection(this, creationKind,name, injectionType, value, instanceFactory);
+                    if (exited != null)
+                    {
+                        _items[name] = item;
+                        return RegisterResults.Replaced;
+                    }
+                    else
+                    {
+                        _items.Add(name, item);
+                        return RegisterResults.Added;
+                    }
+                }
+                finally
+                {
+                    this.Root.AsyncLocker.ExitWriteLock();
+                }
+            }
+            finally
+            {
+                this.Root.AsyncLocker.ExitUpgradeableReadLock();
+            }
+        }
+        public RegisterResults SetItem(string name, object value,CreationKinds creationKind= CreationKinds.Constant,bool replaceIfExisted=true) {
+            return this.SetItem(creationKind,name,null,value,null,replaceIfExisted);
+        }
+
+        public RegisterResults SetItem(string name,Type injectionType, CreationKinds creationKind = CreationKinds.NewOnce, bool isSingleon=false,bool replaceIfExisted = true)
+        {
+            return this.SetItem(creationKind,name,injectionType,null,null,replaceIfExisted);
+        }
+
+        public RegisterResults Register<T>(CreationKinds creationKind = CreationKinds.NewOnce, bool replaceIfExisted = true) {
+            Type injectionType = typeof(T);
+            return this.SetItem(injectionType.FullName,injectionType,creationKind,replaceIfExisted);
+        }
+
+        public RegisterResults Register<TToken,TInjection>(CreationKinds creationKind = CreationKinds.NewOnce, bool replaceIfExisted = true)
+        {
+            return this.SetItem(typeof(TToken).FullName, typeof(TInjection), creationKind, replaceIfExisted);
+        }
+
+        public RegisterResults SetItem(string name, Func<object> instanceFactory, CreationKinds creationKind,bool replaceIfExisted = true) {
+            return this.SetItem(creationKind,name,null,null,instanceFactory,replaceIfExisted);
+        }
+        #endregion
+    }
+}

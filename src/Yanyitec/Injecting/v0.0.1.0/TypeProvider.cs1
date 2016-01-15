@@ -1,0 +1,39 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace Yanyitec.DependenceInject
+{
+    public abstract class TypeProvider
+    {
+        
+
+        public abstract Type GetAppointedType();
+
+        public abstract string FullName { get; }
+
+        public static implicit operator TypeProvider(Type type) {
+            return new DefaultTypeProvider(type);
+        }
+
+        public class DefaultTypeProvider : TypeProvider
+        {
+            public DefaultTypeProvider(Type type) { this.Type = type; }
+            public Type Type { get; private set; }
+
+            public override Type GetAppointedType()
+            {
+                return Type;
+            }
+
+            public override string FullName
+            {
+                get
+                {
+                    return Type.FullName;
+                }
+            }
+        }
+    }
+}

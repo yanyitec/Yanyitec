@@ -1,0 +1,68 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Yanyitec.Compilation;
+
+namespace Yanyitec.DependenceInject
+{
+    using System.Reflection;
+    public class DIContainer : Injection
+    {
+        public DIContainer():base(null, CreationKinds.Group,null,null,null,null) {
+            this.AsyncLocker = new ReaderWriterLockSlim();
+        }
+
+        public ReaderWriterLockSlim AsyncLocker
+        {
+            get;
+            private set;
+
+        }
+
+        public virtual Injection CreateInjection(Injection parent, CreationKinds creationKind, string name, Type injectionType, object constantValue, Func<object> instanceFactory)
+        {
+            return new Injection(parent, creationKind, name, injectionType, constantValue, instanceFactory);
+        }
+
+        public object CreateInstance(string name)
+        {
+            var item = this.Lookup(name,true);
+            return item?.CreateInstance();
+        }
+
+        public object CreateInstance(Type type)
+        {
+            return this.CreateInstance(type.FullName);
+        }
+
+        public T CreateInstance<T>()
+        {
+            return (T)this.CreateInstance(typeof(T).FullName);
+        }
+
+        public void Import(IArtifact artifact)
+        {
+            var types = artifact.GetTypes();
+            foreach (var type in types) {
+                var typeInfo = type.GetTypeInfo();
+                if (typeInfo.GetCustomAttribute(typeof(InjectableAttribute))==null) continue;
+            }
+        }
+        void SetItem(Type type, IArtifact artifact) {
+            var injection = this.CreateInjection(this, CreationKinds.NewOnce, type.FullName, type, null, null);
+            if (base.Items.ContainsKey(type.FullName))
+            {
+                base.Items[type.FullName] = injection;
+            }
+            else {
+                base.Items.Add(type.FullName,injection);
+            }
+
+            artifact.OnChange += (sender) => {
+                injection.ResetCreateInstanceFunc();
+            };
+        }
+    }
+}

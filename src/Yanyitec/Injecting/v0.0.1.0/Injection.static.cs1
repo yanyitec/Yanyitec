@@ -1,0 +1,28 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace Yanyitec.DependenceInject
+{
+    using Yanyitec.Json;
+    public partial class Injection
+    {
+        public static object NullValue = new object();
+        public static Injection ParseJson(string jsonString,Injection parent=null,string pname = null) {
+            var reader = new Json.Reader(jsonString);
+            Injection current = null;Injection result = null;
+            reader.OnObjectStart = (name,colAt,lineAt) => {
+                if (name == null)
+                {
+                    if (result == null) result = current = parent == null ? new DIContainer() : new Injection(parent, CreationKinds.Config, pname, null, null, null);
+                    throw new ArgumentException("Invalid json");
+                }
+                else {
+
+                }
+            };
+            return null;
+        }
+    }
+}
