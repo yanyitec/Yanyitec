@@ -14,13 +14,13 @@ namespace Yanyitec.Runtime
         public Artifact(IStorageItem location ,IAsemblyLoader loader) {
             this.Location = location;
             this.AsemblyLoader = loader;
-            location.OnChange += (sender, evtArgs) =>
-            {
-                lock (this.AsyncLocker)
-                { 
-                    this._assembly = null;
-                }
-            };
+            //location.OnChange += (sender, evtArgs) =>
+            //{
+            //    lock (this.AsyncLocker)
+            //    { 
+            //        this._assembly = null;
+            //    }
+            //};
         }
 
         
