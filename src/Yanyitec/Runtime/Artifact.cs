@@ -17,7 +17,7 @@ namespace Yanyitec.Runtime
             location.OnChange += (sender, evtArgs) =>
             {
                 lock (this.AsyncLocker)
-                {
+                { 
                     this._assembly = null;
                 }
             };
