@@ -56,8 +56,8 @@ namespace Yanyitec.Runtime
                 info.Artifact.OnChange += Artifact_OnChange;
             }
         }
-        public override void Initialize(object initialParameters) {
-            InitWatching();
+        public override void Initialize(IHost host, IArtifact artifact) {
+            
             foreach (var item in ModDir.ListItems(false)) {
                 InitModuleInfo(item);
             }

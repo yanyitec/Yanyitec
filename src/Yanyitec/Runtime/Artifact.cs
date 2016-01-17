@@ -10,7 +10,7 @@ namespace Yanyitec.Runtime
     public class Artifact
     {
         readonly object AsyncLocker = new object();
-
+        public event Action<IArtifact, ArtifactChangeEventArgs> Changed;
         public Artifact(IStorageItem location ,IAsemblyLoader loader) {
             this.Location = location;
             this.AsemblyLoader = loader;

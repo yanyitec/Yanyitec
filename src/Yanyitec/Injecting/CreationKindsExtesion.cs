@@ -7,17 +7,17 @@ namespace Yanyitec.Injecting
 {
     public static class CreationKindsExtesion
     {
-        public static bool IsContainer(this CreationKinds self) {
-            return self == CreationKinds.Constant;
+        public static bool IsContainer(this InjectionKinds self) {
+            return self == InjectionKinds.Constant;
         }
 
-        public static bool IsRuntimeNew(this CreationKinds self) {
-            return(((int)self & (int)CreationKinds.RuntimeNew)>0);
+        public static bool IsRuntimeNew(this InjectionKinds self) {
+            return(((int)self & (int)InjectionKinds.RuntimeNew)>0);
         }
 
-        public static bool IsSingleon(this CreationKinds self)
+        public static bool IsSingleon(this InjectionKinds self)
         {
-            return (((int)self & (int)CreationKinds.Singleon) > 0);
+            return (((int)self & (int)InjectionKinds.Singleon) > 0);
         }
     }
 }

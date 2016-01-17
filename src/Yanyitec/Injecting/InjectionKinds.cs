@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Yanyitec.Injecting
 {
     [Flags]
-    public enum CreationKinds
+    public enum InjectionKinds
     {
         /// <summary>
         /// 会在运行期创建
@@ -21,12 +21,12 @@ namespace Yanyitec.Injecting
         /// <summary>
         /// 容器，createInstance根本不能使用
         /// </summary>
-        Group =1<<2,
+        Container =1<<2,
 
         /// <summary>
         /// 配置项，会在运行期查找合适的项
         /// </summary>
-        Config = 1<<3,
+        Define = 1<<3,
         
         /// <summary>
         /// 固定值，在Register时就规定好了值(可能由constantValue传入，或者在SetItem时就运行instanceFactory)

@@ -11,9 +11,15 @@ namespace Yanyitec.Runtime
         readonly System.Threading.ReaderWriterLockSlim _asyncLocker = new System.Threading.ReaderWriterLockSlim();
         public System.Threading.ReaderWriterLockSlim AsyncLocker { get { return _asyncLocker; } }
 
-        public IModule Container { get; private set; }
+        public Module() {
+            
+        }
 
-        public string Name { get; set; }
+        public IHost Host { get; protected set; }
+
+        public IArtifact Artifact { get; protected set; }
+
+        public string Name { get; protected set; }
 
         public object this[string key]
         {
@@ -46,9 +52,10 @@ namespace Yanyitec.Runtime
             }
         }
 
-        public virtual void Initialize(object initalParameter = null)
+        public virtual void Initialize(IHost host, IArtifact artifact)
         {
-
+            this.Host = host;
+            this.Artifact = artifact;
         }
 
         public virtual bool RunMain(object parameters)

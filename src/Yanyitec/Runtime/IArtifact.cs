@@ -11,6 +11,8 @@ namespace Yanyitec
     {
         event Action<IArtifact, ArtifactChangeEventArgs> OnChange;
 
+        event Action<IArtifact, ArtifactChangeEventArgs> Changed;
+
         bool IsValid { get; }
         string Name { get; }
 

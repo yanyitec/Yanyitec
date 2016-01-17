@@ -7,7 +7,9 @@ namespace Yanyitec.Injecting
     using System.Linq;
     using System.Threading.Tasks;
     using System.Reflection;
-    public class ItemCollection
+    using System.Collections;
+
+    public class ItemCollection :IEnumerable<Injection>
     {
         readonly SortedDictionary<string, Injection> _namedItems = new SortedDictionary<string, Injection>();
         readonly SortedDictionary<int, Injection> _typedItems = new SortedDictionary<int, Injection>();
@@ -35,7 +37,7 @@ namespace Yanyitec.Injecting
         }
 
         public void AddByType(Injection injection) {
-            this._typedItems.Add(injection.InjectionType.GetHashCode(),injection);
+            this._typedItems.Add(injection.TokenType.GetHashCode(),injection);
         }
 
         public Injection GetByName(string name,bool includeTypeName =true) {
@@ -43,7 +45,7 @@ namespace Yanyitec.Injecting
             if (_namedItems.TryGetValue(name, out result)) return result;
             if (includeTypeName) {
                 foreach (var sub in _typedItems.Values) {
-                    if (sub.InjectionType != null && sub.InjectionType.FullName == name) return sub;
+                    if (sub.TokenType != null && sub.TokenType.FullName == name) return sub;
                 }
             }
             return null;
@@ -57,11 +59,71 @@ namespace Yanyitec.Injecting
                 
                 foreach (var sub in _namedItems.Values)
                 {
-                    var subType = sub.InjectionType;
+                    var subType = sub.TokenType;
                     if (subType != null && type.IsAssignableFrom(subType)) return sub;
                 }
             }
             return null;
+        }
+
+        public IEnumerator<Injection> GetEnumerator()
+        {
+            return new ItemCollectionEnumerator(this._namedItems.Values.GetEnumerator(),this._typedItems.Values.GetEnumerator());
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return new ItemCollectionEnumerator(this._namedItems.Values.GetEnumerator(), this._typedItems.Values.GetEnumerator());
+        }
+
+        public class ItemCollectionEnumerator : IEnumerator<Injection> {
+            public ItemCollectionEnumerator(IEnumerator<Injection> named, IEnumerator<Injection> typed) {
+                this._named = named;
+                this._current = this._typed = typed;
+            }
+
+            IEnumerator<Injection> _named;
+            IEnumerator<Injection> _typed;
+            IEnumerator<Injection> _current;
+            public Injection Current
+            {
+                get
+                {
+                    return _current.Current;
+                }
+            }
+
+            object IEnumerator.Current
+            {
+                get
+                {
+                    return _current.Current;
+                }
+            }
+
+            public void Dispose()
+            {
+                _named.Dispose();
+                _typed.Dispose();
+            }
+
+            public bool MoveNext()
+            {
+                if (!this._current.MoveNext()) {
+                    if (this._current == this._typed) {
+                        this._current = this._named;
+                        return this._current.MoveNext();
+                    }
+                }
+                return true;
+            }
+
+            public void Reset()
+            {
+                this._named.Reset();
+                this._typed.Reset();
+                this._current = this._typed;
+            }
         }
     }
 }

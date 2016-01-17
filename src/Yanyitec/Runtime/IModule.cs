@@ -6,10 +6,10 @@ using Yanyitec.Storaging;
 
 namespace Yanyitec.Runtime
 {
-    public interface IModule: IInitializable
+    public interface IModule
     {
         object this[string key] { get; set; }
-        IModule Container { get; }
+        IHost Host { get; }
         
         string Name { get; }
 

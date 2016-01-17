@@ -10,5 +10,7 @@ namespace Yanyitec
         public const string UTF8Codepage = "65001";
 
         public const string DefaultCodepage = UTF8Codepage;
+
+        
     }
 }
