@@ -7,10 +7,15 @@ using System.Threading.Tasks;
 namespace Yanyitec.Runtime
 {
     using System.Reflection;
-    public class Artifact
+    using System.Text;
+    using System.IO;
+
+    public class Artifact: IArtifact
     {
         readonly object AsyncLocker = new object();
         public event Action<IArtifact, ArtifactChangeEventArgs> Changed;
+
+        private FileSystemWatcher _fsWatcher;
         public Artifact(IStorageItem location ,IAsemblyLoader loader) {
             this.Location = location;
             this.AsemblyLoader = loader;
@@ -23,11 +28,23 @@ namespace Yanyitec.Runtime
             //};
         }
 
+        public Artifact(Assembly assemlby) {
+            this._assembly = assemlby;
+            //this.Location = location;
+            //if (location != null) {
+
+            //}
+        }
+
         
 
         public IAsemblyLoader AsemblyLoader { get; private set; }
 
         public IStorageItem Location { get; private set; }
+
+        public string Name {
+            get { return this.Assembly.FullName; }
+        }
 
 
         Assembly _assembly;
@@ -57,7 +74,7 @@ namespace Yanyitec.Runtime
             }
         }
 
-        public IEnumerable<TypeInfo> GetTypes() {
+        public IEnumerable<TypeInfo> GetTypeInfos() {
             return this.Assembly.DefinedTypes;
         }
 
@@ -79,8 +96,17 @@ namespace Yanyitec.Runtime
         /// 获取资源字符串
         /// </summary>
         /// <returns></returns>
-        public string GetResourceText(string name) {
+        public string GetResourceText(string name, Encoding encoding = null)
+        {
             return null;
+        }
+
+        public static implicit operator Artifact(Assembly assembly) {
+            return new Artifact(assembly);
+        }
+
+        public static implicit operator Assembly(Artifact artifact) {
+            return artifact.Assembly;
         }
     }
 }

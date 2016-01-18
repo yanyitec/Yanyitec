@@ -105,7 +105,7 @@ namespace Yanyitec
 
         public static int? ToInt(this string self) {
             int result = 0;
-            if (int.TryParse(self, out result)) return result;
+            if (int.TryParse(self, out result)) return (int?)result;
             return null;
         }
         public static object ToIntObject(this string self)
@@ -251,7 +251,6 @@ namespace Yanyitec
 
         static readonly SortedDictionary<int, Func<string, object>> _nullableConvertors = new SortedDictionary<int, Func<string,object>>() {
             { typeof(bool).GetHashCode(),(text)=>StringConvertExtension.ToBoolean(text) }
-            ,  { typeof(bool).GetHashCode(),(text)=>StringConvertExtension.ToBoolean(text) }
             ,  { typeof(byte).GetHashCode(),(text)=>StringConvertExtension.ToByte(text) }
             ,  { typeof(char).GetHashCode(),(text)=>StringConvertExtension.ToChar(text) }
             ,  { typeof(short).GetHashCode(),(text)=>StringConvertExtension.ToShort(text) }
@@ -266,7 +265,6 @@ namespace Yanyitec
             ,  { typeof(Guid).GetHashCode(),(text)=>StringConvertExtension.ToGuid(text) }
             ,  { typeof(DateTime).GetHashCode(),(text)=>StringConvertExtension.ToDateTime(text) }
 
-            ,  { typeof(bool?).GetHashCode(),(text)=>StringConvertExtension.ToBoolean(text) }
             ,  { typeof(bool?).GetHashCode(),(text)=>StringConvertExtension.ToBoolean(text) }
             ,  { typeof(byte?).GetHashCode(),(text)=>StringConvertExtension.ToByte(text) }
             ,  { typeof(char?).GetHashCode(),(text)=>StringConvertExtension.ToChar(text) }
@@ -285,7 +283,6 @@ namespace Yanyitec
 
         static readonly SortedDictionary<int, Func<string, object>> _objectConvertors = new SortedDictionary<int, Func<string, object>>() {
             { typeof(bool).GetHashCode(),(text)=>StringConvertExtension.ToBooleanObject(text) }
-            ,  { typeof(bool).GetHashCode(),(text)=>StringConvertExtension.ToBooleanObject(text) }
             ,  { typeof(byte).GetHashCode(),(text)=>StringConvertExtension.ToByteObject(text) }
             ,  { typeof(char).GetHashCode(),(text)=>StringConvertExtension.ToCharObject(text) }
             ,  { typeof(short).GetHashCode(),(text)=>StringConvertExtension.ToShortObject(text) }
@@ -300,7 +297,6 @@ namespace Yanyitec
             ,  { typeof(Guid).GetHashCode(),(text)=>StringConvertExtension.ToGuidObject(text) }
             ,  { typeof(DateTime).GetHashCode(),(text)=>StringConvertExtension.ToDateTimeObject(text) }
 
-            ,  { typeof(bool?).GetHashCode(),(text)=>StringConvertExtension.ToBoolean(text) }
             ,  { typeof(bool?).GetHashCode(),(text)=>StringConvertExtension.ToBoolean(text) }
             ,  { typeof(byte?).GetHashCode(),(text)=>StringConvertExtension.ToByte(text) }
             ,  { typeof(char?).GetHashCode(),(text)=>StringConvertExtension.ToChar(text) }

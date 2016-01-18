@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Yanyitec.Unitest": {
+      "commandName": "Yanyitec.Unitest",
+      "sdkVersion": "dnx-clr-win-x86.1.0.0-rc2-16357"
+    }
+  }
+}

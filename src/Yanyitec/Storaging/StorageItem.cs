@@ -9,7 +9,7 @@ namespace Yanyitec.Storaging
     using System.IO;
     public class StorageItem : IStorageItem
     {
-        protected StorageItem(StorageTypes storageType, FileSystemInfo info,StorageItem parent,Storage root=null) {
+        protected StorageItem(StorageTypes storageType, FileSystemInfo info,StorageDirectory parent,Storage root=null) {
             this.StorageType = storageType;
             this.FileSystemInfo = info;
             
@@ -20,14 +20,9 @@ namespace Yanyitec.Storaging
         protected readonly object AsyncLocker = new object();
 
 
-        public void Delete() {
-            if (this.FileSystemInfo != null) {
-                this.FileSystemInfo.Delete();
-            }
-            throw new InvalidOperationException("Cannot delete the system root.");
-        }
+       
 
-        public virtual bool IsExisted {
+        public bool IsExisted {
             get {
                 if (this.StorageType == StorageTypes.File)
                 {
@@ -40,8 +35,20 @@ namespace Yanyitec.Storaging
             }
         }
 
-        IStorageItem _parent;
-        public IStorageItem Parent {
+        StorageDirectory _parent;
+
+        StorageDirectory GetParent() {
+            if (_parent == null)
+            {
+                var fullname = this.FileSystemInfo.FullName.Replace("\\", "/");
+                var lastSlash = _fullName.LastIndexOf("/");
+                if (lastSlash < 0) return this.InternalRoot;
+                _parent = new StorageDirectory(new DirectoryInfo(fullname.Substring(0, lastSlash)), null, this.InternalRoot);
+
+            }
+            return _parent;
+        }
+        public IDirectory Parent {
             get {
 
                 if (_parent == null)
@@ -49,14 +56,7 @@ namespace Yanyitec.Storaging
                     if (this == this.InternalRoot) return null;
                     lock (AsyncLocker)
                     {
-                        if (_parent == null)
-                        {
-                            var fullname = this.FileSystemInfo.FullName.Replace("\\","/");
-                            var lastSlash = _fullName.LastIndexOf("/");
-                            if (lastSlash < 0) return this.Root;
-                            _parent = new Directory(fullname.Substring(0, lastSlash));
-                            
-                        }
+                        this.GetParent();
                     }
                 }
                 
@@ -76,17 +76,21 @@ namespace Yanyitec.Storaging
             get {
                 if (_fullName == null)
                 {
-                    if (this == this.InternalRoot) return null;
+                    //if (this == this.InternalRoot) return null;
                     lock (AsyncLocker)
                     {
                         if (_fullName == null)
                         {
-                            _fullName = this.FileSystemInfo.FullName.Replace("\\", "/");
+                            _fullName = ConvertToXnixStyle(this.FileSystemInfo.FullName);
                         }
                     }
                 }
                 return _fullName;
             }
+        }
+
+        static string ConvertToXnixStyle(string path) {
+            return path.Replace(":\\\\", ":/").Replace("://", ":/").Replace("\\", "/");
         }
 
         public string Name {
@@ -96,8 +100,13 @@ namespace Yanyitec.Storaging
         string _relativeName;
 
         string GetRelativeName() {
-            return this.FileSystemInfo.FullName.Substring(this.Root.FullName.Length);
-            
+            if (_relativeName == null)
+            {
+                return this._relativeName = this.InternalRoot == this ? string.Empty : ConvertToXnixStyle(this.FileSystemInfo.FullName).Substring(this.Root.FullName.Length + 1);
+
+
+            }
+            return this._relativeName;
         }
         public string RelativeName
         {
@@ -108,14 +117,8 @@ namespace Yanyitec.Storaging
                     if (this == this.InternalRoot) return null;
                     lock (AsyncLocker)
                     {
-                        if (_relativeName == null)
-                        {
-                            if (this._parent != null)
-                            {
-                                _relativeName = this.GetRelativeName();
-                            }
-                            
-                        }
+                        this.GetRelativeName();
+                        
                     }
                 }
                 return _relativeName;
@@ -123,6 +126,8 @@ namespace Yanyitec.Storaging
         }
 
         protected Storage InternalRoot;
+
+       
         public IStorage Root {
             get {
                 if (InternalRoot != null) {

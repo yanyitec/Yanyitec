@@ -97,56 +97,73 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="F:Yanyitec.Injecting.CreationKinds.RuntimeNew">
+        <member name="M:Yanyitec.Injecting.Injection.LoadFromArtifact(Yanyitec.IArtifact,Yanyitec.Injecting.ItemCollection)">
+            <summary>
+            该函数不是线程安全安全的，没有用Lock保护
+            </summary>
+            <param name="artifact"></param>
+            <param name="items"></param>
+        </member>
+        <member name="F:Yanyitec.Injecting.InjectionKinds.RuntimeNew">
             <summary>
             会在运行期创建
             </summary>
         </member>
-        <member name="F:Yanyitec.Injecting.CreationKinds.Singleon">
+        <member name="F:Yanyitec.Injecting.InjectionKinds.Singleon">
             <summary>
             单例，每次CreateInstance只会得到一个值。
             </summary>
         </member>
-        <member name="F:Yanyitec.Injecting.CreationKinds.Group">
+        <member name="F:Yanyitec.Injecting.InjectionKinds.Container">
             <summary>
             容器，createInstance根本不能使用
             </summary>
         </member>
-        <member name="F:Yanyitec.Injecting.CreationKinds.Config">
+        <member name="F:Yanyitec.Injecting.InjectionKinds.Define">
             <summary>
             配置项，会在运行期查找合适的项
             </summary>
         </member>
-        <member name="F:Yanyitec.Injecting.CreationKinds.Constant">
+        <member name="F:Yanyitec.Injecting.InjectionKinds.Constant">
             <summary>
             固定值，在Register时就规定好了值(可能由constantValue传入，或者在SetItem时就运行instanceFactory)
             
             </summary>
         </member>
-        <member name="F:Yanyitec.Injecting.CreationKinds.NewOnce">
+        <member name="F:Yanyitec.Injecting.InjectionKinds.NewOnce">
             <summary>
             每次创建只创建一次
             </summary>
         </member>
-        <member name="F:Yanyitec.Injecting.CreationKinds.NewOnlyOnce">
+        <member name="F:Yanyitec.Injecting.InjectionKinds.NewOnlyOnce">
             <summary>
             全局的只创建一次
             </summary>
         </member>
-        <member name="F:Yanyitec.Injecting.CreationKinds.AlwaysNew">
+        <member name="F:Yanyitec.Injecting.InjectionKinds.AlwaysNew">
             <summary>
             总是重新创建
             </summary>
         </member>
-        <member name="F:Yanyitec.Injecting.CreationKinds.Create">
+        <member name="F:Yanyitec.Injecting.InjectionKinds.Create">
             <summary>
             动态创建.生成的代码不是new T(),而是 dependentItem.CreateInstance();
             </summary>
         </member>
-        <member name="F:Yanyitec.Injecting.CreationKinds.Agency">
+        <member name="F:Yanyitec.Injecting.InjectionKinds.Agency">
             <summary>
             创建代理,从AgencyItem创建
             </summary>
+        </member>
+        <member name="M:Yanyitec.Injecting.InstanceFactoryGenerator.ValueExpression(System.Collections.Generic.List{System.Linq.Expressions.ParameterExpression},System.Collections.Generic.Dictionary{System.Int32,System.Linq.Expressions.ParameterExpression},System.Collections.Generic.Dictionary{System.String,System.Linq.Expressions.ParameterExpression},System.Collections.Generic.List{System.Linq.Expressions.Expression},System.Type)">
+            <summary>
+            该函数会被其他的Generator调用
+            </summary>
+            <param name="locals"></param>
+            <param name="typedVars"></param>
+            <param name="namedVars"></param>
+            <param name="creations"></param>
+            <returns></returns>
         </member>
         <member name="M:Yanyitec.JQuery.Filter.Check(Yanyitec.Dom.IHtmlElement,Yanyitec.Dom.IHtmlElement)">
             <summary>
@@ -239,7 +256,7 @@
             <param name="name"></param>
             <returns></returns>
         </member>
-        <member name="M:Yanyitec.Runtime.Artifact.GetResourceText(System.String)">
+        <member name="M:Yanyitec.Runtime.Artifact.GetResourceText(System.String,System.Text.Encoding)">
             <summary>
             获取资源字符串
             </summary>
@@ -258,7 +275,7 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:Yanyitec.Testing.TestClassInfo.RunMethods(System.String,System.Collections.Generic.IDictionary{System.String,Yanyitec.Testing.AssertException})">
+        <member name="M:Yanyitec.Testing.TestClassInfo.RunMethods(System.String,System.Collections.Generic.IDictionary{System.String,Yanyitec.Testing.AssertException},System.Nullable{System.Boolean})">
             <summary>
             运行类的测试方法
             </summary>

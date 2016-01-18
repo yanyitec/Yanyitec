@@ -14,7 +14,7 @@ namespace Yanyitec.Testing
                 this.Description = attr.Description;
                 this.IsValid = true;
                 this.Artifact = artifact;
-                artifact.OnChange += (sender,eventArgs) => {
+                artifact.Changed += (sender,eventArgs) => {
                     lock (this) {
                         if (eventArgs.ChangeType == ArtifactChangeTypes.Deleted)
                         {
@@ -73,12 +73,14 @@ namespace Yanyitec.Testing
             }
         }
 
-        public IDictionary<string,IDictionary<string,AssertException>> TestMethods(string clsName=null,string methodName=null, Dictionary<string, IDictionary<string, AssertException>> result = null) {
-             result = result ?? new Dictionary<string, IDictionary<string, AssertException>>();
+        public IDictionary<string,IDictionary<string,AssertException>> TestMethods(string clsName=null,string methodName=null, Dictionary<string, IDictionary<string, AssertException>> result = null,bool? throwException=null) {
+            
+            
+            result = result ?? new Dictionary<string, IDictionary<string, AssertException>>();
             foreach (var pair in TestClassInfos) {
-                if (clsName == null || pair.Key.Like(clsName)) {
+                if (clsName == null || pair.Key.Like(clsName) || pair.Value.TestClassType.Name.Like(clsName)) {
                     var clsResult = new Dictionary<string, AssertException>();
-                    pair.Value.RunMethods(methodName,clsResult);
+                    pair.Value.RunMethods(methodName,clsResult,throwException);
                     result.Add(pair.Key,clsResult);
 
                 }

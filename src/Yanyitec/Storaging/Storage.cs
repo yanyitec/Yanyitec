@@ -7,10 +7,13 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Storaging
 {
-    public class Storage : Directory,IStorage
+    public class Storage : StorageDirectory,IStorage
     {
         public Storage(string path):base(new DirectoryInfo(path),null, null) {
             this.InternalRoot = this;
+            if (!this.FileSystemInfo.Exists) {
+                (this.FileSystemInfo as DirectoryInfo).Create();
+            }
         }
 
         public Storage() : base(null, null, null) {

@@ -57,16 +57,25 @@ namespace Yanyitec.Testing
 
         
 
-        private AssertException Call(TestMethodInfo methodInfo) {
-            try
+        private AssertException Call(TestMethodInfo methodInfo,bool? throwException = null) {
+            bool throwEx = throwException.HasValue ? throwException.Value : Assert.ThrowException;
+            if (!throwEx)
             {
+                try
+                {
+                    methodInfo.Run();
+                    return AssertException.Success;
+                }
+                catch (AssertException ex)
+                {
+                    return ex;
+                }
+            }
+            else {
                 methodInfo.Run();
                 return AssertException.Success;
             }
-            catch (AssertException ex)
-            {
-                return ex;
-            }
+            
         }
         /// <summary>
         /// 运行类的测试方法
@@ -74,11 +83,14 @@ namespace Yanyitec.Testing
         /// <param name="methodName">null 表示所有的方法， 可以用 like表达式</param>
         /// <param name="result">方法名，结果</param>
         /// <returns></returns>
-        public IDictionary<string, AssertException> RunMethods(string methodName = null,IDictionary<string,AssertException> result = null) {
+        public IDictionary<string, AssertException> RunMethods(string methodName = null,IDictionary<string,AssertException> result = null,bool? throwException=null) {
             methodName = methodName?.Trim();
-            result = result ?? new Dictionary<string, AssertException>();
+            if (result == null) {
+                result = new Dictionary<string, AssertException>();
+            }
+            
             foreach (var methodInfo in this.TestMethodInfos.Values) {
-               if(methodName == null || methodInfo.Name.Like(methodName)) result.Add(methodInfo.Name,Call(methodInfo));
+               if(methodName == null || methodInfo.Name.Like(methodName)) result.Add(methodInfo.Name,Call(methodInfo,throwException));
             }
             return result;
         }

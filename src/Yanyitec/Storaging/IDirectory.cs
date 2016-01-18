@@ -6,6 +6,7 @@ namespace Yanyitec.Storaging
 {
     public interface IDirectory :IStorageItem
     {
+        void Delete();
         void AppendText(string path, string text, Encoding encoding = null);
         Task AppendTextAsync(string path, string text, Encoding encoding = null);
         IStorageItem CreateItem(string path, StorageTypes itemType = StorageTypes.Directory);

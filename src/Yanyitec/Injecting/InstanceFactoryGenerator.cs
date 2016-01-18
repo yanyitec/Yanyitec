@@ -141,6 +141,8 @@ namespace Yanyitec.Injecting
                     var itemGenerator = new InstanceFactoryGenerator(item);
                     var instanceExpr = itemGenerator.ValueExpression(locals, typedVars, namedVars, creations);
                     paramExpressions.Add(instanceExpr);
+                    item.Changed += (sender, e) =>  this.Injection.ResetInstanceFactory();
+                    
                 }
 
             }
@@ -170,6 +172,7 @@ namespace Yanyitec.Injecting
                 if (valueExpr != null) {
                     var assignExpr = Expression.Assign(Expression.Field(instanceExpr, fieldInfo), valueExpr);
                     creations.Add(assignExpr);
+                    item.Changed += (sender, e) => this.Injection.ResetInstanceFactory();
                 }
                 
             }
@@ -185,6 +188,7 @@ namespace Yanyitec.Injecting
                 if (valueExpr != null) {
                     var assignExpr = Expression.Assign(Expression.Property(instanceExpr, propInfo), valueExpr);
                     creations.Add(assignExpr);
+                    item.Changed += (sender, e) => this.Injection.ResetInstanceFactory();
                 }
                 
             }

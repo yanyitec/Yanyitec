@@ -53,7 +53,7 @@ namespace Yanyitec.Runtime
             if (info != null)
             {
                 _moduleInfos.Add(info.Name, info);
-                info.Artifact.OnChange += Artifact_OnChange;
+                info.Artifact.Changed += Artifact_OnChange;
             }
         }
         public override void Initialize(IHost host, IArtifact artifact) {

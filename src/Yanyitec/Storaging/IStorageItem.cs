@@ -11,7 +11,7 @@ namespace Yanyitec.Storaging
 
         bool IsExisted { get; }
 
-        void Delete();
+       
 
         //event Action<IStorageItem, StorageChangeEventArgs> OnChange;
 
@@ -24,7 +24,7 @@ namespace Yanyitec.Storaging
         IStorage Root { get; }
 
         
-
+        IDirectory Parent { get; }
         string ToString();
     }
 }

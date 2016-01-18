@@ -6,22 +6,22 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Storaging
 {
-    public class File : StorageItem
+    public class StorageFile : StorageItem
     {
-        public File(string abstractFilename)
+        public StorageFile(string abstractFilename)
             : this(new FileInfo(abstractFilename),null,null) {
             
             
         }
 
-        public File(FileInfo info)
+        public StorageFile(FileInfo info)
             : this(info, null, null)
         {
 
 
         }
 
-        protected internal File(FileInfo info,Directory parent, Storage root)
+        protected internal StorageFile(FileInfo info,StorageDirectory parent, Storage root)
             :base(StorageTypes.File , info, parent,root)
         {  
         }

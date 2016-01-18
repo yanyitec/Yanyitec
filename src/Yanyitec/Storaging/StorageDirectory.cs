@@ -7,21 +7,21 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Storaging
 {
-    public class Directory : StorageItem, IDirectory
+    public class StorageDirectory : StorageItem, IDirectory
     {
         
 
         
 
-        protected internal Directory(DirectoryInfo info, StorageItem parent,Storage root)
+        protected internal StorageDirectory(DirectoryInfo info, StorageDirectory parent,Storage root)
             : base(StorageTypes.Directory, info, parent,root)
         {
 
         }
 
-        public Directory(DirectoryInfo info) : this(info,null,null) { }
+        public StorageDirectory(DirectoryInfo info) : this(info,null,null) { }
 
-        public Directory(string absolutePath) : this(new DirectoryInfo(absolutePath))
+        public StorageDirectory(string absolutePath) : this(new DirectoryInfo(absolutePath))
         {
 
         }
@@ -33,7 +33,7 @@ namespace Yanyitec.Storaging
             if (itemType == StorageTypes.Directory)
             {
                 var dirInfo = System.IO.Directory.CreateDirectory(filename);
-                return new Directory(dirInfo,this,this.InternalRoot);
+                return new StorageDirectory(dirInfo,null,this.InternalRoot);
             }
             if (itemType == StorageTypes.File)
             {
@@ -41,11 +41,19 @@ namespace Yanyitec.Storaging
                 System.IO.Directory.CreateDirectory(info.DirectoryName);
                 using (info.Create()) { } ;
                 
-                return new File(info,this,this.InternalRoot);
+                return new StorageFile(info,null,this.InternalRoot);
             }
             return null;
         }
 
+        public void Delete()
+        {
+            if (this.FileSystemInfo != null)
+            {
+                this.FileSystemInfo.Delete();
+            }
+            throw new InvalidOperationException("Cannot delete the system root.");
+        }
 
 
         public async Task<IStorageItem> CreateItemAsync(string path, StorageTypes itemType = StorageTypes.Directory) {
@@ -61,14 +69,14 @@ namespace Yanyitec.Storaging
             {
                 if (System.IO.Directory.Exists(absolutePath))
                 {
-                    return new Directory(new DirectoryInfo(absolutePath),this,this.InternalRoot);
+                    return new StorageDirectory(new DirectoryInfo(absolutePath),null,this.InternalRoot);
                 }
             }
             if (itemType.IsFile())
             {
                 if (System.IO.File.Exists(absolutePath))
                 {
-                    return new File(new FileInfo(absolutePath),this,this.InternalRoot);
+                    return new StorageFile(new FileInfo(absolutePath),null,this.InternalRoot);
                 }
             }
             return null;
@@ -145,13 +153,13 @@ namespace Yanyitec.Storaging
             if (itemType.IsFile())
             {
                 var filenames = System.IO.Directory.GetFiles(filename);
-                foreach(var name in filenames) result.Add(new File(new FileInfo(name),this,this.InternalRoot));
+                foreach(var name in filenames) result.Add(new StorageFile(new FileInfo(name),this,this.InternalRoot));
             }
             if (itemType.IsDirectory())
             {
                 path += "/";
                 var filenames = System.IO.Directory.GetDirectories(filename);
-                foreach (var name in filenames) result.Add(new Directory(new DirectoryInfo(name),this,this.InternalRoot));
+                foreach (var name in filenames) result.Add(new StorageDirectory(new DirectoryInfo(name),this,this.InternalRoot));
             }
             return result;
         }
@@ -161,13 +169,13 @@ namespace Yanyitec.Storaging
             return await Task<IList<IStorageItem>>.Run(()=>this.ListItems(path,itemType));
         }
 
-        void InternalListItems(List<IStorageItem>  result ,Directory dir, bool includeSubs = false, StorageTypes itemType = StorageTypes.All) {
+        void InternalListItems(List<IStorageItem>  result ,StorageDirectory dir, bool includeSubs = false, StorageTypes itemType = StorageTypes.All) {
             var dirInfo = (dir.FileSystemInfo as DirectoryInfo);
             if (itemType.IsDirectory()) {
                 var subInfos = dirInfo.GetDirectories();
                 
                 foreach (var sub in subInfos) {
-                    var subItem = new Directory(sub, dir,null);
+                    var subItem = new StorageDirectory(sub, dir,this.InternalRoot);
                     result.Add(subItem);
                     if(includeSubs)InternalListItems(result, subItem, includeSubs,itemType);
                 }
@@ -178,7 +186,7 @@ namespace Yanyitec.Storaging
                 var subInfos = dirInfo .GetFiles();
                 foreach (var sub in subInfos)
                 {
-                    result.Add(new File(sub, dir,null));
+                    result.Add(new StorageFile(sub, dir,this.InternalRoot));
                 }
             }
         }
@@ -213,6 +221,7 @@ namespace Yanyitec.Storaging
 
         public void PutText(string path, string text, Encoding encoding = null)
         {
+            
             if (encoding == null) encoding = System.Text.Encoding.GetEncoding(Constants.DefaultCodepage);
             var bytes = encoding.GetBytes(text);
             this.PutBytes(path,bytes);

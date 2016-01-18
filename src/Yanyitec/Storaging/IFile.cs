@@ -8,6 +8,8 @@ namespace Yanyitec.Storaging
     using System.IO;
     public interface IFile : IStorageItem
     {
+        void Delete();
+
         Stream GetStream(bool createIfNotExisted = true);
 
         bool CopyTo(IFile target);

@@ -227,13 +227,16 @@ namespace Yanyitec.Injecting
 
         }
 
+        protected internal void ResetInstanceFactory() {
+            this._instanceFactory = null;
+        }
 
         public object GetOrCreateInstance() {
             if (_instanceFactory == null) {this.GetOrCreateInstanceFunc(true,null);}
             return _instanceFactory();
         }
 
-        public Func<object> GetOrCreateInstanceFunc(bool force = false, object locker=null) {
+        protected internal Func<object> GetOrCreateInstanceFunc(bool force = false, object locker=null) {
             if (locker == this.AsyncLocker) return GetOrCreateInstanceFunc(force);
             this.AsyncLocker.EnterWriteLock();
             try {

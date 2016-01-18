@@ -5,12 +5,18 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Unitest
 {
+    using System.Reflection;
+    using Yanyitec.Runtime;
+    using Testing;
+
     public class Program
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine(typeof(int?).GetHashCode());
-            Console.WriteLine(typeof(DateTime?).GetHashCode());
+            Assert.ThrowException = true;
+            var test = new Testing.TestArtifactInfo(new Artifact(typeof(Program).GetTypeInfo().Assembly));
+
+            test.TestMethods("Storage%");
         }
     }
 }

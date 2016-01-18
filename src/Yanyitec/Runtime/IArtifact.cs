@@ -9,18 +9,18 @@ namespace Yanyitec
 {
     public interface IArtifact
     {
-        event Action<IArtifact, ArtifactChangeEventArgs> OnChange;
+        
 
         event Action<IArtifact, ArtifactChangeEventArgs> Changed;
 
-        bool IsValid { get; }
+        //bool IsValid { get; }
         string Name { get; }
 
         Assembly Assembly { get; }
 
 
 
-        Type GetType(string name);
+        //Type GetType(string name);
         IEnumerable<TypeInfo> GetTypeInfos();
 
         IEnumerable<Attribute> GetAttributes();
