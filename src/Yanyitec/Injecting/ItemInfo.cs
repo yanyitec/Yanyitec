@@ -14,6 +14,8 @@ namespace Yanyitec.Injecting
 
         public InjectionKinds Kind { get; set; }
 
+        public bool isDefination { get; set; }
+
         public Type TokenType { get; set; }
 
         public string TypeName { get; set; }

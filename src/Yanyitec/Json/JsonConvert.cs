@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Json
 {
-    public class Convert {
+    public class JsonConvert {
         public ITypeCompiler Compiler { get; private set; }
 
         public IRWLocker RWLocker { get; private set; }

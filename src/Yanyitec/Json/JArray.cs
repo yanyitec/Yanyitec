@@ -57,8 +57,33 @@ namespace Yanyitec.Json
             }
         }
 
+        public int Length {
+            get { return this.Value.Count; }
+            set {
+                if (value < this.Value.Count)
+                {
+                    for (int i = value, j = this.Value.Count; i < j; i++)
+                    {
+                        this.Value.RemoveAt(this.Value.Count - 1);
+                    }
+                }
+                else if (value > this.Value.Count) {
+                    for (int i = this.Value.Count, j = value; i < j; i++) {
+                        this.Value.Add(JUndefined.Default);
+                    }
+                }
+            }
+        }
+
         public void Push(JToken token) {
             this.Value.Add(token);
+        }
+
+        public JToken Pop() {
+            if (this.Value.Count == 0) return JUndefined.Default;
+            var item = this[0];
+            this.Value.RemoveAt(0);
+            return item;
         }
 
         public override void ToJson(StringBuilder sb)
@@ -67,6 +92,7 @@ namespace Yanyitec.Json
             var first = true;
             foreach (var item in this.Value) {
                 if (first) { first = false; } else { sb.Append(','); }
+                item.ToJson(sb);
             }
             sb.Append("]");
         }

@@ -8,7 +8,7 @@ namespace Yanyitec.Testing
 {
     public class AssertException : Exception
     {
-        public AssertException(string msg) : base(msg) { }
+        public AssertException(string msg=null) : base(msg) { }
 
         public readonly static AssertException None = new AssertException("None");
 

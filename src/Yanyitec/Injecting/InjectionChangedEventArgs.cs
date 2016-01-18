@@ -7,8 +7,7 @@ namespace Yanyitec.Injecting
 {
     public class InjectionChangedEventArgs : EventArgs
     {
-        public InjectionChangedEventArgs(bool locked) { this.Locked = locked; }
+        public InjectionChangedEventArgs() {  }
 
-        public bool Locked { get; set; }
     }
 }

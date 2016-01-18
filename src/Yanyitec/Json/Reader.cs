@@ -119,6 +119,7 @@ namespace Yanyitec.Json
                             {
                                 var func = text.Substring(lastAt, At - lastAt + 1);
                                 this.OnFunctionFound(name, func.Trim());
+                                name = null;
                                 lastAt = At + 1; lastCh = ch;
                             }
                             break;

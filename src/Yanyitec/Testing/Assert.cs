@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
+
 
 namespace Yanyitec.Testing
 {
+    using System;
+    using System.Reflection;
     public static class Assert
     {
         public static Yanyitec.Logging.ILogger Log = Yanyitec.Logging.ConsoleLogger.Default;
@@ -41,8 +40,13 @@ namespace Yanyitec.Testing
 
 
         public static void AreEqual<T>(T expect, T actual) {
-            
-            if (!expect.Equals(actual)) throw new AssertException("Expect is not match actual.");
+
+            if (!expect.Equals(actual)) throw new AreEqualException(expect,actual);
+        }
+
+        public static void IsInstanceOfType(object obj, Type type) {
+            if (obj == null) throw new InstanceOfTypeException(obj,type);
+            if (type!=obj.GetType() && !type.IsAssignableFrom(obj.GetType())) throw new InstanceOfTypeException(obj, type);
         }
     }
 }

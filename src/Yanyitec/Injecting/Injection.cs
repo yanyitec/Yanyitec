@@ -23,7 +23,7 @@ namespace Yanyitec.Injecting
             this.AsyncLocker = new System.Threading.ReaderWriterLockSlim();
         }
 
-        
+        #region load methods
         void LoadFromDefines(Json.JObject obj, ItemCollection items) {
 
         }
@@ -63,7 +63,7 @@ namespace Yanyitec.Injecting
             #region assembly发生了变化，所有的这些_instance都要重写，他们的依赖项也要重写
             artifact.Changed += (sender, e) => {
                 this.AsyncLocker.EnterWriteLock();
-                var evt = new InjectionChangedEventArgs(true);
+                var evt = new InjectionChangedEventArgs();
                 evt.Source = e;
                 evt.LockedObject = this;
                 try {
@@ -78,7 +78,9 @@ namespace Yanyitec.Injecting
             #endregion
         }
 
-        
+        #endregion
+
+        #region properties
 
         ItemInfo _itemInfo;
         protected internal ItemInfo ItemInfo { get; private set; }
@@ -111,10 +113,166 @@ namespace Yanyitec.Injecting
             get { return this._itemInfo.Kind; }
         }
 
+        #endregion
 
-        
+        #region container
+        public void Register(Type tokenType, Type injectionType, InjectionKinds kind = InjectionKinds.NewOnce){
+            if (tokenType == null) tokenType = injectionType;
+            if (!tokenType.IsAssignableFrom(injectionType))
+            {
+                throw new ArgumentException("Cant assign [" + injectionType?.FullName + "] to [" + tokenType?.FullName + "]");
+            }
+            this.AsyncLocker.EnterWriteLock();
+            try {
+                Injection item = null;
+                if (this._typedItems.TryGetValue(tokenType.GetHashCode(), out item))
+                {
+                    item._injectionType = injectionType;
+                    item._instanceFactory = null;
+                    item.Changed(item, new InjectionChangedEventArgs() { LockedObject = this.AsyncLocker});
+                }
+                else
+                {
+                    var info = new ItemInfo()
+                    {
+                        TokenType = tokenType,
+                        InjectionType = injectionType,
+                        Kind = kind
+                    };
+                    item = new Injection(this, info);
+                    this._typedItems.Add(tokenType.GetHashCode(), item);
+                }
+                Injection named = null;
+                if (this._namedItems.TryGetValue(tokenType.FullName, out named))
+                {
+                    named._injectionType = injectionType;
+                    named._instanceFactory = null;
+                    named.Changed(named, new InjectionChangedEventArgs() { LockedObject = this.AsyncLocker});
+                }
+                else
+                {
+                    this._namedItems.Add(tokenType.FullName, item);
+                }
+            }
+            finally {
+                this.AsyncLocker.ExitWriteLock();
+            }
+            
+        }
+        public void Register(Type injectionType, InjectionKinds kind = InjectionKinds.NewOnce) {
+            this.Register(null,injectionType,kind);
+            
+        }
 
-        public Injection GetByName(string name,object locker=null) {
+        public void Register<T>(InjectionKinds kind = InjectionKinds.NewOnce) {
+            this.Register(typeof(T),kind);
+        }
+
+        public void Register<TToken,TInjection>(InjectionKinds kind = InjectionKinds.NewOnce){
+            this.Register(typeof(TToken),typeof(TInjection), kind);
+        }
+
+        public void Register(string name, object value) {
+            this.AsyncLocker.EnterWriteLock();
+            try
+            {
+                Injection item = null;
+                if (this._namedItems.TryGetValue(name, out item))
+                {
+                    item._itemInfo.ConstValue = value;
+                    item._instanceFactory = null;
+                    item.Changed(item, new InjectionChangedEventArgs() { LockedObject = this.AsyncLocker });
+                }
+                else {
+                    var info = new ItemInfo()
+                    {
+                        Name = name,
+                        ConstValue = value
+                    };
+                    item = new Injection(this,info);
+                    this._namedItems.Add(name, item);
+                }
+            }
+            finally
+            {
+                this.AsyncLocker.ExitWriteLock();
+            }
+        }
+
+        public void Define(string name, string value)
+        {
+            this.AsyncLocker.EnterWriteLock();
+            try
+            {
+                Injection item = null;
+                if (!this._namedItems.TryGetValue(name, out item))
+                {
+                   
+                    var info = new ItemInfo()
+                    {
+                        Name = name,
+                        ConstValue = value,
+                        isDefination = true
+                    };
+                    item = new Injection(this, info);
+                    this._namedItems.Add(name, item);
+                }
+            }
+            finally
+            {
+                this.AsyncLocker.ExitWriteLock();
+            }
+        }
+
+        public void Register<T>(Func<object> instanceFactory, InjectionKinds kind = InjectionKinds.Create)
+        {
+            this.AsyncLocker.EnterWriteLock();
+            var tokenType = typeof(T);
+            try
+            {
+                Injection item = null;
+                if (this._typedItems.TryGetValue(tokenType.GetHashCode(), out item))
+                {
+                    item._itemInfo.InstanceFactory = instanceFactory;
+                    item._itemInfo.TokenType = tokenType;
+                    item._instanceFactory = null;
+                    item.Changed(item, new InjectionChangedEventArgs() { LockedObject = this.AsyncLocker });
+                }
+                else
+                {
+                    var info = new ItemInfo()
+                    {
+                        TokenType = tokenType,
+                        InstanceFactory = instanceFactory
+                    };
+                    item = new Injection(this, info);
+                    this._typedItems.Add(tokenType.GetHashCode(), item);
+                }
+
+                Injection named = null;
+                if (this._namedItems.TryGetValue(tokenType.FullName, out named))
+                {
+                    named._itemInfo.TokenType = tokenType;
+                    named._itemInfo.InstanceFactory = instanceFactory;
+                    named._instanceFactory = null;
+                    named.Changed(named, new InjectionChangedEventArgs() { LockedObject = this.AsyncLocker });
+                }
+                else
+                {
+                    this._namedItems.Add(tokenType.FullName, item);
+                }
+            }
+            finally
+            {
+                this.AsyncLocker.ExitWriteLock();
+            }
+        }
+
+    
+
+
+
+    public Injection GetByName(string name,object locker=null) {
             if (locker==this.AsyncLocker) {
                 Injection result = null;
                 this._namedItems.TryGetValue(name, out result);
@@ -204,6 +362,9 @@ namespace Yanyitec.Injecting
             return null;
         }
 
+        #endregion
+
+        #region create instance
 
         protected internal Injection FindDepedence(string name) {
             Injection result = null;
@@ -254,7 +415,7 @@ namespace Yanyitec.Injecting
             if (this._itemInfo.Kind == InjectionKinds.Constant) {
                 return this.GenConstValueFunc();
             }
-            if (this._itemInfo.Kind == InjectionKinds.Define) {
+            if (this._itemInfo.isDefination) {
                 return this.GenDefineFunc();
             }
             return this._instanceFactory = new InstanceFactoryGenerator(this).Generate();
@@ -308,5 +469,7 @@ namespace Yanyitec.Injecting
             }
             return () => this.ItemInfo.ConstValue;
         }
+
+        #endregion
     }
 }

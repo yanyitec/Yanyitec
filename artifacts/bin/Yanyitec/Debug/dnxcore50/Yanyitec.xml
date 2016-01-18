@@ -104,11 +104,6 @@
             <param name="artifact"></param>
             <param name="items"></param>
         </member>
-        <member name="F:Yanyitec.Injecting.InjectionKinds.RuntimeNew">
-            <summary>
-            会在运行期创建
-            </summary>
-        </member>
         <member name="F:Yanyitec.Injecting.InjectionKinds.Singleon">
             <summary>
             单例，每次CreateInstance只会得到一个值。
@@ -117,11 +112,6 @@
         <member name="F:Yanyitec.Injecting.InjectionKinds.Container">
             <summary>
             容器，createInstance根本不能使用
-            </summary>
-        </member>
-        <member name="F:Yanyitec.Injecting.InjectionKinds.Define">
-            <summary>
-            配置项，会在运行期查找合适的项
             </summary>
         </member>
         <member name="F:Yanyitec.Injecting.InjectionKinds.Constant">
@@ -135,11 +125,6 @@
             每次创建只创建一次
             </summary>
         </member>
-        <member name="F:Yanyitec.Injecting.InjectionKinds.NewOnlyOnce">
-            <summary>
-            全局的只创建一次
-            </summary>
-        </member>
         <member name="F:Yanyitec.Injecting.InjectionKinds.AlwaysNew">
             <summary>
             总是重新创建
@@ -148,11 +133,6 @@
         <member name="F:Yanyitec.Injecting.InjectionKinds.Create">
             <summary>
             动态创建.生成的代码不是new T(),而是 dependentItem.CreateInstance();
-            </summary>
-        </member>
-        <member name="F:Yanyitec.Injecting.InjectionKinds.Agency">
-            <summary>
-            创建代理,从AgencyItem创建
             </summary>
         </member>
         <member name="M:Yanyitec.Injecting.InstanceFactoryGenerator.ValueExpression(System.Collections.Generic.List{System.Linq.Expressions.ParameterExpression},System.Collections.Generic.Dictionary{System.Int32,System.Linq.Expressions.ParameterExpression},System.Collections.Generic.Dictionary{System.String,System.Linq.Expressions.ParameterExpression},System.Collections.Generic.List{System.Linq.Expressions.Expression},System.Type)">

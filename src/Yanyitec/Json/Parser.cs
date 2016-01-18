@@ -5,6 +5,7 @@
 
 namespace Yanyitec.Json
 {
+    using System;
     using System.Collections.Generic;
     public class Parser
     {
@@ -125,7 +126,7 @@ namespace Yanyitec.Json
                 return true;
             };
             reader.OnKeyValueFound = (name, valueString) => {
-                JToken value = null;
+                JToken value = ParseValueString(valueString);
                 if (targetObj != null) targetObj[name] = value;
                 else if (targetArr != null) targetArr.Push(value);
                 else if (name == null) result = value;
@@ -140,12 +141,13 @@ namespace Yanyitec.Json
             reader.Read();
             return result;
         }
-
+        static System.Text.RegularExpressions.Regex JsonDateRegex = new System.Text.RegularExpressions.Regex("^(\\d{4})\\-(10|11|12|0?\\d)\\-([012]\\d|30|31)T([01]\\d|2[0-3]):([0-5]?\\d):([0-5]?\\d)$", System.Text.RegularExpressions.RegexOptions.Compiled);
         static JToken ParseValueString(string valueString) {
             if (valueString == "null") return new JNull();
             if (valueString == "undefined") return JUndefined.Default;
             if (valueString == "true") return JBoolean.True;
             if (valueString == "false") return JBoolean.False;
+            
             var numberInt = 0;
             if (int.TryParse(valueString, out numberInt))
             {
@@ -170,8 +172,25 @@ namespace Yanyitec.Json
             {
                 strValue = valueString.Trim('\'');
             }
-            if (strValue != null) return new JString(strValue);
-            return new JUnknown(valueString);
+            if (strValue == null)
+                return new JUnknown(valueString);
+            var dateMatch = JsonDateRegex.Match(strValue);
+            if (dateMatch != null && dateMatch.Success)
+            {
+                var dateTime = new DateTime(
+                    int.Parse(dateMatch.Groups[1].Value)
+                    , int.Parse(dateMatch.Groups[2].Value)
+                    , int.Parse(dateMatch.Groups[3].Value)
+                    , int.Parse(dateMatch.Groups[4].Value)
+                    , int.Parse(dateMatch.Groups[5].Value)
+                    , int.Parse(dateMatch.Groups[6].Value)
+                );
+                return new JDate(dateTime);
+            }
+
+
+           return new JString(strValue);
+
 
         }
     

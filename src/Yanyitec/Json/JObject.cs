@@ -53,6 +53,14 @@ namespace Yanyitec.Json
             }
         }
 
+        public void SetNull(string name) {
+            this.Value[name] = new JNull();
+        }
+
+        public void SetUndefined(string name) {
+            this.Value[name] = JUndefined.Default;
+        }
+
         public override void ToJson(StringBuilder sb)
         {
             sb.Append("{");

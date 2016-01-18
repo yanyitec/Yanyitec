@@ -318,6 +318,8 @@ namespace Yanyitec
         
 
         public static object ConvertTo(this string self, Type type) {
+            if (self == null) return null;
+            if (type == typeof(string)) return self;
             Func<string, object> convertor = null;
 
             if (_objectConvertors.TryGetValue(type.GetHashCode(), out convertor)) return convertor(self);

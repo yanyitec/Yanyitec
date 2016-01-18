@@ -17,8 +17,9 @@ namespace Yanyitec.Json
         Char = 1<<17 | String,
         Function = 1<<18,
         Object = 1<<19,
-        Null = 1<<20 | Object,
-        Array = 1<< 21 | Object,
+        DateTime = 1<<28 | Object,
+        Array = 1 << 29 | Object,
+        Null = 1<<30 | Object,
         Unknown = 1<<31
     }
 }

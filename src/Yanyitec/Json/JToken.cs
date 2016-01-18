@@ -24,6 +24,13 @@ namespace Yanyitec.Json
 
         public virtual void ToJson(StringBuilder sb) { sb.Append(this.ValueOf().ToString()); }
 
+        public override string ToString()
+        {
+            return ValueOf().ToString();
+        }
+
+        public static JUndefined Undefined = JUndefined.Default;
+
         #region int
         public static implicit operator int? (JToken jToken) {
             if (jToken.ValueType == ValueType.Int) return (jToken as JInt).Value;
@@ -134,6 +141,37 @@ namespace Yanyitec.Json
             return new JString(value);
         }
 
+        public static implicit operator JToken(Guid? guid)
+        {
+            if (guid == null) return JUndefined.Default;
+            return new JString(guid.Value.ToString());
+        }
+
+        public static implicit operator JToken(Guid guid)
+        {
+            return new JString(guid.ToString());
+        }
+
+        #endregion
+
+        #region datetime
+        public static implicit operator DateTime (JToken jToken)
+        {
+            if (jToken.ValueType == ValueType.DateTime) return ((JDate)jToken).Value;
+            return DateTime.MinValue;
+        }
+
+        public static implicit operator JToken(DateTime value)
+        {
+            
+            return new JDate(value);
+        }
+
+        public static implicit operator JToken(DateTime? value)
+        {
+            if(value.HasValue) return new JDate(value.Value);
+            return JUndefined.Default;
+        }
         #endregion
     }
 }
