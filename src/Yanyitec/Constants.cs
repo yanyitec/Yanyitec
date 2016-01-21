@@ -11,6 +11,11 @@ namespace Yanyitec
 
         public const string DefaultCodepage = UTF8Codepage;
 
-        
+        public static int IntSize = BitConverter.GetBytes(0).Length;
+
+        public static int DoubleSize = BitConverter.GetBytes((double)0.1).Length;
+
+        public static int GuidSize = Guid.Empty.ToByteArray().Length;
+
     }
 }

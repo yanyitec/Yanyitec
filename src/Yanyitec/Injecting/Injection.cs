@@ -116,6 +116,7 @@ namespace Yanyitec.Injecting
         #endregion
 
         #region container
+        
         public void Register(Type tokenType, Type injectionType, InjectionKinds kind = InjectionKinds.NewOnce){
             if (tokenType == null) tokenType = injectionType;
             if (!tokenType.IsAssignableFrom(injectionType))
@@ -310,43 +311,43 @@ namespace Yanyitec.Injecting
             }
         }
 
-        public Injection Search(string name,object locker=null) {
-            if (locker == this.AsyncLocker) return InternalSearchByName(name,this);
+        public Injection Find(string name,object locker=null) {
+            if (locker == this.AsyncLocker) return FindByName(name,this);
             this.AsyncLocker.EnterReadLock();
             try {
-                return InternalSearchByName(name,this);
+                return FindByName(name,this);
             } finally {
                 this.AsyncLocker.ExitReadLock();
             }
 
         }
 
-        static Injection InternalSearchByName(string key, Injection initInjection) {
+        static Injection FindByName(string key, Injection initInjection) {
             System.Collections.Generic.Queue<Injection> queue = new Queue<Injection>();
             queue.Enqueue(initInjection);
             Injection current = null;
             while ((current = queue.Dequeue()) != null) {
                 foreach (var item in current._namedItems.Values) {
                     if (item.Name == key) return item;
-                    if (item._namedItems.Count > 0) queue.Enqueue(item);
+                    if (item._namedItems.Count > 0 && item.Kind == InjectionKinds.Container) queue.Enqueue(item);
                 }
             }
             return null;
         }
 
-        public Injection Search(Type type, object locker = null) {
-            if (locker == this.AsyncLocker) return InternalSearchByType(type.GetHashCode(), this);
+        public Injection Find(Type type, object locker = null) {
+            if (locker == this.AsyncLocker) return FindByType(type.GetHashCode(), this);
             this.AsyncLocker.EnterReadLock();
             try
             {
-                return InternalSearchByType(type.GetHashCode(), this);
+                return FindByType(type.GetHashCode(), this);
             }
             finally
             {
                 this.AsyncLocker.ExitReadLock();
             }
         }
-        static Injection InternalSearchByType(int key, Injection initInjection)
+        static Injection FindByType(int key, Injection initInjection)
         {
             System.Collections.Generic.Queue<Injection> queue = new Queue<Injection>();
             queue.Enqueue(initInjection);
@@ -356,7 +357,7 @@ namespace Yanyitec.Injecting
                 foreach (var itemPair in current._typedItems)
                 {
                     if (itemPair.Key == key) return itemPair.Value;
-                    if (itemPair.Value._typedItems.Count > 0) queue.Enqueue(itemPair.Value);
+                    if (itemPair.Value._typedItems.Count > 0 && itemPair.Value.Kind == InjectionKinds.Container) queue.Enqueue(itemPair.Value);
                 }
             }
             return null;

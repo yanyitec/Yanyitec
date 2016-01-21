@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Yanyitec.Json
+namespace Yanyitec.Unitest
 {
-    public interface IConverter
+    public class Injecting_Unittest
     {
-        
     }
 }

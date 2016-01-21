@@ -10,6 +10,15 @@ namespace Yanyitec.Testing
     {
         public AssertException(string msg=null) : base(msg) { }
 
+        public virtual string AssertResult
+        {
+            get{ return base.Message; }     
+        }
+
+        public override string ToString()
+        {
+            return "Assert:" + this.AssertResult;
+        }
         public readonly static AssertException None = new AssertException("None");
 
         public readonly static AssertException Success = new AssertException("Success");

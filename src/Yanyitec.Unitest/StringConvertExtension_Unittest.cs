@@ -14,9 +14,9 @@ namespace Yanyitec.Unitest
             string input = "123";
             object val = input.ToInt();
             var nullable = (int?)val;
-            Assert.IsInstanceOfType(nullable,typeof(Nullable<int>));
-            Assert.AreEqual(nullable.HasValue,true);
-            Assert.AreEqual(nullable.Value,123);
+            Assert.InstanceOf(nullable,typeof(Nullable<int>));
+            Assert.True(nullable.HasValue);
+            Assert.Equal("123",nullable.Value);
         }
     }
 }
