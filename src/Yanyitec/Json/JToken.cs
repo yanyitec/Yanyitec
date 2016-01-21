@@ -14,6 +14,10 @@ namespace Yanyitec.Json
         }
         public abstract object ValueOf();
 
+        public bool IsUndefined {
+            get { return this.ValueType == ValueType.Undefined; }
+        }
+
         public ValueType ValueType { get; private set; }
 
         public abstract JToken this[string key] { get; set; }

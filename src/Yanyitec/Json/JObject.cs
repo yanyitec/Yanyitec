@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Json
 {
-    public class JObject : JToken
+    public class JObject : JToken,IEnumerable<KeyValuePair<string,JToken>>
     {
         public JObject() : base(ValueType.Object) {
             this.Value = new Dictionary<string, JToken>();
@@ -72,6 +73,16 @@ namespace Yanyitec.Json
                 
             }
             sb.Append("}");
+        }
+
+        public IEnumerator<KeyValuePair<string, JToken>> GetEnumerator()
+        {
+            return this.Value.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.Value.GetEnumerator();
         }
     }
 }

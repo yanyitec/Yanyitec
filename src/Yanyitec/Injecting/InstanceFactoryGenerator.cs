@@ -31,12 +31,12 @@ namespace Yanyitec.Injecting
             get { return this.Injection.Kind; }
         }
 
-        public Type InjectionType { get; private set; }
+        public Type InjectionType { get { return this.Injection.InjectionType; } }
 
         
         public Func<object> Generate()
         {
-            return null;
+            return CreateInstanceFactory();
         }
 
         
@@ -68,7 +68,8 @@ namespace Yanyitec.Injecting
             }
             var lamda = Expression.Lambda<Func<object>>(block);
 
-            return lamda.Compile();
+            var result = lamda.Compile();
+            return result;
             
         }
 
@@ -139,7 +140,7 @@ namespace Yanyitec.Injecting
                 else
                 {
                     var itemGenerator = new InstanceFactoryGenerator(item);
-                    var instanceExpr = itemGenerator.ValueExpression(locals, typedVars, namedVars, creations);
+                    var instanceExpr = itemGenerator.ValueExpression(locals, typedVars, namedVars, creations,parameterInfo.ParameterType);
                     paramExpressions.Add(instanceExpr);
                     item.Changed += (sender, e) =>  this.Injection.ResetInstanceFactory();
                     
@@ -184,7 +185,7 @@ namespace Yanyitec.Injecting
                     return;
                 }
                 var itemGenerator = new InstanceFactoryGenerator(item);
-                var valueExpr = itemGenerator.ValueExpression(locals, typedVars, namedVars, creations);
+                var valueExpr = itemGenerator.ValueExpression(locals, typedVars, namedVars, creations,propInfo.PropertyType);
                 if (valueExpr != null) {
                     var assignExpr = Expression.Assign(Expression.Property(instanceExpr, propInfo), valueExpr);
                     creations.Add(assignExpr);
@@ -223,11 +224,12 @@ namespace Yanyitec.Injecting
                     //var parsedValue = valueStr.ConvertTo(expectValueType) as Nullable;
                     
                 }
-                return Expression.Constant(constValue);
+                return Expression.Constant(constValue,expectValueType);
             }
 
             ParameterExpression varExpr = null;
-            if (!namedVars.TryGetValue(this.Injection.Name, out varExpr))
+            var name = this.Injection.Name ?? this.Injection.InjectionType.FullName;
+            if (!namedVars.TryGetValue(name, out varExpr))
             {
                 varExpr = this.InitExpression(
                     this.InjectionType,
@@ -235,7 +237,7 @@ namespace Yanyitec.Injecting
                     typedVars,
                     namedVars,
                     creations);
-                namedVars.Add(this.Injection.Name, varExpr);
+                namedVars.Add(name, varExpr);
             }
 
             return varExpr;
@@ -266,6 +268,5 @@ namespace Yanyitec.Injecting
             return injectCtor ?? defaultCtor;
         }
 
-        private Func<object> _createInstance;
     }
 }

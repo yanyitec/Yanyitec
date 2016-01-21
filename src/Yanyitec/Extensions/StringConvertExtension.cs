@@ -105,7 +105,7 @@ namespace Yanyitec
 
         public static int? ToInt(this string self) {
             int result = 0;
-            if (int.TryParse(self, out result)) return (int?)result;
+            if (int.TryParse(self, out result)) return new Nullable<int>(result);
             return null;
         }
         public static object ToIntObject(this string self)

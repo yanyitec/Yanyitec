@@ -25,7 +25,69 @@ namespace Yanyitec.Injecting
 
         #region load methods
         void LoadFromDefines(Json.JObject obj, ItemCollection items) {
+            foreach (var pair in obj) {
+                var sub = this.ConvertToInjection(pair.Key, pair.Value);
+                if (_namedItems.ContainsKey(sub.Name))
+                {
+                    _namedItems[sub.Name] = sub;
+                }
+                else
+                {
+                    this._namedItems.Add(sub.Name, sub);
+                }
+            }
+        }
 
+        Injection ConvertToInjection(string key, Json.JToken define) {
+            Injection result = null;
+            ItemInfo info = null;
+            if (define.ValueType != Json.ValueType.Object)
+            {
+                info = new ItemInfo() {
+                    isDefination = true,
+                    Name = key,
+                    ConstValue = define.ToString()
+                };
+                return new Injection(this,info);
+            }
+            info = new ItemInfo() { Name = Name };
+            var valueToken = define["$value"];
+            if (!valueToken.IsUndefined)
+            {
+                info.ConstValue = valueToken.ToString();
+                info.Kind = InjectionKinds.Constant;
+                return new Injection(this,info);
+            }
+            var typename = define["$type"]?.ToString();
+            string kindstr = define["$kind"]?.ToString();
+
+            if (!string.IsNullOrEmpty(typename))
+            {
+                info.TypeName = typename;
+                if (string.IsNullOrEmpty(kindstr))
+                {
+                    InjectionKinds kind = InjectionKinds.Container;
+                    if (Enum.TryParse<InjectionKinds>(kindstr, out kind))
+                    {
+                        info.Kind = kind;
+                    }
+                    else info.Kind = InjectionKinds.NewOnce;
+                }
+                else info.Kind = InjectionKinds.NewOnce;
+            }
+            else info.Kind = InjectionKinds.Container;
+            result = new Injection(this,info);
+            foreach (var pair in define as Json.JObject) {
+                if (pair.Key == "$type" || pair.Key == "$value" || pair.Key == "$kind") continue;
+                var sub = result.ConvertToInjection(pair.Key, pair.Value);
+                if (_namedItems.ContainsKey(sub.Name)) {
+                    _namedItems[sub.Name] = sub;
+                } else {
+                    result._namedItems.Add(sub.Name, sub);
+                }
+            }
+            return result;
+            
         }
         /// <summary>
         /// 该函数不是线程安全安全的，没有用Lock保护
@@ -93,7 +155,7 @@ namespace Yanyitec.Injecting
 
         public string Name {
             get {
-                return this._itemInfo.Name;
+                return this._itemInfo.Name ;
             }
         }
 
@@ -103,9 +165,30 @@ namespace Yanyitec.Injecting
 
         Type _injectionType;
 
+        internal Type GetOrFindInjectionType() {
+            if (_injectionType == null)
+            {
+                if (this._itemInfo.InjectionType != null) return this._injectionType = this._itemInfo.InjectionType;
+                var typename = this._itemInfo.isDefination ? this._itemInfo.ConstValue?.ToString() : this._itemInfo.TypeName;
+                if (!string.IsNullOrEmpty(typename)) {
+                    Injection item = this.FindDepedence(typename);
+                    if (item != null) {
+
+                    }
+                }
+            }
+            return _injectionType;
+        }
+
         public Type InjectionType {
             get {
-                return _injectionType ?? this._itemInfo.InjectionType;
+                this.AsyncLocker.EnterReadLock();
+                try {
+                    return this.GetOrFindInjectionType();
+                } finally {
+                    this.AsyncLocker.ExitReadLock();
+                }
+                
             }
         }
 
@@ -188,7 +271,8 @@ namespace Yanyitec.Injecting
                     var info = new ItemInfo()
                     {
                         Name = name,
-                        ConstValue = value
+                        ConstValue = value,
+                        Kind = InjectionKinds.Constant
                     };
                     item = new Injection(this,info);
                     this._namedItems.Add(name, item);
@@ -426,8 +510,7 @@ namespace Yanyitec.Injecting
         Func<object> GenConstValueFunc() {
             object constValue = null;
             if (this._itemInfo.ConstValue != null) {
-                
-                constValue = this.ItemInfo.ConstValue;
+                constValue = this._itemInfo.ConstValue;
                 if (constValue != null)
                 {
                     this._injectionType = constValue.GetType();
