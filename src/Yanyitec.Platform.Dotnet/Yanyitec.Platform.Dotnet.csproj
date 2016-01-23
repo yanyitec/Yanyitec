@@ -65,7 +65,6 @@
   <ItemGroup>
     <Compile Include="Compilation\CompileReference.cs" />
     <Compile Include="Compilation\CSharpCompiler.cs" />
-    <Compile Include="Compilation\ICompiler.cs" />
     <Compile Include="Compiler_Unittest.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
