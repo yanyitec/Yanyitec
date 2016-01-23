@@ -48,7 +48,7 @@ namespace Yanyitec.Storaging
             }
             return _parent;
         }
-        public IDirectory Parent {
+        public IStorageDirectory Parent {
             get {
 
                 if (_parent == null)

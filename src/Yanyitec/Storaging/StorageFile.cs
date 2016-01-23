@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Storaging
 {
-    public class StorageFile : StorageItem , IFile
+    public class StorageFile : StorageItem , IStorageFile
     {
         public StorageFile(string abstractFilename)
             : this(new FileInfo(abstractFilename),null,null) {
@@ -35,7 +35,7 @@ namespace Yanyitec.Storaging
             return (this.FileSystemInfo as FileInfo).Open(createIfNotExisted?FileMode.OpenOrCreate: FileMode.Open);
         }
 
-        public bool CopyTo(IFile target) {
+        public bool CopyTo(IStorageFile target) {
             var srcStream = this.GetStream();
             if (srcStream == null) return false;
             using (srcStream) {
@@ -52,7 +52,7 @@ namespace Yanyitec.Storaging
             return true;
         }
 
-        public async Task<bool> CopyToAsync(IFile target)
+        public async Task<bool> CopyToAsync(IStorageFile target)
         {
             var srcStream = this.GetStream();
             if (srcStream == null) return false;

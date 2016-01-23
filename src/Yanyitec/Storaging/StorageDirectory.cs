@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Storaging
 {
-    public class StorageDirectory : StorageItem, IDirectory
+    public class StorageDirectory : StorageItem, IStorageDirectory
     {
         
 
@@ -70,7 +70,7 @@ namespace Yanyitec.Storaging
         }
 
 
-        public IStorageItem GetItem(string path, StorageTypes itemType = StorageTypes.All)
+        public IStorageItem GetItem(string path, StorageTypes itemType = StorageTypes.All,bool createIfNotExisted=false)
         {
             
             var absolutePath =this.GetAbsolutePath(path);
@@ -78,22 +78,33 @@ namespace Yanyitec.Storaging
             {
                 if (System.IO.Directory.Exists(absolutePath))
                 {
-                    return new StorageDirectory(new DirectoryInfo(absolutePath),null,this.InternalRoot);
+                    return new StorageDirectory(new DirectoryInfo(absolutePath), null, this.InternalRoot);
+                }
+                else if(createIfNotExisted){
+                    var dir = new DirectoryInfo(absolutePath);
+                    dir.Create();
+                    return new StorageDirectory(dir, null, this.InternalRoot);
                 }
             }
             if (itemType.IsFile())
             {
                 if (System.IO.File.Exists(absolutePath))
                 {
-                    return new StorageFile(new FileInfo(absolutePath),null,this.InternalRoot);
+                    return new StorageFile(new FileInfo(absolutePath), null, this.InternalRoot);
+                }
+                else if(createIfNotExisted){
+                    var info = new FileInfo(absolutePath);
+                    if (!info.Directory.Exists) info.Directory.Create();
+                    using (var s = info.Create()) { };
+                    return new StorageFile(info, null, this.InternalRoot);
                 }
             }
             return null;
         }
 
-        public async Task<IStorageItem> GetItemAsync(string path, StorageTypes itemType = StorageTypes.All)
+        public async Task<IStorageItem> GetItemAsync(string path, StorageTypes itemType = StorageTypes.All,bool createIfNotExisted=false)
         {
-            return await Task.Run(() => this.GetItem(path, itemType));
+            return await Task.Run(() => this.GetItem(path, itemType,createIfNotExisted));
         }
         public void AppendText(string path, string text, Encoding encoding = null)
         {

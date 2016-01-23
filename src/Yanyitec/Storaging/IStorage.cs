@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Storaging
 {
-    public interface IStorage : IDirectory
+    public interface IStorage : IStorageDirectory
     {
         
     }

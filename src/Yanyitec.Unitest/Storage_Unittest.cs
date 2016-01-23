@@ -47,7 +47,7 @@ namespace Yanyitec.Unitest
             Assert.Equal(subitem.FullName,BasePath + "/access/sub/testdir");
             Assert.Equal(subitem.RelativeName,"access/sub/testdir");
 
-            var accessItem = storage.GetItem("access") as IDirectory;
+            var accessItem = storage.GetItem("access") as IStorageDirectory;
             var list = accessItem.ListItems(false);
             Assert.Equal(2,list.Count);
             Assert.True(list[1].Equals(textItem));
@@ -62,7 +62,7 @@ namespace Yanyitec.Unitest
         [Test("绝对目录操作")]
         public void Absolute() {
             var storage = new Storaging.Storage(BasePath);
-            var sub = storage.CreateItem("abs") as IDirectory;
+            var sub = storage.CreateItem("abs") as IStorageDirectory;
             var sub1 = sub.GetItem("/abs");
             Assert.Equal(sub.FullName,sub1.FullName);
         }

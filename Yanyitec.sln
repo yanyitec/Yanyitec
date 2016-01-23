@@ -15,9 +15,6 @@ EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Yanyitec.Unitest", "src\Yanyitec.Unitest\Yanyitec.Unitest.xproj", "{1AD935E3-34B2-4BB1-9984-37FCFEA77DCD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yanyitec.Platform.Dotnet", "src\Yanyitec.Platform.Dotnet\Yanyitec.Platform.Dotnet.csproj", "{1AA68408-A3BC-4F21-9D9C-191A6AABDD6F}"
-	ProjectSection(ProjectDependencies) = postProject
-		{DFC3D6D5-567B-49CC-B262-816D176BDCC4} = {DFC3D6D5-567B-49CC-B262-816D176BDCC4}
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

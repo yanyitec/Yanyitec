@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 namespace Yanyitec.Storaging
 {
     using System.IO;
-    public interface IFile : IStorageItem
+    public interface IStorageFile : IStorageItem
     {
         void Delete();
 
         Stream GetStream(bool createIfNotExisted = true);
 
-        bool CopyTo(IFile target);
-        Task<bool> CopyToAsync(IFile target);
+        bool CopyTo(IStorageFile target);
+        Task<bool> CopyToAsync(IStorageFile target);
     }
 }

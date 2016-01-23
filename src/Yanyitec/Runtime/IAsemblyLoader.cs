@@ -8,7 +8,7 @@ namespace Yanyitec.Runtime
     {
         Assembly LoadFromName(string assemblyName);
         Assembly LoadFromFile(string file);
-        Assembly LoadProject(IDirectory location);
+        Assembly LoadProject(IStorageDirectory location);
         Assembly LoadFromStream(Stream assembly, Stream assemblySymbols);
     }
 }

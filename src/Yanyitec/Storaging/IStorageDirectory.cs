@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Storaging
 {
-    public interface IDirectory :IStorageItem
+    public interface IStorageDirectory :IStorageItem
     {
         void Delete();
         void AppendText(string path, string text, Encoding encoding = null);
@@ -13,8 +13,8 @@ namespace Yanyitec.Storaging
         Task<IStorageItem> CreateItemAsync(string path, StorageTypes itemType = StorageTypes.Directory);
         byte[] GetBytes(string path);
         Task<byte[]> GetBytesAsync(string path);
-        IStorageItem GetItem(string path, StorageTypes itemType = StorageTypes.All);
-        Task<IStorageItem> GetItemAsync(string path, StorageTypes itemType = StorageTypes.All);
+        IStorageItem GetItem(string path, StorageTypes itemType = StorageTypes.All, bool createIfNotExisted = false);
+        Task<IStorageItem> GetItemAsync(string path, StorageTypes itemType = StorageTypes.All, bool createIfNotExisted = false);
         string GetText(string path, Encoding encoding = null);
         Task<string> GetTextAsync(string path, Encoding encoding = null);
         IList<IStorageItem> ListItems(string path, StorageTypes itemType = StorageTypes.All);

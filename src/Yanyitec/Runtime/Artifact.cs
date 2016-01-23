@@ -53,11 +53,11 @@ namespace Yanyitec.Runtime
             {
                 if (this.Location.StorageType == StorageTypes.File)
                 {
-                    _assembly = this.AsemblyLoader.LoadFromStream((this.Location as IFile).GetStream(false), null);
+                    _assembly = this.AsemblyLoader.LoadFromStream((this.Location as IStorageFile).GetStream(false), null);
                 }
                 else
                 {
-                    _assembly = this.AsemblyLoader.LoadProject(this.Location as IDirectory);
+                    _assembly = this.AsemblyLoader.LoadProject(this.Location as IStorageDirectory);
                 }
             }
             return _assembly;
