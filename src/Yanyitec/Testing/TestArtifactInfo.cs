@@ -10,22 +10,28 @@ namespace Yanyitec.Testing
     {
         public TestArtifactInfo(IArtifact artifact) {
             var attr = artifact.GetAttribute<TestAttribute>();
+            this.IsValid = true;
+            this.Artifact = artifact;
+            artifact.Changed += (sender, eventArgs) => {
+                lock (this)
+                {
+                    if (eventArgs.ChangeType == ArtifactChangeTypes.Deleted)
+                    {
+                        this.IsValid = false;
+                        this._testClassInfos = null;
+                    }
+                    else
+                    {
+                        this._testClassInfos = null;
+                    }
+                }
+            };
+
             if (attr != null) {
                 this.Description = attr.Description;
-                this.IsValid = true;
-                this.Artifact = artifact;
-                artifact.Changed += (sender,eventArgs) => {
-                    lock (this) {
-                        if (eventArgs.ChangeType == ArtifactChangeTypes.Deleted)
-                        {
-                            this.IsValid = false;
-                            this._testClassInfos = null;
-                        }
-                        else {
-                            this._testClassInfos = null;
-                        }
-                    }
-                };
+                
+                
+                
             }
         }
 
@@ -40,7 +46,7 @@ namespace Yanyitec.Testing
 
         Dictionary<string, TestClassInfo> GetTestClassInfos()
         {
-            if (!this.IsValid) throw new ObjectDisposedException("Invalid TestArtifactInfo. The Artifact's assembly is properly deleted.");
+            if (!this.IsValid) throw new ObjectDisposedException("Invalid TestArtifactInfo. The Artifact's assembly is properly deleted or has no TestAttribute.");
             var result = new Dictionary<string, TestClassInfo>();
             var types = this.Artifact.GetTypeInfos();
             foreach (var type in types)

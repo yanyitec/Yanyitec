@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Storaging
 {
-    public class StorageFile : StorageItem
+    public class StorageFile : StorageItem , IFile
     {
         public StorageFile(string abstractFilename)
             : this(new FileInfo(abstractFilename),null,null) {
@@ -24,6 +24,10 @@ namespace Yanyitec.Storaging
         protected internal StorageFile(FileInfo info,StorageDirectory parent, Storage root)
             :base(StorageTypes.File , info, parent,root)
         {  
+        }
+
+        public void Delete() {
+            this.FileSystemInfo.Delete();
         }
         
 

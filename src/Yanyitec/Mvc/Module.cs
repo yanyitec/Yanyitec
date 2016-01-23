@@ -28,7 +28,7 @@ namespace Yanyitec.Mvc
             get; private set;
         }
 
-        public ICompiler CreateCompiler() { return null; }
+        //public ICompiler CreateCompiler() { return null; }
 
         public IStorageItem Location { get; private set; }
 
@@ -62,13 +62,13 @@ namespace Yanyitec.Mvc
 
         void Compile() {
             //查找目录下的所有cs文件，并编译出来
-            var codes = GetCodes(null);
-            var compiler = this.CreateCompiler();
-            foreach (var code in codes) {
-                compiler.AddCode(code);
-            }
+            //var codes = GetCodes(null);
+            //var compiler = this.CreateCompiler();
+            //foreach (var code in codes) {
+            //    compiler.AddCode(code);
+            //}
 
-            var assembly = compiler.Compile();
+            //var assembly = compiler.Compile();
             
         }
         IList<string> GetCodes(IStorage storage, IList<string> codes=null) {

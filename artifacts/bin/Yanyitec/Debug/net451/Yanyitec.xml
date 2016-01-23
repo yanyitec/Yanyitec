@@ -58,45 +58,6 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="T:Yanyitec.Compilation.ICompiler">
-            <summary>
-            编译器
-            </summary>
-        </member>
-        <member name="M:Yanyitec.Compilation.ICompiler.AddReferenceFromFile(System.String)">
-            <summary>
-            从assembly文件中添加引用
-            </summary>
-            <param name="filename"></param>
-            <returns></returns>
-        </member>
-        <member name="M:Yanyitec.Compilation.ICompiler.AddReferenceFromType(System.Type)">
-            <summary>
-            根据某个类型添加引用
-            </summary>
-            <param name="filename"></param>
-            <returns></returns>
-        </member>
-        <member name="M:Yanyitec.Compilation.ICompiler.AddReferenceFromAssembly(System.Reflection.Assembly)">
-            <summary>
-            加载某个assembly作为引用
-            </summary>
-            <param name="assembly"></param>
-            <returns></returns>
-        </member>
-        <member name="M:Yanyitec.Compilation.ICompiler.AddCode(System.String)">
-            <summary>
-            添加代码
-            </summary>
-            <param name="code"></param>
-            <returns></returns>
-        </member>
-        <member name="M:Yanyitec.Compilation.ICompiler.Parse">
-            <summary>
-            解析出语法树
-            </summary>
-            <returns></returns>
-        </member>
         <member name="M:Yanyitec.Injecting.Injection.LoadFromArtifact(Yanyitec.IArtifact,Yanyitec.Injecting.ItemCollection)">
             <summary>
             该函数不是线程安全安全的，没有用Lock保护
