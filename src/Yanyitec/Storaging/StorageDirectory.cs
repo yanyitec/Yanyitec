@@ -25,11 +25,20 @@ namespace Yanyitec.Storaging
         {
 
         }
+        const string RootRegExpression = "^[a-zA-Z]:(?:\\\\|/)[^/\\\\]?";
+        static readonly System.Text.RegularExpressions.Regex RootPathRegx = new System.Text.RegularExpressions.Regex(RootRegExpression);
+        public string GetAbsolutePath(string path) {
+            if (RootPathRegx.IsMatch(path)) return path;
+            if (path.StartsWith("/") || path.StartsWith("\\")) {
+                return this.InternalRoot.FullName + path.TrimEnd('\\','/');
+            }
+            return this.FullName==null?path : this.FullName + "/" + path.TrimEnd('/', '\\');
+        }
 
         public IStorageItem CreateItem(string path, StorageTypes itemType = StorageTypes.Directory)
         {
             //CreateFilePathIfNotExisted(path);
-            var filename = this.FullName==null?path : this.FullName  + "/" + path.Trim('/','\\');
+            var filename = GetAbsolutePath(path);
             if (itemType == StorageTypes.Directory)
             {
                 var dirInfo = System.IO.Directory.CreateDirectory(filename);
@@ -64,7 +73,7 @@ namespace Yanyitec.Storaging
         public IStorageItem GetItem(string path, StorageTypes itemType = StorageTypes.All)
         {
             
-            var absolutePath =this.FullName==null? path : this.FullName + "/" + path.Trim('/', '\\');
+            var absolutePath =this.GetAbsolutePath(path);
             if (itemType.IsDirectory())
             {
                 if (System.IO.Directory.Exists(absolutePath))
@@ -88,7 +97,7 @@ namespace Yanyitec.Storaging
         }
         public void AppendText(string path, string text, Encoding encoding = null)
         {
-            var filename  =this.FullName==null? path : this.FullName + "/" + path.Trim('/', '\\');
+            var filename  =this.GetAbsolutePath(path);
             var info = new FileInfo(filename);
             if (!info.Exists) {
                 if (!info.Directory.Exists) info.Directory.Create();
@@ -104,7 +113,7 @@ namespace Yanyitec.Storaging
 
         public async Task AppendTextAsync(string path, string text, Encoding encoding = null)
         {
-            var filename = this.FullName==null? path : this.FullName + "/" + path.Trim('/', '\\');
+            var filename = this.GetAbsolutePath(path);
             var info = new FileInfo(filename);
             if (!info.Exists)
             {
@@ -121,7 +130,7 @@ namespace Yanyitec.Storaging
 
 
         public byte[] GetBytes(string path) {
-            var filename = this.FullName==null? path : this.FullName + "/" + path.Trim('/', '\\');
+            var filename = this.GetAbsolutePath(path);
             if (!System.IO.File.Exists(filename)) return null;
             return System.IO.File.ReadAllBytes(filename);
         }
@@ -146,7 +155,7 @@ namespace Yanyitec.Storaging
         public IList<IStorageItem> ListItems(string path, StorageTypes itemType = StorageTypes.All)
         {
             
-            var filename = this.FullName==null? path : this.FullName + "/" + path.Trim('/', '\\');
+            var filename = this.GetAbsolutePath(path);
 
             if (!System.IO.Directory.Exists(filename)) return null;
             var result = new List<IStorageItem>();
@@ -205,7 +214,7 @@ namespace Yanyitec.Storaging
 
 
         public void PutBytes(string path, byte[] bytes) {
-            var filename =this.FullName==null? path : this.FullName + "/" + path.Trim('/', '\\');
+            var filename =this.GetAbsolutePath(path);
             var info = new FileInfo(filename);
             if (!info.Exists)
             {

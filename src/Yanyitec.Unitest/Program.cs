@@ -21,7 +21,7 @@ namespace Yanyitec.Unitest
             Assert.ThrowException = true;
             var test = new Testing.TestArtifactInfo(new Artifact(typeof(Program).GetTypeInfo().Assembly));
 
-            test.TestMethods("Inject%");
+            test.TestMethods("Storage%");
         }
 
         public class JObj

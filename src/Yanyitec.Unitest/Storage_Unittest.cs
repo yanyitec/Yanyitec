@@ -11,8 +11,8 @@ namespace Yanyitec.Unitest
     public class Storage_Unittest
     {
         const string BasePath = "d:/yanyi_test/basic";
-        [Test]
-        public void Storage() {
+        [Test("相对目录操作")]
+        public void Relative() {
             var storage = new Storaging.Storage(BasePath);
             //storage 必须存在，如果没有目录就创建一个
             //Storage must existed.If not , the construtor will create it
@@ -58,6 +58,13 @@ namespace Yanyitec.Unitest
             Assert.Equal(all[1].RelativeName,"access/sub/testdir");
             
             Assert.Equal(all[2].RelativeName,"access/test.txt");
+        }
+        [Test("绝对目录操作")]
+        public void Absolute() {
+            var storage = new Storaging.Storage(BasePath);
+            var sub = storage.CreateItem("abs") as IDirectory;
+            var sub1 = sub.GetItem("/abs");
+            Assert.Equal(sub.FullName,sub1.FullName);
         }
     }
 }
