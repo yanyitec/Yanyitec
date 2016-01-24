@@ -33,19 +33,19 @@ namespace Yanyitec.Unitest
             Assert.Equal(BasePath + "/access/test.txt", textItem.FullName);
             //Relative name is the name relate on the storage base path
             //相对名是相对Storage 的名字
-            Assert.Equal("access/test.txt", textItem.RelativeName);
-            Assert.Equal(textItem.Root, storage);
+            Assert.Equal("/access/test.txt", textItem.RelativeName);
+            Assert.Equal(textItem.Storage, storage);
             //Name is the name of this item (file name or directory name)
             //名字就文件名或目录名
             Assert.Equal("test.txt", textItem.Name);
 
-            Assert.Equal(textItem.Parent.RelativeName,"access");
+            Assert.Equal(textItem.Parent.RelativeName,"/access");
             Assert.Equal(textItem.Parent.FullName,BasePath + "/access");
 
             var subitem = textItem.Parent.CreateItem("sub/testdir");
             Assert.Equal(subitem.StorageType , StorageTypes.Directory);
             Assert.Equal(subitem.FullName,BasePath + "/access/sub/testdir");
-            Assert.Equal(subitem.RelativeName,"access/sub/testdir");
+            Assert.Equal(subitem.RelativeName,"/access/sub/testdir");
 
             var accessItem = storage.GetItem("access") as IStorageDirectory;
             var list = accessItem.ListItems(false);
@@ -54,10 +54,10 @@ namespace Yanyitec.Unitest
 
             var all = accessItem.ListItems(true);
             Assert.Equal(3,all.Count);
-            Assert.Equal(all[0].RelativeName, "access/sub");
-            Assert.Equal(all[1].RelativeName,"access/sub/testdir");
+            Assert.Equal(all[0].RelativeName, "/access/sub");
+            Assert.Equal(all[1].RelativeName,"/access/sub/testdir");
             
-            Assert.Equal(all[2].RelativeName,"access/test.txt");
+            Assert.Equal(all[2].RelativeName,"/access/test.txt");
         }
         [Test("绝对目录操作")]
         public void Absolute() {
@@ -66,5 +66,23 @@ namespace Yanyitec.Unitest
             var sub1 = sub.GetItem("/abs");
             Assert.Equal(sub.FullName,sub1.FullName);
         }
+
+        [Test("监听目录")]
+        public void Watch() {
+            var storage = new Storaging.Storage(BasePath);
+            IStorageDirectory sender = null;
+            ItemChangedEventArgs evt = null;
+            storage.Changed += (sdr,e)=> {
+                sender = sdr;evt = e;
+            };
+            var item = storage.CreateItem("/watch");
+            Assert.NotNull(sender);
+            Assert.NotNull(evt);
+            Assert.Equal(storage,sender);
+            Assert.Equal(evt.ChangeKind, ChangeKinds.Created);
+            Assert.Equal(item.FullName , evt.ChangedItem.FullName);
+        }
+
+        
     }
 }

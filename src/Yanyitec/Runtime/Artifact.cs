@@ -12,28 +12,27 @@ namespace Yanyitec.Runtime
 
     public class Artifact: IArtifact
     {
-        readonly object AsyncLocker = new object();
+        readonly object SynchronizingObject = new object();
         public event Action<IArtifact, ArtifactChangeEventArgs> Changed;
 
         private FileSystemWatcher _fsWatcher;
-        public Artifact(IStorageItem location ,IAsemblyLoader loader) {
+        public Artifact(IStorageItem location ,IAsemblyLoader loader=null) {
             this.Location = location;
             this.AsemblyLoader = loader;
             //location.OnChange += (sender, evtArgs) =>
             //{
-            //    lock (this.AsyncLocker)
+            //    lock (this.SynchronizingObject)
             //    { 
             //        this._assembly = null;
             //    }
             //};
         }
 
-        public Artifact(Assembly assemlby) {
-            this._assembly = assemlby;
-            //this.Location = location;
-            //if (location != null) {
-
-            //}
+        public Artifact(Assembly assembly, IStorageFile location =null) {
+            this._assembly = assembly;
+            
+            this.Location = location;
+            
         }
 
         
@@ -66,7 +65,7 @@ namespace Yanyitec.Runtime
         public Assembly Assembly {
             get {
                 if (_assembly == null) {
-                    lock (this.AsyncLocker) {
+                    lock (this.SynchronizingObject) {
                         GetOrLoadAssembly();
                     }
                 }

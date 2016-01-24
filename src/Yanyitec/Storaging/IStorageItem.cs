@@ -21,7 +21,7 @@ namespace Yanyitec.Storaging
 
         string Name { get; }
 
-        IStorage Root { get; }
+        IStorage Storage { get; }
 
         
         IStorageDirectory Parent { get; }

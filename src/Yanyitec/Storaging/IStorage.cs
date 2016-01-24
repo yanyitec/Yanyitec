@@ -8,6 +8,6 @@ namespace Yanyitec.Storaging
 {
     public interface IStorage : IStorageDirectory
     {
-        
+        object SynchronizingObject { get;}
     }
 }

@@ -216,6 +216,13 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="P:Yanyitec.Storaging.StorageItem.RelativeName">
+            <summary>
+            Root = ""
+            Storage = "/"
+            其他的返回 /dir/filename
+            </summary>
+        </member>
         <member name="M:Yanyitec.Testing.TestClassInfo.RunMethods(System.String,System.Collections.Generic.IDictionary{System.String,Yanyitec.Testing.AssertException},System.Nullable{System.Boolean})">
             <summary>
             运行类的测试方法

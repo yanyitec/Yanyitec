@@ -7,7 +7,7 @@ namespace Yanyitec.Compilation
 {
     public interface ICompiler
     {
-        ReaderWriterLockSlim AsyncLocker { get; }
+        ReaderWriterLockSlim SynchronizingObject { get; }
         IStorageFile Location { get; set; }
 
         object AddOrReplaceCode(string key, string code);

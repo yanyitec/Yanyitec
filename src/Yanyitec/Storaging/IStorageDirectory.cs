@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace Yanyitec.Storaging
 {
+    using System;
+    using System.Text;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+
     public interface IStorageDirectory :IStorageItem
     {
         void Delete();
@@ -25,5 +28,9 @@ namespace Yanyitec.Storaging
         Task PutBytesAsync(string path, byte[] bytes);
         void PutText(string path, string text, Encoding encoding = null);
         Task PutTextAsync(string path, string text, Encoding encoding = null);
+
+        event Action<IStorageDirectory, ItemChangedEventArgs> Changed;
+
+        IStorage AsStorage();
     }
 }

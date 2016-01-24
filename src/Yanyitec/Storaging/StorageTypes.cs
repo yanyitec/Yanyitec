@@ -9,10 +9,11 @@ namespace Yanyitec.Storaging
     public enum StorageTypes
     {
         None = 0,
-        Storage = 1,
-        File = 4,
-        Attribute =24,
-        Directory = 25 | Storage,
-        All = File |  Directory | Attribute
+        
+        File = 1,
+        Directory = 1<<1,
+        Storage = 1<<30 | Directory,
+        Root = 1<<31 | Storage,
+        All = File |  Directory | Storage
     }
 }

@@ -13,7 +13,7 @@ namespace Yanyitec.Injecting
         {
             this.Injection = injection;
         }
-        public System.Threading.ReaderWriterLockSlim AsyncLocker { get { return this.Injection.AsyncLocker; } }
+        public System.Threading.ReaderWriterLockSlim SynchronizingObject { get { return this.Injection.SynchronizingObject; } }
         public Injection Injection { get; private set; }
 
         Injection InternalFindDependence(string name)
@@ -216,7 +216,7 @@ namespace Yanyitec.Injecting
             }
             else if (this.CreationKind == InjectionKinds.Constant)
             {
-                var constValue = this.Injection.GetOrCreateInstanceFunc(false,this.AsyncLocker)();
+                var constValue = this.Injection.GetOrCreateInstanceFunc(false,this.SynchronizingObject)();
                 if (expectValueType != null && constValue!=null && !expectValueType.IsAssignableFrom(constValue.GetType())) {
                     var valueStr = constValue.ToString();
                     constValue = StringConvertExtension.ConvertTo(valueStr, expectValueType);

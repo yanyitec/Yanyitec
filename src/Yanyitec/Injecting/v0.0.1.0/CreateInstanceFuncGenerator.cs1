@@ -14,7 +14,7 @@ namespace Yanyitec.DependenceInject
             
         }
 
-        public System.Threading.ReaderWriterLockSlim AsyncLocker{ get { return this.Injection.Root.AsyncLocker; } }
+        public System.Threading.ReaderWriterLockSlim SynchronizingObject{ get { return this.Injection.Root.SynchronizingObject; } }
         public Injection Injection { get; private set; }
 
         Injection InternalFindDependence(string name) {
@@ -40,7 +40,7 @@ namespace Yanyitec.DependenceInject
         public Func<object> NewOnlyOnce() {
             return () =>
             {
-                this.AsyncLocker.EnterWriteLock();
+                this.SynchronizingObject.EnterWriteLock();
                 try
                 {
                     var instanceFactory = this.Injection.InstanceFactory ?? this.GenFunc();
@@ -50,7 +50,7 @@ namespace Yanyitec.DependenceInject
                 }
                 finally
                 {
-                    this.AsyncLocker.ExitWriteLock();
+                    this.SynchronizingObject.ExitWriteLock();
                 }
             };
         }

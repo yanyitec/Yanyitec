@@ -14,13 +14,13 @@ namespace Yanyitec.Injecting
         readonly SortedDictionary<int, Injection> _typedItems = new SortedDictionary<int, Injection>();
 
 
-        public System.Threading.ReaderWriterLockSlim AsyncLocker { get; private set; }
+        public System.Threading.ReaderWriterLockSlim SynchronizingObject { get; private set; }
 
         public Injection(Injection parent, ItemInfo itemInfo) {
             _itemInfo = itemInfo;
             this.Parent = parent;
-            if (parent != null) this.AsyncLocker = parent.AsyncLocker;
-            this.AsyncLocker = new System.Threading.ReaderWriterLockSlim();
+            if (parent != null) this.SynchronizingObject = parent.SynchronizingObject;
+            this.SynchronizingObject = new System.Threading.ReaderWriterLockSlim();
         }
 
         #region load methods
@@ -124,17 +124,16 @@ namespace Yanyitec.Injecting
             }
             #region assembly发生了变化，所有的这些_instance都要重写，他们的依赖项也要重写
             artifact.Changed += (sender, e) => {
-                this.AsyncLocker.EnterWriteLock();
-                var evt = new InjectionChangedEventArgs();
-                evt.Source = e;
-                evt.LockedObject = this;
+                this.SynchronizingObject.EnterWriteLock();
+                var evt = new InjectionChangedEventArgs(this,this.SynchronizingObject,e.ChangeKind);
+               
                 try {
                     foreach (var injection in added) {
                         injection._instanceFactory = null;
                         injection._changed(injection,evt);
                     }
                 } finally {
-                    this.AsyncLocker.ExitWriteLock();
+                    this.SynchronizingObject.ExitWriteLock();
                 }
             };
             #endregion
@@ -182,11 +181,11 @@ namespace Yanyitec.Injecting
 
         public Type InjectionType {
             get {
-                this.AsyncLocker.EnterReadLock();
+                this.SynchronizingObject.EnterReadLock();
                 try {
                     return this.GetOrFindInjectionType();
                 } finally {
-                    this.AsyncLocker.ExitReadLock();
+                    this.SynchronizingObject.ExitReadLock();
                 }
                 
             }
@@ -206,14 +205,14 @@ namespace Yanyitec.Injecting
             {
                 throw new ArgumentException("Cant assign [" + injectionType?.FullName + "] to [" + tokenType?.FullName + "]");
             }
-            this.AsyncLocker.EnterWriteLock();
+            this.SynchronizingObject.EnterWriteLock();
             try {
                 Injection item = null;
                 if (this._typedItems.TryGetValue(tokenType.GetHashCode(), out item))
                 {
                     item._injectionType = injectionType;
                     item._instanceFactory = null;
-                    item.Changed(item, new InjectionChangedEventArgs() { LockedObject = this.AsyncLocker});
+                    item.Changed(item, new InjectionChangedEventArgs(this,this.SynchronizingObject, ChangeKinds.Updated) );
                 }
                 else
                 {
@@ -231,7 +230,7 @@ namespace Yanyitec.Injecting
                 {
                     named._injectionType = injectionType;
                     named._instanceFactory = null;
-                    named.Changed(named, new InjectionChangedEventArgs() { LockedObject = this.AsyncLocker});
+                    named.Changed(named, new InjectionChangedEventArgs(this,this.SynchronizingObject, ChangeKinds.Updated));
                 }
                 else
                 {
@@ -239,7 +238,7 @@ namespace Yanyitec.Injecting
                 }
             }
             finally {
-                this.AsyncLocker.ExitWriteLock();
+                this.SynchronizingObject.ExitWriteLock();
             }
             
         }
@@ -257,7 +256,7 @@ namespace Yanyitec.Injecting
         }
 
         public void Register(string name, object value) {
-            this.AsyncLocker.EnterWriteLock();
+            this.SynchronizingObject.EnterWriteLock();
             try
             {
                 Injection item = null;
@@ -265,7 +264,7 @@ namespace Yanyitec.Injecting
                 {
                     item._itemInfo.ConstValue = value;
                     item._instanceFactory = null;
-                    item.Changed(item, new InjectionChangedEventArgs() { LockedObject = this.AsyncLocker });
+                    item.Changed(item, new InjectionChangedEventArgs(this,this.SynchronizingObject, ChangeKinds.Updated));
                 }
                 else {
                     var info = new ItemInfo()
@@ -280,13 +279,13 @@ namespace Yanyitec.Injecting
             }
             finally
             {
-                this.AsyncLocker.ExitWriteLock();
+                this.SynchronizingObject.ExitWriteLock();
             }
         }
 
         public void Define(string name, string value)
         {
-            this.AsyncLocker.EnterWriteLock();
+            this.SynchronizingObject.EnterWriteLock();
             try
             {
                 Injection item = null;
@@ -305,13 +304,13 @@ namespace Yanyitec.Injecting
             }
             finally
             {
-                this.AsyncLocker.ExitWriteLock();
+                this.SynchronizingObject.ExitWriteLock();
             }
         }
 
         public void Register<T>(Func<object> instanceFactory, InjectionKinds kind = InjectionKinds.Create)
         {
-            this.AsyncLocker.EnterWriteLock();
+            this.SynchronizingObject.EnterWriteLock();
             var tokenType = typeof(T);
             try
             {
@@ -321,7 +320,7 @@ namespace Yanyitec.Injecting
                     item._itemInfo.InstanceFactory = instanceFactory;
                     item._itemInfo.TokenType = tokenType;
                     item._instanceFactory = null;
-                    item.Changed(item, new InjectionChangedEventArgs() { LockedObject = this.AsyncLocker });
+                    item.Changed(item, new InjectionChangedEventArgs(this,this.SynchronizingObject, ChangeKinds.Updated));
                 }
                 else
                 {
@@ -340,7 +339,7 @@ namespace Yanyitec.Injecting
                     named._itemInfo.TokenType = tokenType;
                     named._itemInfo.InstanceFactory = instanceFactory;
                     named._instanceFactory = null;
-                    named.Changed(named, new InjectionChangedEventArgs() { LockedObject = this.AsyncLocker });
+                    named.Changed(named, new InjectionChangedEventArgs(this,this.SynchronizingObject, ChangeKinds.Updated));
                 }
                 else
                 {
@@ -349,7 +348,7 @@ namespace Yanyitec.Injecting
             }
             finally
             {
-                this.AsyncLocker.ExitWriteLock();
+                this.SynchronizingObject.ExitWriteLock();
             }
         }
 
@@ -358,12 +357,12 @@ namespace Yanyitec.Injecting
 
 
     public Injection GetByName(string name,object locker=null) {
-            if (locker==this.AsyncLocker) {
+            if (locker==this.SynchronizingObject) {
                 Injection result = null;
                 this._namedItems.TryGetValue(name, out result);
                 return result;
             }
-            this.AsyncLocker.EnterReadLock();
+            this.SynchronizingObject.EnterReadLock();
             try
             {
                 Injection result = null;
@@ -371,18 +370,18 @@ namespace Yanyitec.Injecting
                 return result;
             }
             finally {
-                this.AsyncLocker.ExitReadLock();
+                this.SynchronizingObject.ExitReadLock();
             }
             
         }
 
         public Injection GetByType(Type type,object locker=null) {
-            if (locker==this.AsyncLocker) {
+            if (locker==this.SynchronizingObject) {
                 Injection result = null;
                 this._typedItems.TryGetValue(type.GetHashCode(), out result);
                 return result;
             }
-            this.AsyncLocker.EnterReadLock();
+            this.SynchronizingObject.EnterReadLock();
             try
             {
                 Injection result = null;
@@ -391,17 +390,17 @@ namespace Yanyitec.Injecting
             }
             finally
             {
-                this.AsyncLocker.ExitReadLock();
+                this.SynchronizingObject.ExitReadLock();
             }
         }
 
         public Injection Find(string name,object locker=null) {
-            if (locker == this.AsyncLocker) return FindByName(name,this);
-            this.AsyncLocker.EnterReadLock();
+            if (locker == this.SynchronizingObject) return FindByName(name,this);
+            this.SynchronizingObject.EnterReadLock();
             try {
                 return FindByName(name,this);
             } finally {
-                this.AsyncLocker.ExitReadLock();
+                this.SynchronizingObject.ExitReadLock();
             }
 
         }
@@ -420,15 +419,15 @@ namespace Yanyitec.Injecting
         }
 
         public Injection Find(Type type, object locker = null) {
-            if (locker == this.AsyncLocker) return FindByType(type.GetHashCode(), this);
-            this.AsyncLocker.EnterReadLock();
+            if (locker == this.SynchronizingObject) return FindByType(type.GetHashCode(), this);
+            this.SynchronizingObject.EnterReadLock();
             try
             {
                 return FindByType(type.GetHashCode(), this);
             }
             finally
             {
-                this.AsyncLocker.ExitReadLock();
+                this.SynchronizingObject.ExitReadLock();
             }
         }
         static Injection FindByType(int key, Injection initInjection)
@@ -483,12 +482,12 @@ namespace Yanyitec.Injecting
         }
 
         protected internal Func<object> GetOrCreateInstanceFunc(bool force = false, object locker=null) {
-            if (locker == this.AsyncLocker) return GetOrCreateInstanceFunc(force);
-            this.AsyncLocker.EnterWriteLock();
+            if (locker == this.SynchronizingObject) return GetOrCreateInstanceFunc(force);
+            this.SynchronizingObject.EnterWriteLock();
             try {
                 return this.GetOrCreateInstanceFunc(force);
             } finally {
-                this.AsyncLocker.ExitWriteLock();
+                this.SynchronizingObject.ExitWriteLock();
             }
         }
 

@@ -58,8 +58,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="Yanyitec, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Yanyitec">
       <HintPath>..\..\artifacts\bin\Yanyitec\Debug\net451\Yanyitec.dll</HintPath>
     </Reference>
   </ItemGroup>

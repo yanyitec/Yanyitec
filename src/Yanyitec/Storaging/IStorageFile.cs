@@ -12,6 +12,14 @@ namespace Yanyitec.Storaging
 
         Stream GetStream(bool createIfNotExisted = true);
 
+        string GetText(System.Text.Encoding encoding = null);
+
+        Task<string> GetTextAsync(System.Text.Encoding encoding = null);
+
+        byte[] GetBytes();
+
+        Task<byte[]> GetBytesAsync();
+
         bool CopyTo(IStorageFile target);
         Task<bool> CopyToAsync(IStorageFile target);
     }

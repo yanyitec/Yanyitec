@@ -54,8 +54,8 @@ namespace Yanyitec.DependenceInject
 
         public CreationKinds CreationKind { get; private set; }
 
-        public System.Threading.ReaderWriterLockSlim AsyncLocker {
-            get { return this.Root.AsyncLocker; }
+        public System.Threading.ReaderWriterLockSlim SynchronizingObject {
+            get { return this.Root.SynchronizingObject; }
         }
         #endregion
 
@@ -68,10 +68,10 @@ namespace Yanyitec.DependenceInject
         protected internal Func<object> CreateInstanceFunc { get; set; }
         public object CreateInstance()
         {
-            this.AsyncLocker.EnterUpgradeableReadLock();
+            this.SynchronizingObject.EnterUpgradeableReadLock();
             try {
                 if (this.CreateInstanceFunc == null) {
-                    this.AsyncLocker.EnterWriteLock();
+                    this.SynchronizingObject.EnterWriteLock();
                     try {
                         if (this.CreateInstanceFunc == null) {
                             var generator = new CreateInstanceFuncGenerator(this);
@@ -79,13 +79,13 @@ namespace Yanyitec.DependenceInject
                         }
                         
                     } finally {
-                        this.AsyncLocker.ExitWriteLock();
+                        this.SynchronizingObject.ExitWriteLock();
                     }
                     
                 }
                 return this.CreateInstanceFunc();
             } finally {
-                this.AsyncLocker.ExitUpgradeableReadLock();
+                this.SynchronizingObject.ExitUpgradeableReadLock();
             }
         }
 
@@ -170,37 +170,37 @@ namespace Yanyitec.DependenceInject
         }
 
         public Injection GetItem(string name,bool includeTypename = true) {
-            this.Root.AsyncLocker.EnterReadLock();
+            this.Root.SynchronizingObject.EnterReadLock();
             try
             {
                 return this._itemCollection.GetByName(name, includeTypename);
             }
             finally
             {
-                this.Root.AsyncLocker.EnterReadLock();
+                this.Root.SynchronizingObject.EnterReadLock();
             }
         }
 
         public Injection GetItem(Type type, bool includeNamedItems = true)
         {
-            this.Root.AsyncLocker.EnterReadLock();
+            this.Root.SynchronizingObject.EnterReadLock();
             try
             {
                 return this._itemCollection.GetByType(type, includeNamedItems);
             }
             finally
             {
-                this.Root.AsyncLocker.EnterReadLock();
+                this.Root.SynchronizingObject.EnterReadLock();
             }
         }
 
         public Injection Lookup(string name, bool includeTypename=true)
         {
-            this.Root.AsyncLocker.EnterReadLock();
+            this.Root.SynchronizingObject.EnterReadLock();
             try {
                 return this.InternalLookup(name, includeTypename);
             } finally {
-                this.Root.AsyncLocker.EnterReadLock();
+                this.Root.SynchronizingObject.EnterReadLock();
             }
         }
 
@@ -256,7 +256,7 @@ namespace Yanyitec.DependenceInject
 
 
         public RegisterResults SetItem(CreationKinds creationKind,string name,Type injectionType, object value,  Func<object> instanceFactory, bool replaceIfExisted = true) {
-            this.Root.AsyncLocker.EnterUpgradeableReadLock();
+            this.Root.SynchronizingObject.EnterUpgradeableReadLock();
             try
             {
                 Injection exited = null;
@@ -264,7 +264,7 @@ namespace Yanyitec.DependenceInject
                 {
                     if (!replaceIfExisted) return RegisterResults.Existed;
                 }
-                this.Root.AsyncLocker.EnterWriteLock();
+                this.Root.SynchronizingObject.EnterWriteLock();
                 try
                 {
                     var item = this.Root.CreateInjection(this, creationKind,name, injectionType, value, instanceFactory);
@@ -281,12 +281,12 @@ namespace Yanyitec.DependenceInject
                 }
                 finally
                 {
-                    this.Root.AsyncLocker.ExitWriteLock();
+                    this.Root.SynchronizingObject.ExitWriteLock();
                 }
             }
             finally
             {
-                this.Root.AsyncLocker.ExitUpgradeableReadLock();
+                this.Root.SynchronizingObject.ExitUpgradeableReadLock();
             }
         }
         public RegisterResults SetItem(string name, object value,CreationKinds creationKind= CreationKinds.Constant,bool replaceIfExisted=true) {

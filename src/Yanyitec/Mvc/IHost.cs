@@ -15,7 +15,7 @@ namespace Yanyitec.Mvc
         IStorage DataPath { get;  }
 
 
-        IRWLocker AsyncLocker { get;  }
+        IRWLocker SynchronizingObject { get;  }
 
     }
 }

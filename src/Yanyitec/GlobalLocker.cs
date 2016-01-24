@@ -7,7 +7,7 @@ namespace Yanyitec
 {
     public class GlobalLocker
     {
-        internal static readonly System.Threading.ReaderWriterLockSlim InternalAsyncLocker = new System.Threading.ReaderWriterLockSlim();
+        internal static readonly System.Threading.ReaderWriterLockSlim InternalSynchronizingObject = new System.Threading.ReaderWriterLockSlim();
         public static readonly System.Threading.ReaderWriterLockSlim Instance = new System.Threading.ReaderWriterLockSlim();
     }
 }

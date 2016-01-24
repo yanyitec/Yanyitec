@@ -5,9 +5,14 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Injecting
 {
-    public class InjectionChangedEventArgs : EventArgs
+    public class InjectionChangedEventArgs : ChangedEventArgs
     {
-        public InjectionChangedEventArgs() {  }
+        public InjectionChangedEventArgs(object sender, object locker ,ChangeKinds kind,ChangedEventArgs sourceEvent=null) {
+            this.LockedObject = locker;
+            this.ChangeKind = kind;
+            this.Sender = sender;
+            this.SourceEventArgs = sourceEvent;
+        }
 
     }
 }

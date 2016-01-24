@@ -15,7 +15,7 @@ namespace Yanyitec.Mvc
         public IStorage DataPath { get; set; }
         
 
-        public IRWLocker AsyncLocker { get; set; }
+        public IRWLocker SynchronizingObject { get; set; }
 
         SortedDictionary<string, IModule> Modules { get; set; }
 
@@ -27,31 +27,31 @@ namespace Yanyitec.Mvc
         {
             try
             {
-                AsyncLocker.EnterReadLock();
+                SynchronizingObject.EnterReadLock();
                 foreach (var pair in Modules)
                 {
                     //if (pair.Value.Artifact.IsDependon(e.OldFullName ?? e.Item.FullName)) {
-                    //    AsyncLocker.UpgradeToWriteLock();
+                    //    SynchronizingObject.UpgradeToWriteLock();
                     //    pair.Value.Reflush(false);
                     //}
                 }
             }
             finally
             {
-                AsyncLocker.ExitLock();
+                SynchronizingObject.ExitLock();
             }
             
         }
 
         public async Task<bool> HandleRequestAsync(object rawContext) {
             try {
-                AsyncLocker.EnterReadLock();
+                SynchronizingObject.EnterReadLock();
                 foreach (var pair in Modules) {
                     var result = await pair.Value.HandleRequestAsync(rawContext);
                     if (result) return true;
                 }
             } finally {
-                AsyncLocker.ExitReadLock();
+                SynchronizingObject.ExitReadLock();
             }
             return false;
         }
@@ -59,7 +59,7 @@ namespace Yanyitec.Mvc
         public IModule GetModule(string name) {
             try
             {
-                AsyncLocker.EnterReadLock();
+                SynchronizingObject.EnterReadLock();
                 IModule result = null;
                 this.Modules.TryGetValue(name, out result);
                 return result;
@@ -67,7 +67,7 @@ namespace Yanyitec.Mvc
             }
             finally
             {
-                AsyncLocker.ExitReadLock();
+                SynchronizingObject.ExitReadLock();
             }
         }
 
@@ -78,7 +78,7 @@ namespace Yanyitec.Mvc
         public bool RegisterModule(string nameOrPath) {
             try
             {
-                AsyncLocker.EnterWriteLock();
+                SynchronizingObject.EnterWriteLock();
                 
                 if (this.Modules.ContainsKey(nameOrPath)) return false;
                 var module = this.LoadModule(nameOrPath);
@@ -88,19 +88,19 @@ namespace Yanyitec.Mvc
             }
             finally
             {
-                AsyncLocker.ExitWriteLock();
+                SynchronizingObject.ExitWriteLock();
             }
         }
 
         public bool UnregisterModule(string nameOrPath) {
             try
             {
-                AsyncLocker.EnterWriteLock();
+                SynchronizingObject.EnterWriteLock();
                 return this.Modules.Remove(nameOrPath);
             }
             finally
             {
-                AsyncLocker.ExitWriteLock();
+                SynchronizingObject.ExitWriteLock();
             }
         }
     }

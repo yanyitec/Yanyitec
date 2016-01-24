@@ -19,7 +19,7 @@
 //            this.Storage = new Storage(location);
 //        }
 
-//        protected readonly object _asyncLocker = new object();
+//        protected readonly object _synchronizingObject = new object();
 //        public IStorage Storage
 //        {
 //            get; private set;
@@ -54,7 +54,7 @@
 //            {
 //                if (_files == null)
 //                {
-//                    lock (this._asyncLocker)
+//                    lock (this._synchronizingObject)
 //                    {
 //                        if (_files == null)
 //                        {
@@ -80,7 +80,7 @@
 //        private void Storage_OnChange(IStorageItem sender, StorageChangeEventArgs e)
 //        {
 //            bool isCsChanged = true;
-//            lock (this._asyncLocker)
+//            lock (this._synchronizingObject)
 //            {
 //                #region check is code changed
                 

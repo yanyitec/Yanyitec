@@ -15,5 +15,10 @@ namespace Yanyitec.Storaging
         {
             return self == StorageTypes.Directory || (((int)self & (int)StorageTypes.Directory) > 0);
         }
+
+        public static bool IsStorage(this StorageTypes self)
+        {
+            return self == StorageTypes.Storage && self != StorageTypes.Root;
+        }
     }
 }

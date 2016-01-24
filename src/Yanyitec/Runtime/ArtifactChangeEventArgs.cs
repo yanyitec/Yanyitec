@@ -6,7 +6,7 @@ using Yanyitec.Runtime;
 
 namespace Yanyitec
 {
-    public class ArtifactChangeEventArgs : EventArgs
+    public class ArtifactChangeEventArgs : ChangedEventArgs
     {
         public ArtifactChangeEventArgs(ArtifactChangeTypes changeType) {
             this.ChangeType = changeType;

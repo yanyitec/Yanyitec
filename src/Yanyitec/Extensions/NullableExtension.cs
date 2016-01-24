@@ -33,10 +33,10 @@ namespace Yanyitec
             var type = nullableValue.GetType();
             var typeid = type.GetHashCode();
             if (_valueGetters.TryGetValue(typeid, out getter)) return getter(nullableValue);
-            GlobalLocker.InternalAsyncLocker.EnterUpgradeableReadLock();
+            GlobalLocker.InternalSynchronizingObject.EnterUpgradeableReadLock();
             try {
                 if (_customerValueGetters.TryGetValue(typeid, out getter)) return getter(nullableValue);
-                GlobalLocker.InternalAsyncLocker.EnterWriteLock();
+                GlobalLocker.InternalSynchronizingObject.EnterWriteLock();
                 try {
                     if (_customerValueGetters.TryGetValue(typeid, out getter)) return getter(nullableValue);
                     getter = GenValueGetter(type);
@@ -47,10 +47,10 @@ namespace Yanyitec
                     }
                     else return null;
                 } finally {
-                    GlobalLocker.InternalAsyncLocker.ExitWriteLock();
+                    GlobalLocker.InternalSynchronizingObject.ExitWriteLock();
                 }
             } finally {
-                GlobalLocker.InternalAsyncLocker.ExitUpgradeableReadLock();
+                GlobalLocker.InternalSynchronizingObject.ExitUpgradeableReadLock();
             }
         }
         

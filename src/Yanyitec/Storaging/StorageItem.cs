@@ -14,12 +14,14 @@ namespace Yanyitec.Storaging
             this.FileSystemInfo = info;
             
             this._parent = parent;
-            this.InternalRoot = root;
+            this.InternalStorage = root;
             
         }
-        protected readonly object AsyncLocker = new object();
 
-
+        readonly object _synchronizingObject = new object();
+        protected object SynchronizingObject {
+            get { return _synchronizingObject; }
+        }
        
 
         public bool IsExisted {
@@ -42,8 +44,8 @@ namespace Yanyitec.Storaging
             {
                 var fullname = this.FileSystemInfo.FullName.Replace("\\", "/");
                 var lastSlash = _fullName.LastIndexOf("/");
-                if (lastSlash < 0) return this.InternalRoot;
-                _parent = new StorageDirectory(new DirectoryInfo(fullname.Substring(0, lastSlash)), null, this.InternalRoot);
+                if (lastSlash < 0) return this.InternalStorage;
+                _parent = new StorageDirectory(new DirectoryInfo(fullname.Substring(0, lastSlash)), null, this.InternalStorage);
 
             }
             return _parent;
@@ -53,8 +55,8 @@ namespace Yanyitec.Storaging
 
                 if (_parent == null)
                 {
-                    if (this == this.InternalRoot) return null;
-                    lock (AsyncLocker)
+                    if (this == this.InternalStorage) return null;
+                    lock (this.Storage.SynchronizingObject)
                     {
                         this.GetParent();
                     }
@@ -74,14 +76,15 @@ namespace Yanyitec.Storaging
         string _fullName;
         public string FullName {
             get {
-                if (_fullName == null)
+                if (_fullName == null )
                 {
                     //if (this == this.InternalRoot) return null;
-                    lock (AsyncLocker)
+                    lock (SynchronizingObject)
                     {
                         if (_fullName == null)
                         {
-                            _fullName = ConvertToXnixStyle(this.FileSystemInfo.FullName);
+
+                            _fullName = this.FileSystemInfo ==null?string.Empty : ConvertToXnixStyle(this.FileSystemInfo.FullName);
                         }
                     }
                 }
@@ -94,7 +97,7 @@ namespace Yanyitec.Storaging
         }
 
         public string Name {
-            get { return this.FileSystemInfo.Name; }
+            get { return this.FileSystemInfo==null?string.Empty:this.FileSystemInfo.Name; }
         }
 
         string _relativeName;
@@ -102,20 +105,26 @@ namespace Yanyitec.Storaging
         string GetRelativeName() {
             if (_relativeName == null)
             {
-                return this._relativeName = this.InternalRoot == this ? string.Empty : ConvertToXnixStyle(this.FileSystemInfo.FullName).Substring(this.Root.FullName.Length + 1);
+                return this._relativeName =  ConvertToXnixStyle(this.FileSystemInfo.FullName).Substring(this.InternalStorage.FullName.Length);
 
 
             }
             return this._relativeName;
         }
+        /// <summary>
+        /// Root = ""
+        /// Storage = "/"
+        /// 其他的返回 /dir/filename
+        /// </summary>
         public string RelativeName
         {
             get
             {
                 if (_relativeName == null)
                 {
-                    if (this == this.InternalRoot) return null;
-                    lock (AsyncLocker)
+                    if (this == Storaging.Storage.Root) return string.Empty;
+                    if (this == this.InternalStorage) return "/";
+                    lock (SynchronizingObject)
                     {
                         this.GetRelativeName();
                         
@@ -125,29 +134,16 @@ namespace Yanyitec.Storaging
             }
         }
 
-        protected Storage InternalRoot;
-
+        protected internal Storage InternalStorage;
        
-        public IStorage Root {
-            get {
-                if (InternalRoot != null) {
-                    lock (this.AsyncLocker) {
-                        if (InternalRoot == null) {
-                            if (this._parent != null)
-                            {
-                                InternalRoot = this._parent.Root as Storage;
-                            }
-                            else InternalRoot = Storage.System;
-                        }
-                    }
-                }
-                return this.InternalRoot;
-            }
+        public IStorage Storage {
+            get { return InternalStorage; }
+
         }
 
         public override string ToString()
         {
-            return this.FullName;
+            return this.FileSystemInfo==null?"%root%":this.FullName;
         }
 
         
@@ -160,6 +156,6 @@ namespace Yanyitec.Storaging
             return otherStorageItem == this || otherStorageItem.FullName == this.FullName;
         }
         
-        
+       
     }
 }

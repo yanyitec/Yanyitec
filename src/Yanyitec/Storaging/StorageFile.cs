@@ -35,6 +35,27 @@ namespace Yanyitec.Storaging
             return (this.FileSystemInfo as FileInfo).Open(createIfNotExisted?FileMode.OpenOrCreate: FileMode.Open);
         }
 
+        public string GetText(System.Text.Encoding encoding = null) {
+            var bytes = this.GetBytes();
+            if (encoding == null) encoding = System.Text.Encoding.GetEncoding(Constants.DefaultCodepage);
+            return encoding.GetString(bytes, 0, bytes.Length);
+        }
+
+        public async Task<string> GetTextAsync(System.Text.Encoding encoding = null) {
+            return await Task<string>.Run(() => GetText(encoding));
+        }
+
+        public byte[] GetBytes() {
+         
+            if (this.FileSystemInfo.Exists) return null;
+            return System.IO.File.ReadAllBytes(this.FileSystemInfo.FullName);
+        }
+
+        public async Task<byte[]> GetBytesAsync() {
+            return await Task<byte[]>.Run(() => GetBytes());
+        }
+
+
         public bool CopyTo(IStorageFile target) {
             var srcStream = this.GetStream();
             if (srcStream == null) return false;

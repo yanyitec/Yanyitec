@@ -323,10 +323,10 @@ namespace Yanyitec
             Func<string, object> convertor = null;
 
             if (_objectConvertors.TryGetValue(type.GetHashCode(), out convertor)) return convertor(self);
-            GlobalLocker.InternalAsyncLocker.EnterUpgradeableReadLock();
+            GlobalLocker.InternalSynchronizingObject.EnterUpgradeableReadLock();
             try {
                 if (_objectEnumConvertors.TryGetValue(type.GetHashCode(), out convertor)) return convertor(self);
-                GlobalLocker.InternalAsyncLocker.EnterWriteLock();
+                GlobalLocker.InternalSynchronizingObject.EnterWriteLock();
                 try {
                     if (_objectEnumConvertors.TryGetValue(type.GetHashCode(), out convertor)) return convertor(self);
                     convertor = GenEnumConverter(type);
@@ -336,10 +336,10 @@ namespace Yanyitec
                     }
                     return null;
                 } finally {
-                    GlobalLocker.InternalAsyncLocker.ExitWriteLock();
+                    GlobalLocker.InternalSynchronizingObject.ExitWriteLock();
                 }
             } finally {
-                GlobalLocker.InternalAsyncLocker.ExitUpgradeableReadLock();
+                GlobalLocker.InternalSynchronizingObject.ExitUpgradeableReadLock();
             }
             
             

@@ -16,7 +16,7 @@
 
 //        DynamicMetadataReference _reference;
 
-//        readonly object asyncLocker = new object();
+//        readonly object SynchronizingObject = new object();
 
 //        public IStorage Storage { get; private set; }
 
@@ -32,7 +32,7 @@
 //            if (_references.Exists(p => p.Equals(reference))) return false;
 //            _references.Add(reference);
 //            reference.OnChange += (t) => {
-//                lock(asyncLocker) this._assembly = null;
+//                lock(SynchronizingObject) this._assembly = null;
 //            };
 //            return true;
 //        }

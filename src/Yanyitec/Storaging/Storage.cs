@@ -9,17 +9,32 @@ namespace Yanyitec.Storaging
 {
     public class Storage : StorageDirectory,IStorage
     {
-        public Storage(string path):base(new DirectoryInfo(path),null, null) {
-            this.InternalRoot = this;
+        public Storage(string path):base(new DirectoryInfo(path),null, Storaging.Storage.Root) {
+            
             if (!this.FileSystemInfo.Exists) {
                 (this.FileSystemInfo as DirectoryInfo).Create();
             }
+            this.StorageType = StorageTypes.Storage;
+            //this.InternalStorage = this;
         }
+
+        
 
         public Storage() : base(null, null, null) {
-            this.InternalRoot = this;
+            this.InternalStorage = this;
+            this.StorageType = StorageTypes.Root;
         }
 
-        public static readonly Storage System = new Storage();
+        internal Storage(DirectoryInfo info, StorageDirectory parent) : base(info, parent, Storaging.Storage.Root) { }
+
+        public static readonly Storage Root = new Storage();
+
+        
+
+        public new object SynchronizingObject {
+            get {
+                return base.SynchronizingObject;
+            }
+        }
     }
 }

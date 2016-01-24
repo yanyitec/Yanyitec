@@ -11,10 +11,10 @@ namespace Yanyitec.DependenceInject
     public class DIContainer : Injection
     {
         public DIContainer():base(null, CreationKinds.Group,null,null,null,null) {
-            this.AsyncLocker = new ReaderWriterLockSlim();
+            this.SynchronizingObject = new ReaderWriterLockSlim();
         }
 
-        public ReaderWriterLockSlim AsyncLocker
+        public ReaderWriterLockSlim SynchronizingObject
         {
             get;
             private set;
