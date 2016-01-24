@@ -2,8 +2,8 @@
   "locked": false,
   "version": 2,
   "targets": {
-    ".NETFramework,Version=v4.5.1": {},
-    "DNX,Version=v4.5.1": {},
+    ".NETFramework,Version=v4.5.0": {},
+    "DNX,Version=v4.5.0": {},
     "DNXCore,Version=v5.0": {
       "Microsoft.CSharp/4.0.1-rc2-23629": {
         "type": "package",
@@ -399,10 +399,10 @@
         }
       }
     },
-    ".NETFramework,Version=v4.5.1/win7-x86": {},
-    ".NETFramework,Version=v4.5.1/win7-x64": {},
-    "DNX,Version=v4.5.1/win7-x86": {},
-    "DNX,Version=v4.5.1/win7-x64": {},
+    ".NETFramework,Version=v4.5.0/win7-x86": {},
+    ".NETFramework,Version=v4.5.0/win7-x64": {},
+    "DNX,Version=v4.5.0/win7-x86": {},
+    "DNX,Version=v4.5.0/win7-x64": {},
     "DNXCore,Version=v5.0/win7-x86": {
       "Microsoft.CSharp/4.0.1-rc2-23629": {
         "type": "package",
@@ -2781,8 +2781,8 @@
   },
   "projectFileDependencyGroups": {
     "": [],
-    ".NETFramework,Version=v4.5.1": [],
-    "DNX,Version=v4.5.1": [],
+    ".NETFramework,Version=v4.5.0": [],
+    "DNX,Version=v4.5.0": [],
     "DNXCore,Version=v5.0": [
       "System.Console >= 4.0.0-*",
       "Microsoft.CSharp >= 4.0.1-*",

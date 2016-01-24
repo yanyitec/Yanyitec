@@ -14,9 +14,7 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Yanyitec", "src\Yanyitec\Ya
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Yanyitec.Unitest", "src\Yanyitec.Unitest\Yanyitec.Unitest.xproj", "{1AD935E3-34B2-4BB1-9984-37FCFEA77DCD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yanyitec.Platform.Dotnet", "src\Yanyitec.Platform.Dotnet\Yanyitec.Platform.Dotnet.csproj", "{1AA68408-A3BC-4F21-9D9C-191A6AABDD6F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FSWatcher", "FSWatcher\FSWatcher.csproj", "{7954ED05-982B-457C-ACFA-71B5CF8C777A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yanyitec.Platforms.Dotnet", "src\Yanyitec.Platforms.Dotnet\Yanyitec.Platforms.Dotnet.csproj", "{1AA68408-A3BC-4F21-9D9C-191A6AABDD6F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,10 +34,6 @@ Global
 		{1AA68408-A3BC-4F21-9D9C-191A6AABDD6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1AA68408-A3BC-4F21-9D9C-191A6AABDD6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1AA68408-A3BC-4F21-9D9C-191A6AABDD6F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7954ED05-982B-457C-ACFA-71B5CF8C777A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7954ED05-982B-457C-ACFA-71B5CF8C777A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7954ED05-982B-457C-ACFA-71B5CF8C777A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7954ED05-982B-457C-ACFA-71B5CF8C777A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -47,6 +41,5 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{DFC3D6D5-567B-49CC-B262-816D176BDCC4} = {8E79F4C8-0DC4-44F8-93C1-F3B7D1A497FC}
 		{1AD935E3-34B2-4BB1-9984-37FCFEA77DCD} = {8E79F4C8-0DC4-44F8-93C1-F3B7D1A497FC}
-		{1AA68408-A3BC-4F21-9D9C-191A6AABDD6F} = {8E79F4C8-0DC4-44F8-93C1-F3B7D1A497FC}
 	EndGlobalSection
 EndGlobal

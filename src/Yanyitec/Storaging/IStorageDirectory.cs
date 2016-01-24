@@ -19,6 +19,10 @@ namespace Yanyitec.Storaging
         Task<byte[]> GetBytesAsync(string path);
         IStorageItem GetItem(string path, StorageTypes itemType = StorageTypes.All, bool createIfNotExisted = false);
         Task<IStorageItem> GetItemAsync(string path, StorageTypes itemType = StorageTypes.All, bool createIfNotExisted = false);
+
+        IStorageDirectory GetDirectory(string path, bool createIfNotExisted = false);
+        Task<IStorageDirectory> GetDirectoryAsync(string path, bool createIfNotExisted = false);
+
         string GetText(string path, Encoding encoding = null);
         Task<string> GetTextAsync(string path, Encoding encoding = null);
         IList<IStorageItem> ListItems(string path, StorageTypes itemType = StorageTypes.All);

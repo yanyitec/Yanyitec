@@ -9,8 +9,7 @@ namespace Yanyitec.Testing
     {
         public static Yanyitec.Logging.ILogger Log = Yanyitec.Logging.ConsoleLogger.Default;
 
-        public static bool ThrowException = true;
-
+        
         public static void True(bool value) {
             if(value!=true) throw new AssertBoolException(true);
         }

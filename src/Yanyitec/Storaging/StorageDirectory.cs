@@ -11,13 +11,13 @@ namespace Yanyitec.Storaging
     {
         
 
-        protected internal StorageDirectory(DirectoryInfo info, StorageDirectory parent,Storage root)
-            : base(StorageTypes.Directory, info, parent,root)
+        protected internal StorageDirectory(DirectoryInfo info, StorageDirectory parent,Storage storage)
+            : base(StorageTypes.Directory, info, parent, storage)
         {
 
         }
 
-        public StorageDirectory(DirectoryInfo info) : this(info,null,null) { }
+        public StorageDirectory(DirectoryInfo info) : this(info,null,Storaging.Storage.Root) { }
 
         public StorageDirectory(string absolutePath) : this(new DirectoryInfo(absolutePath))
         {
@@ -106,6 +106,15 @@ namespace Yanyitec.Storaging
         {
             return await Task.Run(() => this.GetItem(path, itemType,createIfNotExisted));
         }
+
+        public IStorageDirectory GetDirectory(string path, bool createdIfNotExisted = false) {
+            return this.GetItem(path, StorageTypes.Directory,createdIfNotExisted) as IStorageDirectory;
+        }
+        public async Task<IStorageDirectory> GetDirectoryAsync(string path, bool createdIfNotExisted = false)
+        {
+            return  await this.GetItemAsync(path, StorageTypes.Directory, createdIfNotExisted) as IStorageDirectory;
+        }
+
         public void AppendText(string path, string text, Encoding encoding = null)
         {
             var filename  =new AbsolutePath(path, this);
@@ -154,6 +163,7 @@ namespace Yanyitec.Storaging
         public string GetText(string path, Encoding encoding = null)
         {
             var bytes = this.GetBytes(path);
+            if (bytes == null) return null;
             if (encoding == null) encoding = System.Text.Encoding.GetEncoding(Constants.DefaultCodepage);
             return encoding.GetString(bytes,0,bytes.Length);
         }
@@ -191,15 +201,7 @@ namespace Yanyitec.Storaging
 
         void InternalListItems(List<IStorageItem>  result ,StorageDirectory dir, bool includeSubs = false, StorageTypes itemType = StorageTypes.All) {
             var dirInfo = (dir.FileSystemInfo as DirectoryInfo);
-            if (itemType.IsDirectory()) {
-                var subInfos = dirInfo.GetDirectories();
-                
-                foreach (var sub in subInfos) {
-                    var subItem = new StorageDirectory(sub, dir,this.InternalStorage);
-                    result.Add(subItem);
-                    if(includeSubs)InternalListItems(result, subItem, includeSubs,itemType);
-                }
-            }
+            
 
             if (itemType.IsFile())
             {
@@ -209,6 +211,18 @@ namespace Yanyitec.Storaging
                     result.Add(new StorageFile(sub, dir,this.InternalStorage));
                 }
             }
+            if (itemType.IsDirectory() || includeSubs) {
+                var subs = dirInfo.GetDirectories();
+
+                foreach (var sub in subs)
+                {
+                    var subItem = new StorageDirectory(sub, dir, this.InternalStorage);
+                    if(itemType.IsDirectory())result.Add(subItem);
+                    if (includeSubs) InternalListItems(result, subItem, includeSubs, itemType);
+                }
+            }
+            
+
         }
 
         public IList<IStorageItem> ListItems(bool includeSubs = false, StorageTypes itemType = StorageTypes.All) {
@@ -255,7 +269,7 @@ namespace Yanyitec.Storaging
 
         public IStorage AsStorage() {
             if (this.StorageType.IsStorage()) return this as IStorage;
-            return new Storage(this.FileSystemInfo as DirectoryInfo, this);
+            return new Storage(this);
         }
 
         #region watcher

@@ -7,10 +7,10 @@ namespace Yanyitec.Compilation
 {
     public interface ICompiler
     {
-        ReaderWriterLockSlim SynchronizingObject { get; }
+        object SynchronizingObject { get; }
         IStorageFile Location { get; set; }
 
-        object AddOrReplaceCode(string key, string code);
+        object AddOrReplaceCode(string key, string code,object locker = null);
         bool AddReference(Type keytype, object locker = null);
         bool AddReference(string assemblyLocation, object locker = null);
         bool AddReference(Assembly assembly, object locker = null);

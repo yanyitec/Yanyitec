@@ -37,6 +37,7 @@ namespace Yanyitec.Storaging
 
         public string GetText(System.Text.Encoding encoding = null) {
             var bytes = this.GetBytes();
+            if (bytes == null) return null;
             if (encoding == null) encoding = System.Text.Encoding.GetEncoding(Constants.DefaultCodepage);
             return encoding.GetString(bytes, 0, bytes.Length);
         }
@@ -47,7 +48,7 @@ namespace Yanyitec.Storaging
 
         public byte[] GetBytes() {
          
-            if (this.FileSystemInfo.Exists) return null;
+            if (!this.FileSystemInfo.Exists) return null;
             return System.IO.File.ReadAllBytes(this.FileSystemInfo.FullName);
         }
 

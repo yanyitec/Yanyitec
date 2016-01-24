@@ -203,6 +203,16 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="P:Yanyitec.Runtime.DynamicArtifact.SourceStorage">
+            <summary>
+            文件变化时重新编译源及其后继依赖
+            </summary>
+        </member>
+        <member name="P:Yanyitec.Runtime.DynamicArtifact.TempDirectory">
+            <summary>
+            临时文件目录
+            </summary>
+        </member>
         <member name="M:Yanyitec.IArtifact.GetResource(System.String)">
             <summary>
             获取资源

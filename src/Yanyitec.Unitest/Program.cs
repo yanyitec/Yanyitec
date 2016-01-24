@@ -20,7 +20,7 @@ namespace Yanyitec.Unitest
             
             //var paras = method.GetParameters();
 
-            Assert.ThrowException = true;
+      
             var test = new Testing.TestArtifactInfo(new Artifact(typeof(Program).GetTypeInfo().Assembly));
 
             test.TestMethods("Storage%");

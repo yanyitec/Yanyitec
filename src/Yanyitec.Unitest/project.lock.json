@@ -5,7 +5,7 @@
     "DNX,Version=v4.5.1": {
       "Yanyitec/1.0.0": {
         "type": "project",
-        "framework": "DNX,Version=v4.5.1"
+        "framework": "DNX,Version=v4.5.0"
       }
     },
     "DNXCore,Version=v5.0": {
@@ -426,13 +426,13 @@
     "DNX,Version=v4.5.1/win7-x86": {
       "Yanyitec/1.0.0": {
         "type": "project",
-        "framework": "DNX,Version=v4.5.1"
+        "framework": "DNX,Version=v4.5.0"
       }
     },
     "DNX,Version=v4.5.1/win7-x64": {
       "Yanyitec/1.0.0": {
         "type": "project",
-        "framework": "DNX,Version=v4.5.1"
+        "framework": "DNX,Version=v4.5.0"
       }
     },
     "DNXCore,Version=v5.0/win7-x86": {

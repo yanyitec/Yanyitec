@@ -25,7 +25,9 @@ namespace Yanyitec.Storaging
             this.StorageType = StorageTypes.Root;
         }
 
-        internal Storage(DirectoryInfo info, StorageDirectory parent) : base(info, parent, Storaging.Storage.Root) { }
+        internal Storage(StorageDirectory dir) : base(dir.FileSystemInfo as DirectoryInfo, null, dir.InternalStorage) {
+            this.StorageType = StorageTypes.Storage;
+        }
 
         public static readonly Storage Root = new Storage();
 

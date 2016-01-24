@@ -7,12 +7,12 @@
   "licenseUrl": "",
 
   "frameworks": {
-    "net451": {
+    "net450": {
       "dependencies": {
         
       }
     },
-    "dnx451": {
+    "dnx450": {
       "dependencies": {
         
       }

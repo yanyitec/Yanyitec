@@ -8,8 +8,11 @@ namespace Yanyitec
 {
     public class ArtifactChangeEventArgs : ChangedEventArgs
     {
-        public ArtifactChangeEventArgs(ArtifactChangeTypes changeType) {
+        public ArtifactChangeEventArgs(ArtifactChangeTypes changeType,object sender,object syncLocker, ChangedEventArgs source ) {
             this.ChangeType = changeType;
+            this.Sender = sender;
+            this.SourceEventArgs = source;
+            this.SynchronizingObject = syncLocker;
         }
         public ArtifactChangeEventArgs(string oldName)
         {
