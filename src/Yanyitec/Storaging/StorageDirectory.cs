@@ -45,13 +45,23 @@ namespace Yanyitec.Storaging
             return null;
         }
 
-        public void Delete()
+        public virtual void Delete()
         {
             if (this.FileSystemInfo != null)
             {
                 this.FileSystemInfo.Delete();
+            }else throw new InvalidOperationException("Cannot delete the system root.");
+        }
+
+        public bool Delete(string path) {
+            var absolutePath = new AbsolutePath(path, this);
+            var item = this.GetItem(path);
+            if (item != null) {
+                if (item.StorageType == StorageTypes.Directory) (item as StorageDirectory).Delete();
+                else (item as StorageFile).Delete();
+                return true;
             }
-            throw new InvalidOperationException("Cannot delete the system root.");
+            return false;
         }
 
 
@@ -272,9 +282,15 @@ namespace Yanyitec.Storaging
         }
 
         System.IO.FileSystemWatcher CreateWatcher() {
-            System.IO.FileSystemWatcher watch = new FileSystemWatcher(this.FullName);       //初始化目录监视
+            System.IO.FileSystemWatcher watch = new FileSystemWatcher();       //初始化目录监视
+                                                                               //#if DNXCORE50
+                                                                               //#else
+                                                                               //            watch.BeginInit();
+                                                                               //#endif 
+            watch.Path = this.FullName;
+            watch.Filter = "*.*";
             //watch.Filter = "*.txt";                      //监视的对象，目录中监视哪些文件，默认为*.*
-                                                         //不过这里有个好玩的地方，实验证明，通配符可以用在很多地方，比如可以设置成为  watch.Filter = "*.tx*";    针对具体文件就写具体文件名
+            //不过这里有个好玩的地方，实验证明，通配符可以用在很多地方，比如可以设置成为  watch.Filter = "*.tx*";    针对具体文件就写具体文件名
             watch.IncludeSubdirectories = true;     //包括子目录
             watch.Changed += Watch_Changed;          //文件改变事件
             watch.Created += Watch_Created;          //文件添加事件
@@ -302,26 +318,33 @@ namespace Yanyitec.Storaging
         {
 
             var item = this.Storage.GetItem(e.FullPath);
-            var evt = new ItemChangedEventArgs(this, null, ChangeKinds.Renamed, e.OldName ,this.Storage.SynchronizingObject);
+            var evt = new ItemChangedEventArgs(this, item, ChangeKinds.Renamed, e.OldName ,this.Storage.SynchronizingObject);
+            if(this._changed!=null) this._changed(this,evt);
         }
 
         private void Watch_Deleted(object sender, FileSystemEventArgs e)
         {
             var item = this.Storage.GetItem(e.FullPath);
-            var evt = new ItemChangedEventArgs(this, null, ChangeKinds.Deleted, null, this.Storage.SynchronizingObject);
+            var evt = new ItemChangedEventArgs(this, item, ChangeKinds.Deleted, null, this.Storage.SynchronizingObject);
+            if (this._changed != null) this._changed(this, evt);
         }
 
         private void Watch_Created(object sender, FileSystemEventArgs e)
         {
             var item = this.Storage.GetItem(e.FullPath);
-            var evt = new ItemChangedEventArgs(this, null, ChangeKinds.Created, null, this.Storage.SynchronizingObject);
+            var evt = new ItemChangedEventArgs(this, item, ChangeKinds.Created, null, this.Storage.SynchronizingObject);
+            if (this._changed != null) this._changed(this, evt);
         }
 
         private void Watch_Changed(object sender, FileSystemEventArgs e)
         {
             var item = this.Storage.GetItem(e.FullPath);
-            var evt = new ItemChangedEventArgs(this, null, ChangeKinds.Updated, null, this.Storage.SynchronizingObject);
+            var evt = new ItemChangedEventArgs(this, item, ChangeKinds.Updated, null, this.Storage.SynchronizingObject);
+            if (this._changed != null) this._changed(this, evt);
         }
+
+
+        
         #endregion
     }
 }

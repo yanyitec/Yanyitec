@@ -223,7 +223,7 @@
             其他的返回 /dir/filename
             </summary>
         </member>
-        <member name="M:Yanyitec.Testing.TestClassInfo.RunMethods(System.String,System.Collections.Generic.IDictionary{System.String,Yanyitec.Testing.AssertException},System.Nullable{System.Boolean})">
+        <member name="M:Yanyitec.Testing.TestClassInfo.RunMethods(System.String)">
             <summary>
             运行类的测试方法
             </summary>

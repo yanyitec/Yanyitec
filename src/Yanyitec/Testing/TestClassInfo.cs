@@ -57,44 +57,47 @@ namespace Yanyitec.Testing
 
         
 
-        private AssertException Call(TestMethodInfo methodInfo,bool? throwException = null) {
-            bool throwEx = throwException.HasValue ? throwException.Value : Assert.ThrowException;
-            if (!throwEx)
-            {
-                try
-                {
-                    methodInfo.Run();
-                    return AssertException.Success;
-                }
-                catch (AssertException ex)
-                {
-                    return ex;
-                }
-            }
-            else {
-                methodInfo.Run();
-                return AssertException.Success;
-            }
-            
-        }
+        
         /// <summary>
         /// 运行类的测试方法
         /// </summary>
         /// <param name="methodName">null 表示所有的方法， 可以用 like表达式</param>
         /// <param name="result">方法名，结果</param>
         /// <returns></returns>
-        public IDictionary<string, AssertException> RunMethods(string methodName = null,IDictionary<string,AssertException> result = null,bool? throwException=null) {
+        public void RunMethods(string methodName = null) {
             methodName = methodName?.Trim();
-            if (result == null) {
-                result = new Dictionary<string, AssertException>();
-            }
             
             foreach (var methodInfo in this.TestMethodInfos.Values) {
-               if(methodName == null || methodInfo.Name.Like(methodName)) result.Add(methodInfo.Name,Call(methodInfo,throwException));
+                if (methodName == null || methodInfo.Name.Like(methodName))
+                {
+                    methodInfo.Run();
+
+                }
             }
+        }
+
+        public async Task<IDictionary<string, AssertException>> RunMethodsAsync(string methodName = null) {
+            var tasks = new List<Task>();
+            Dictionary<string, AssertException> result = new Dictionary<string, AssertException>();
+            this.RunMethodsInTask(tasks,result,  methodName);
+            await Task.WhenAll(tasks.ToArray());
             return result;
         }
 
+        internal protected void RunMethodsInTask(IList<Task> tasks,IDictionary<string,AssertException> result, string methodName) {
+            methodName = methodName?.Trim();
+
+            foreach (var methodInfo in this.TestMethodInfos.Values)
+            {
+                if (methodName == null || methodInfo.Name.Like(methodName))
+                {
+                    var task = methodInfo.RunAsync(result);
+                    tasks.Add(task);
+                    task.Start();
+                }
+            }
+        }
         
+
     }
 }

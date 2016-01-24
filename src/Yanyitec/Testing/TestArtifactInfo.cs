@@ -29,9 +29,9 @@ namespace Yanyitec.Testing
 
             if (attr != null) {
                 this.Description = attr.Description;
-                
-                
-                
+
+
+
             }
         }
 
@@ -79,23 +79,33 @@ namespace Yanyitec.Testing
             }
         }
 
-        public IDictionary<string,IDictionary<string,AssertException>> TestMethods(string clsName=null,string methodName=null, Dictionary<string, IDictionary<string, AssertException>> result = null,bool? throwException=null) {
+        public async Task<IDictionary<string, IDictionary<string, AssertException>>> TestMethodsAsync(string clsName = null, string methodName = null) {
+
+            Dictionary<string, IDictionary<string, AssertException>> result = new Dictionary<string, IDictionary<string, AssertException>>();
+            List<Task> tasks = new List<Task>();
             
-            
-            result = result ?? new Dictionary<string, IDictionary<string, AssertException>>();
             foreach (var pair in TestClassInfos) {
                 if (clsName == null || pair.Key.Like(clsName) || pair.Value.TestClassType.Name.Like(clsName)) {
                     var clsResult = new Dictionary<string, AssertException>();
-                    pair.Value.RunMethods(methodName,clsResult,throwException);
-                    result.Add(pair.Key,clsResult);
-
+                    result.Add(pair.Key, clsResult);
+                    pair.Value.RunMethodsInTask(tasks, clsResult, methodName);
+                    
                 }
             }
+            await Task.WhenAll(tasks.ToArray());
             return result;
-            
-
-
         }
 
+        public void TestMethods(string clsName = null, string methodName = null)
+        {
+            
+            foreach (var pair in TestClassInfos)
+            {
+                if (clsName == null || pair.Key.Like(clsName) || pair.Value.TestClassType.Name.Like(clsName))
+                {
+                    pair.Value.RunMethods(methodName);
+                }
+            }
+        }
     }
 }

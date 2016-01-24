@@ -33,24 +33,73 @@ namespace Yanyitec.Testing
 
         public MethodInfo MethodInfo { get; private set; }
 
+        bool _hasInvoker;
         Action _methodInvoker;
+        Func<Task> _methodAsyncInvoker;
 
-        public void Run() {
-            if (_methodInvoker == null) {
-                lock (this) {
-                    if (_methodInvoker == null) {
-                        _methodInvoker = GenInvoker();
+        static MethodInfo TaskRunMethodInfo = typeof(Task).GetMethods().FirstOrDefault(p=>p.Name == "RunSynchronously" && p.GetParameters().Length==0);
+
+        private void GetOrCreateInvoker() {
+            if (!_hasInvoker)
+            {
+                lock (this)
+                {
+                    if (!_hasInvoker)
+                    {
+                        var dele = GenInvoker();
+                        if (this.MethodInfo.ReturnType == typeof(Task))
+                        {
+                            _methodAsyncInvoker = dele as Func<Task>;
+                        }
+                        else _methodInvoker = dele as Action;
+                        _hasInvoker = true;
                     }
                 }
             }
-            _methodInvoker();
+        }
+        public void Run() {
+            this.GetOrCreateInvoker();
+            if (_methodInvoker != null) { _methodInvoker(); }
+            else _methodAsyncInvoker().Wait();
+            return;
+        }
+        public async Task RunAsync(IDictionary<string,AssertException> result) {
+            await Task.Run(async () => {
+                try
+                {
+                    if (_methodInvoker != null) { _methodInvoker(); return; }
+                    else await _methodAsyncInvoker();
+                }
+                catch (Exception ex)
+                {
+                    lock (result)
+                    {
+                        var assertExcepition = ex as AssertException;
+                        if (assertExcepition == null) {
+                            assertExcepition = new AssertUnhandledException(ex);
+                        }
+                        result.Add(this.MethodInfo.Name, assertExcepition);
+                    }
+                }
+
+            });
+            
         }
 
-        private Action GenInvoker() {
+        private Delegate GenInvoker() {
+            
             var instanceExpr = Expression.New(this.MethodInfo.DeclaringType);
             var callExpr = Expression.Call(instanceExpr, this.MethodInfo);
-            var lamda = Expression.Lambda<Action>(callExpr);
-            return lamda.Compile();
+            if (this.MethodInfo.ReturnType != typeof(Task))
+            {
+                var lamda = Expression.Lambda<Action>(callExpr);
+                return lamda.Compile();
+            }
+            else {
+                var lamda = Expression.Lambda<Func<Task>>(callExpr);
+                return lamda.Compile();
+            }
+            
         }
     }
 }

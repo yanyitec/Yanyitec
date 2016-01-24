@@ -68,19 +68,37 @@ namespace Yanyitec.Unitest
         }
 
         [Test("监听目录")]
-        public void Watch() {
+        public async Task Watch() {
             var storage = new Storaging.Storage(BasePath);
+            storage.Delete("/watch");
             IStorageDirectory sender = null;
             ItemChangedEventArgs evt = null;
             storage.Changed += (sdr,e)=> {
                 sender = sdr;evt = e;
             };
-            var item = storage.CreateItem("/watch");
-            Assert.NotNull(sender);
-            Assert.NotNull(evt);
-            Assert.Equal(storage,sender);
-            Assert.Equal(evt.ChangeKind, ChangeKinds.Created);
-            Assert.Equal(item.FullName , evt.ChangedItem.FullName);
+            IStorageItem item = null;
+            int waitingCount = 10;
+            //添加事件会有一些延迟。开个线程等着
+            Task task = System.Threading.Tasks.Task.Run(async () =>
+            {
+                await Task.Delay(1000);
+                item = storage.CreateItem("/watch");
+            });
+
+            await System.Threading.Tasks.Task.Run(async () =>
+            {
+                while (sender == null && waitingCount > 0) {
+                    await Task.Delay(50);
+                    waitingCount--;
+                }
+                Assert.NotNull(sender);
+                Assert.NotNull(evt);
+                Assert.Equal(storage, sender);
+                Assert.Equal(evt.ChangeKind, ChangeKinds.Created);
+                Assert.Equal(item.FullName, evt.ChangedItem.FullName);
+            });
+            //task.Start();
+
         }
 
         

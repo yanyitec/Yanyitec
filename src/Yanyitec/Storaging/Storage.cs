@@ -29,7 +29,10 @@ namespace Yanyitec.Storaging
 
         public static readonly Storage Root = new Storage();
 
-        
+        public override void Delete()
+        {
+            throw new InvalidOperationException("Can not delete storage.");
+        }
 
         public new object SynchronizingObject {
             get {

@@ -9,9 +9,11 @@ namespace Yanyitec.Unitest
     using Yanyitec.Runtime;
     using System.Reflection.Emit;
     using Testing;
+    using System.IO;
 
     public class Program
     {
+        //[PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
         public static void Main(string[] args)
         {
             //Expression<Func<string, int&, bool>> expr;
@@ -22,32 +24,10 @@ namespace Yanyitec.Unitest
             var test = new Testing.TestArtifactInfo(new Artifact(typeof(Program).GetTypeInfo().Assembly));
 
             test.TestMethods("Storage%");
+            Console.Write("Press q to exit..");
+            while (Console.Read() != 'q');
         }
 
-        public class JObj
-        {
-            public int Id { get; set; }
-        }
-
-        public void Parse(string name, string value)
-        {
-            var result = new JObj();
-            if (name == "Id")
-            {
-                int Id = 0;
-                if (int.TryParse(value, out Id))
-                {
-                    result.Id = Id;
-                }
-            }
-        }
-        //static MethodInfo TryParseMethodInfo = typeof(int).GetMethods().First(p=>p.Name=="TryParse");
-        //public Action<JObj, string,string> Gen() {
-
-        //    var IdExpr = Expression.Parameter(typeof(int),"Id");
-        //    var inputExpr = Expression.Parameter(typeof(string),"value");
-        //    var callExpr = Expression.Call( TryParseMethodInfo,inputExpr,);
-        //    return null;
-        //}
+        
     }
 }

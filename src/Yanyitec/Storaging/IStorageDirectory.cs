@@ -10,6 +10,7 @@ namespace Yanyitec.Storaging
     public interface IStorageDirectory :IStorageItem
     {
         void Delete();
+        bool Delete(string path);
         void AppendText(string path, string text, Encoding encoding = null);
         Task AppendTextAsync(string path, string text, Encoding encoding = null);
         IStorageItem CreateItem(string path, StorageTypes itemType = StorageTypes.Directory);
