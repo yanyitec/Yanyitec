@@ -15,7 +15,7 @@ namespace Yanyitec.Platforms
         [PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
         public static void Main() {
             Yanyitec.Platforms.Dotnet.Init();
-            var test = new Testing.TestArtifactInfo(new Artifact(typeof(Program).Assembly));
+            var test = new Testing.TestArtifactInfo(new PrecompiledArtifact(typeof(Program).Assembly));
             
             test.TestMethods("Artifact%");
         }

@@ -19,12 +19,12 @@ namespace Yanyitec.Json
         {
             get
             {
-                throw new InvalidOperationException();
+                return JUndefined.Default;
             }
 
             set
             {
-                throw new InvalidOperationException();
+                
             }
         }
 

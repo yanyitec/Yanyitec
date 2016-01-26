@@ -21,7 +21,7 @@ namespace Yanyitec.Unitest
             //var paras = method.GetParameters();
 
       
-            var test = new Testing.TestArtifactInfo(new Artifact(typeof(Program).GetTypeInfo().Assembly));
+            var test = new Testing.TestArtifactInfo(new PrecompiledArtifact(typeof(Program).GetTypeInfo().Assembly));
 
             test.TestMethods("Storage%");
             Console.Write("Press q to exit..");

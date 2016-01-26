@@ -190,27 +190,27 @@
             <param name="type"></param>
             <returns></returns>
         </member>
-        <member name="M:Yanyitec.Runtime.Artifact.GetResource(System.String)">
+        <member name="M:Yanyitec.Runtime.PrecompiledArtifact.GetResource(System.String)">
             <summary>
             获取资源
             </summary>
             <param name="name"></param>
             <returns></returns>
         </member>
-        <member name="M:Yanyitec.Runtime.Artifact.GetResourceText(System.String,System.Text.Encoding)">
+        <member name="M:Yanyitec.Runtime.PrecompiledArtifact.GetResourceText(System.String,System.Text.Encoding)">
             <summary>
             获取资源字符串
             </summary>
             <returns></returns>
         </member>
-        <member name="P:Yanyitec.Runtime.DynamicArtifact.SourceStorage">
+        <member name="P:Yanyitec.Runtime.ProjectArtifact.SourceStorage">
             <summary>
             文件变化时重新编译源及其后继依赖
             </summary>
         </member>
-        <member name="P:Yanyitec.Runtime.DynamicArtifact.TempDirectory">
+        <member name="P:Yanyitec.Runtime.ProjectArtifact.OutputDirectory">
             <summary>
-            临时文件目录
+            编译文件输出目录
             </summary>
         </member>
         <member name="M:Yanyitec.IArtifact.GetResource(System.String)">

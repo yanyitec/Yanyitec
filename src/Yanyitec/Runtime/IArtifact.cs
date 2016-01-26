@@ -18,6 +18,7 @@ namespace Yanyitec
 
         Assembly Assembly { get; }
 
+        string CompairName { get; }
 
 
         //Type GetType(string name);
@@ -37,6 +38,8 @@ namespace Yanyitec
         /// </summary>
         /// <returns></returns>
         string GetResourceText(string name,Encoding encoding = null);
+
+        
 
     }
 }

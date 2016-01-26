@@ -10,34 +10,32 @@ namespace Yanyitec.Runtime
     using System.Text;
     using System.IO;
 
-    public class Artifact: IArtifact
+    public class PrecompiledArtifact: IArtifact
     {
         readonly object SynchronizingObject = new object();
         public event Action<IArtifact, ArtifactChangeEventArgs> Changed;
 
-        private FileSystemWatcher _fsWatcher;
-        public Artifact(IStorageItem location ,IAsemblyLoader loader=null) {
+        public PrecompiledArtifact(IStorageFile location = null)
+        {
+
             this.Location = location;
-            this.AsemblyLoader = loader;
-            //location.OnChange += (sender, evtArgs) =>
-            //{
-            //    lock (this.SynchronizingObject)
-            //    { 
-            //        this._assembly = null;
-            //    }
-            //};
+
         }
 
-        public Artifact(Assembly assembly, IStorageFile location =null) {
-            this._assembly = assembly;
+
+        public PrecompiledArtifact(Assembly assembly, IStorageFile location =null) {
+            this.Assembly = assembly;
             
             this.Location = location;
             
         }
 
+        public string CompairName {
+            get { return this.Assembly.FullName + "-" + this.Assembly.GetName().Version.ToString(); }
+        }
         
 
-        public IAsemblyLoader AsemblyLoader { get; private set; }
+        public IArtifactLoader AsemblyLoader { get; private set; }
 
         public IStorageItem Location { get; private set; }
 
@@ -46,31 +44,9 @@ namespace Yanyitec.Runtime
         }
 
 
-        Assembly _assembly;
-        Assembly GetOrLoadAssembly() {
-            if (_assembly == null)
-            {
-                if (this.Location.StorageType == StorageTypes.File)
-                {
-                    _assembly = this.AsemblyLoader.LoadFromStream((this.Location as IStorageFile).GetStream(false), null);
-                }
-                else
-                {
-                    _assembly = this.AsemblyLoader.LoadProject(this.Location as IStorageDirectory);
-                }
-            }
-            return _assembly;
-        }
-
+       
         public Assembly Assembly {
-            get {
-                if (_assembly == null) {
-                    lock (this.SynchronizingObject) {
-                        GetOrLoadAssembly();
-                    }
-                }
-                return _assembly;
-            }
+            get; private set;
         }
 
         public IEnumerable<TypeInfo> GetTypeInfos() {
@@ -100,11 +76,11 @@ namespace Yanyitec.Runtime
             return null;
         }
 
-        public static implicit operator Artifact(Assembly assembly) {
-            return new Artifact(assembly);
+        public static implicit operator PrecompiledArtifact(Assembly assembly) {
+            return new PrecompiledArtifact(assembly);
         }
 
-        public static implicit operator Assembly(Artifact artifact) {
+        public static implicit operator Assembly(PrecompiledArtifact artifact) {
             return artifact.Assembly;
         }
     }

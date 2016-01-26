@@ -11,7 +11,7 @@ namespace Yanyitec.Platforms
     {
         public static void Init() {
             Yanyitec.Platform.SetDotnetVersion("net451");
-            Yanyitec.Runtime.DynamicArtifact.CreateComplierFunc = (syncObject) => new CSharpCompiler();
+            Yanyitec.Runtime.ProjectArtifact.CreateComplierFunc = (syncObject) => new CSharpCompiler();
         }
     }
 }
