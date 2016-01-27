@@ -9,8 +9,8 @@ namespace Yanyitec.Runtime
         IStorageDirectory PackageDirectory { get; set; }
         ArtifactLoader Parent { get; set; }
         ReaderWriterLockSlim SynchronizingObject { get; }
-        IArtifact Load(ArtifactLoaderOptions opt);
-        IArtifact Load(string name, string version = null);
+        IArtifact Load(ArtifactLoaderOptions opt,System.Threading.ReaderWriterLockSlim syncObject= null);
+        IArtifact Load(string name, string version = null, System.Threading.ReaderWriterLockSlim syncObject = null);
         IArtifact LoadPackage(string name, string version = null, ReaderWriterLockSlim synchonizingObject = null);
         IArtifact LoadProject(IStorageDirectory projectDir, ReaderWriterLockSlim synchonizingObject = null);
     }

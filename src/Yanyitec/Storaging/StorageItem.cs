@@ -42,8 +42,8 @@ namespace Yanyitec.Storaging
         StorageDirectory GetParent() {
             if (_parent == null)
             {
-                var fullname = this.FileSystemInfo.FullName.Replace("\\", "/");
-                var lastSlash = _fullName.LastIndexOf("/");
+                var fullname = _fullName= this.FileSystemInfo.FullName.Replace("\\", "/");
+                var lastSlash = fullname.LastIndexOf("/");
                 if (lastSlash < 0) return this.InternalStorage;
                 _parent = new StorageDirectory(new DirectoryInfo(fullname.Substring(0, lastSlash)), null, this.InternalStorage);
 

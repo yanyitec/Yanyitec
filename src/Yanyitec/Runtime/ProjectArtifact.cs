@@ -24,12 +24,13 @@ namespace Yanyitec.Runtime
         {
             
             this.SynchronizingObject = synchronizingObject ?? new System.Threading.ReaderWriterLockSlim();
-            if(synchronizingObject==null)this.SourceStorage.Changed += Source_Changed;
             this.Location = sourceDir;
-            this.SourceStorage = sourceDir.AsStorage();
-            
+            this.CacheName = sourceDir.Name;
             this.OutputDirectory = outputDir;
             this.ArtifactLoader = assemblyLoader;
+            this.SourceStorage = sourceDir.AsStorage();
+            if (synchronizingObject==null)this.SourceStorage.Changed += Source_Changed;
+           
         }
 
         protected internal void Source_Changed(IStorageDirectory sender, ItemChangedEventArgs e)
@@ -55,7 +56,7 @@ namespace Yanyitec.Runtime
 
         void InternalClear(ChangedEventArgs sourceEvt=null) {
             this._assembly = null;
-            this._name = null;
+            //this._name = null;
             this._configuration = null;
             this._assemblyLocation = null;
             if (this._changed != null) this._changed(this, new ArtifactChangeEventArgs(ArtifactChangeTypes.Updated, this, this.SynchronizingObject, sourceEvt));
@@ -85,9 +86,14 @@ namespace Yanyitec.Runtime
 
         Json.JObject _configuration;
         public Json.JObject Configuration { get; set; }
-        string _nameWithVersion;
-        public string CacheName { get { return _nameWithVersion; } }
-               
+        
+        public string CacheName { get; private set; }
+
+        public string GetCacheName(System.Threading.ReaderWriterLockSlim syncObject = null)
+        {
+            return CacheName;
+        }
+
         public IArtifactLoader ArtifactLoader { get; private set; }
 
         
@@ -100,6 +106,44 @@ namespace Yanyitec.Runtime
         public IStorageItem Location { get; private set; }
 
         Action<IArtifact, ArtifactChangeEventArgs> _changed;
+        public void AttachChangeHandler(Action<IArtifact, ArtifactChangeEventArgs> handler, System.Threading.ReaderWriterLockSlim syncObject = null)
+        {
+            if (this.SynchronizingObject == syncObject)
+            {
+                _changed += handler;
+            }
+            else
+            {
+                this.SynchronizingObject.EnterWriteLock();
+                try
+                {
+                    _changed += handler;
+                }
+                finally
+                {
+                    this.SynchronizingObject.ExitWriteLock();
+                }
+            }
+        }
+        public void DetechChangeHandler(Action<IArtifact, ArtifactChangeEventArgs> handler, System.Threading.ReaderWriterLockSlim syncObject = null)
+        {
+            if (this.SynchronizingObject == syncObject)
+            {
+                _changed -= handler;
+            }
+            else
+            {
+                this.SynchronizingObject.EnterWriteLock();
+                try
+                {
+                    _changed -= handler;
+                }
+                finally
+                {
+                    this.SynchronizingObject.ExitWriteLock();
+                }
+            }
+        }
         public event Action<IArtifact, ArtifactChangeEventArgs> Changed {
             add {
                 this.SynchronizingObject.EnterWriteLock();
@@ -151,6 +195,33 @@ namespace Yanyitec.Runtime
             }
         }
 
+        public Assembly GetAssembly(System.Threading.ReaderWriterLockSlim syncObject = null) {
+            if (this.SynchronizingObject == syncObject) return this.InternalGetAssembly(syncObject);
+            this.SynchronizingObject.EnterUpgradeableReadLock();
+            try
+            {
+                if (_assembly != null) return _assembly;
+                this.SynchronizingObject.EnterWriteLock();
+                try
+                {
+                    return this.InternalGetAssembly(syncObject);
+                }
+                finally
+                {
+                    this.SynchronizingObject.ExitWriteLock();
+                }
+            }
+            finally
+            {
+                this.SynchronizingObject.ExitUpgradeableReadLock();
+            }
+        }
+
+        Assembly InternalGetAssembly(System.Threading.ReaderWriterLockSlim syncObject = null) {
+            if (_assembly != null) return _assembly;
+            this.InternalCompile(syncObject);
+            return _assembly;
+        }
 
         Assembly _assembly;
         public Assembly Assembly
@@ -192,7 +263,7 @@ namespace Yanyitec.Runtime
 
         //public IArtifact 
 
-        public void Compile(object locker = null)
+        public void Compile(System.Threading.ReaderWriterLockSlim locker = null)
         {
             if (locker == this.SynchronizingObject) this.InternalCompile(locker);
             this.SynchronizingObject.EnterWriteLock();
@@ -212,16 +283,16 @@ namespace Yanyitec.Runtime
             if (item == null) return new Json.JObject();
             return new Json.Parser().Parse(item.GetText()) as Json.JObject ?? new Json.JObject();
         }
-        List<IArtifact> GetReferences(Json.JObject projectJson) {
+        List<IArtifact> GetReferences(Json.JObject projectJson,System.Threading.ReaderWriterLockSlim syncObject) {
             var result = new List<IArtifact>();
             var dep = projectJson["dependencies"] as Json.JObject;
-            GetReferences(dep,result);
+            GetReferences(dep,result,syncObject);
             dep = (projectJson["frameworks"]?[Platform.DotnetVersion]?["dependencies"]) as Json.JObject;
-            GetReferences(dep,result);
+            GetReferences(dep,result, syncObject);
             return result;
             
         }
-        void GetReferences(Json.JObject depSection, List<IArtifact> result) {
+        void GetReferences(Json.JObject depSection, List<IArtifact> result, System.Threading.ReaderWriterLockSlim syncObject) {
             if (depSection == null) return;
             foreach (var pair in depSection) {
                 ArtifactLoaderOptions opt = null;
@@ -230,19 +301,19 @@ namespace Yanyitec.Runtime
                 } else {
                     opt = new ArtifactLoaderOptions(pair.Value) { Name = pair.Key };
                 }
-                var artifact = this.ArtifactLoader.Load(opt);
+                var artifact = this.ArtifactLoader.Load(opt,syncObject);
                 if (artifact != null) result.Add(artifact);
             }
         }
-        void InternalCompile(object locker = null)
+        void InternalCompile(System.Threading.ReaderWriterLockSlim syncLocker = null)
         {
-            var compiler = this.CreateCompiler(this.SynchronizingObject);
+            var compiler = this.CreateCompiler(syncLocker);
             this._configuration = ReadProjectJson();
 
             var name = this.Name + Guid.NewGuid().ToString().Replace("-", "") + ".dll";
             //var file = ".Compilation/" + name;
             var location = this._assemblyLocation = this.OutputDirectory.GetItem(name, StorageTypes.File, true) as IStorageFile;
-            compiler.SetLocation(location, locker);
+            compiler.SetLocation(location, syncLocker);
 
             var items = this.SourceStorage.ListItems(true, StorageTypes.File);
             foreach (IStorageFile item in items)
@@ -254,20 +325,21 @@ namespace Yanyitec.Runtime
             }
 
             compiler.AddReference(typeof(object));
+            compiler.AddReference(typeof(Guid));
             compiler.AddReference(typeof(Microsoft.CSharp.RuntimeBinder.RuntimeBinderException));
             compiler.AddReference(typeof(System.Dynamic.DynamicMetaObjectBinder));
-            var refcs = this._references= this.GetReferences(this._configuration).AsReadOnly();
+            var refcs = this._references= this.GetReferences(this._configuration, syncLocker).AsReadOnly();
             if (refcs != null) {
                 foreach (var refc in refcs)
                 {
-                    if (compiler.AddReference(refc.Assembly)) {
-                        refc.Changed += Reference_Changed;
+                    if (compiler.AddReference(refc)) {
+                        refc.AttachChangeHandler(Reference_Changed,syncLocker);
                     }
                 }
             }
             
 
-            var assembly = this._assembly = compiler.Compile(name, locker);
+            var assembly = this._assembly = compiler.Compile(name, syncLocker);
             
         }
 

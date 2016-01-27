@@ -32,8 +32,14 @@ namespace Yanyitec.Runtime
         {
             get { return this.Assembly.GetName().Name; }
         }
+
+        public string GetCacheName(System.Threading.ReaderWriterLockSlim syncObject = null) {
+            var asm = this.GetAssembly(syncObject);
+            var n = asm.GetName();
+            return n.Name + "." + n.Version.ToString();
+        }
         public string CacheName {
-            get { return this.Assembly.GetName().Name + "." + this.Assembly.GetName().Version.ToString(); }
+            get { return GetCacheName(); }
         }
         
 
@@ -44,26 +50,35 @@ namespace Yanyitec.Runtime
         
 
         Action<IArtifact, ArtifactChangeEventArgs> _changed;
-        public event Action<IArtifact, ArtifactChangeEventArgs> Changed
-        {
-            add
+
+        public void AttachChangeHandler(Action<IArtifact, ArtifactChangeEventArgs> handler, System.Threading.ReaderWriterLockSlim syncObject = null) {
+            if (this.SynchronizingObject == syncObject)
             {
+                _changed += handler;
+            }
+            else {
                 this.SynchronizingObject.EnterWriteLock();
                 try
                 {
-                    _changed += value;
+                    _changed += handler;
                 }
                 finally
                 {
                     this.SynchronizingObject.ExitWriteLock();
                 }
             }
-            remove
+        }
+        public void DetechChangeHandler(Action<IArtifact, ArtifactChangeEventArgs> handler, System.Threading.ReaderWriterLockSlim syncObject = null) {
+            if (this.SynchronizingObject == syncObject)
+            {
+                _changed -= handler;
+            }
+            else
             {
                 this.SynchronizingObject.EnterWriteLock();
                 try
                 {
-                    _changed -= value;
+                    _changed -= handler;
                 }
                 finally
                 {
@@ -72,35 +87,74 @@ namespace Yanyitec.Runtime
             }
         }
 
+
+        public event Action<IArtifact, ArtifactChangeEventArgs> Changed
+        {
+            add
+            {
+                AttachChangeHandler(value,this.SynchronizingObject);
+            }
+            remove
+            {
+                DetechChangeHandler(value,this.SynchronizingObject);
+            }
+        }
+
         Assembly _assembly;
+        public Assembly GetAssembly(System.Threading.ReaderWriterLockSlim syncObject = null) {
+            if (syncObject == this.SynchronizingObject) return InternalGetAssembly();
+            this.SynchronizingObject.EnterUpgradeableReadLock();
+            try
+            {
+                return this.InternalGetAssembly();
+            }
+            finally
+            {
+                this.SynchronizingObject.ExitUpgradeableReadLock();
+            }
+        }
+        Assembly InternalGetAssembly() {
+            if (_assembly != null) return _assembly;
+            if (this.AssemblyLocation == null) return null;
+            IStorageFile pdbFile = null;
+            if (AssemblyLoader.CanLoadPDB)
+            {
+                var dotAt = this.AssemblyLocation.Name.LastIndexOf(".");
+                if (dotAt >= 0)
+                {
+                    var name = this.AssemblyLocation.Name.Substring(0, dotAt);
+                    var pdbFilename = name + "pdb";
+                    pdbFile = this.AssemblyLocation.Parent.GetFile(pdbFilename);
+                }
+            }
+            using (var assembly = this.AssemblyLocation.GetStream())
+            {
+                if (pdbFile != null)
+                {
+                    using (var pdb = pdbFile.GetStream())
+                    {
+                        _assembly = AssemblyLoader.Load(assembly, pdb);
+                    }
+                }
+                else
+                {
+                    _assembly = AssemblyLoader.Load(assembly);
+                }
+            }
+            return _assembly;
+        }
         public Assembly Assembly {
             get {
                 this.SynchronizingObject.EnterUpgradeableReadLock();
                 try {
                     if (_assembly != null) return _assembly;
-                    if (this.AssemblyLocation == null) return null;
-                    IStorageFile pdbFile=null;
-                    if (AssemblyLoader.CanLoadPDB) {
-                        var dotAt = this.AssemblyLocation.Name.LastIndexOf(".");
-                        if (dotAt >= 0) {
-                            var name = this.AssemblyLocation.Name.Substring(0, dotAt);
-                            var pdbFilename = name + "pdb";
-                            pdbFile = this.AssemblyLocation.Parent.GetFile(pdbFilename);
-                        }
+                    this.SynchronizingObject.EnterWriteLock();
+                    try {
+                        return this.InternalGetAssembly();
+                    } finally {
+                        this.SynchronizingObject.ExitWriteLock();
                     }
-                    using (var assembly = this.AssemblyLocation.GetStream()) {
-                        if (pdbFile != null)
-                        {
-                            using (var pdb = pdbFile.GetStream())
-                            {
-                                _assembly = AssemblyLoader.Load(assembly, pdb);
-                            }
-                        }
-                        else {
-                            _assembly = AssemblyLoader.Load(assembly);
-                        }
-                    }
-                    return _assembly;
+                    
                 } finally {
                     this.SynchronizingObject.ExitUpgradeableReadLock();
                 }

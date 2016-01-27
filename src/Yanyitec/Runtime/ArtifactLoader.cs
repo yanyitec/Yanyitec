@@ -13,6 +13,7 @@ namespace Yanyitec.Runtime
             this.SynchronizingObject = parent.SynchronizingObject;
             this.PackageDirectory = packageDirectory;
             this.OutputDirectory = parent.OutputDirectory;
+            this._cached = new Dictionary<string, IArtifact>();
         }
 
         public ArtifactLoader(IStorageDirectory packageDirectory,IStorageDirectory outputDirectory)
@@ -20,6 +21,7 @@ namespace Yanyitec.Runtime
             this.SynchronizingObject = new System.Threading.ReaderWriterLockSlim();
             this.PackageDirectory = packageDirectory;
             this.OutputDirectory = outputDirectory;
+            this._cached = new Dictionary<string, IArtifact>();
         }
         public System.Threading.ReaderWriterLockSlim SynchronizingObject { get; private set; }
 
@@ -36,11 +38,11 @@ namespace Yanyitec.Runtime
 
         Dictionary<string, IArtifact> _cached ;
 
-        public IArtifact Load(ArtifactLoaderOptions opt) {
+        public IArtifact Load(ArtifactLoaderOptions opt,System.Threading.ReaderWriterLockSlim syncLocker = null) {
             if (!string.IsNullOrWhiteSpace(opt.Assembly)) {
-                return new PrecompiledArtifact(new StorageFile(opt.Assembly.Trim()), this.SynchronizingObject);
+                return new PrecompiledArtifact(new StorageFile(opt.Assembly.Trim()), syncLocker?? this.SynchronizingObject);
             }
-            return this.Load(opt.Name, opt.Version);
+            return this.Load(opt.Name, opt.Version,syncLocker);
         }
 
         IArtifact InternalLoad(string name, string version, string compareName, System.Threading.ReaderWriterLockSlim synchronizingObject) {
@@ -49,7 +51,8 @@ namespace Yanyitec.Runtime
             result = this.LoadFromPackageDir(name, version, compareName, synchronizingObject);
             if (result != null)
             {
-                _cached.Add(result.CacheName, result);
+                var cacheName = result.GetCacheName(synchronizingObject);
+                _cached.Add(cacheName, result);
             }
             if (result == null && this.Parent !=null)
             {
@@ -58,14 +61,14 @@ namespace Yanyitec.Runtime
             return result;
         }
 
-        public IArtifact Load(string name ,string version=null) {
-            var version1 = version;
+        public IArtifact Load(string name ,string version=null, System.Threading.ReaderWriterLockSlim syncObject = null) {
+            var compareName = name;
             if (version != null)
             {
-                if (version.EndsWith("*")) version1 = version.TrimEnd('*') + "%";
+                if (version.EndsWith("*")) compareName = name + "." + version.TrimEnd('*') + "%";
             }
-            else version1 = "%";
-            var compareName =name + "." + version1;
+            else compareName = name + "%";
+            if (this.SynchronizingObject == syncObject) return InternalLoad(name, version, compareName, syncObject);
             this.SynchronizingObject.EnterUpgradeableReadLock();
             try {
                 var result = this.LoadFromCache(compareName);
@@ -149,6 +152,7 @@ namespace Yanyitec.Runtime
                     }
                 }
                 if (item.Name.Like(compairName) && item.StorageType.IsDirectory()) {
+                    if (compairName.Length < item.Name.Length && item.Name[compairName.Length] != '.') continue;
                     var packDir = item as IStorageDirectory;
                     var artifact = this.LoadProject(packDir, synchonizingObjct);
                     if (artifact != null) return artifact;

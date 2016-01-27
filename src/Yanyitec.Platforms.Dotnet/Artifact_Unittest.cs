@@ -9,13 +9,14 @@ namespace Yanyitec
     using Storaging;
     using Yanyitec.Testing;
     using Yanyitec.Runtime;
+
     [Testing.Test]
     public class Artifact_Unittest
     {
         public const string ArtifactDir = "D:/yanyi_test/artifacts";
         [Test("测试运行期编译的Artifact")]
-        public void DynamicArtifact_Unittest() {
-            var storage = new Storage(ArtifactDir);
+        public void ProjectArtifact_Unittest() {
+            var storage = new Storage(ArtifactDir + "/test_project");
             var tempDir = storage.GetItem("/temp",StorageTypes.Directory,true) as IStorageDirectory;
             var projLocation = storage.GetItem("/web", StorageTypes.Directory, true) as IStorageDirectory;
             var modelDir = projLocation.GetItem("models",StorageTypes.Directory,true) as IStorageDirectory;
@@ -68,5 +69,34 @@ alert('11');
             }).Wait();
             
         }
+
+        [Test("测试ArtifactLoader,要正常运行该测试需要先拷贝一个Yanyitec包到Loader目录")]
+        public void ArtifactLoader_Unittest() {
+            var packageDir = new Storage(ArtifactDir + "/loader");
+            var outputDir = new Storage(ArtifactDir + "/.compilation");
+            var code = @"
+using System;
+public class UserWrapper{
+    public Yanyitec.SSO.Identity GetIdentity(string name){
+        return new Yanyitec.SSO.Identity(Guid.NewGuid(),name);
+    } 
+}
+";
+            var name = "TestLoader";
+            var projDir = packageDir.GetDirectory("TestLoader", true);
+            projDir.PutText("UserWrapper.cs", code);
+
+            var json = "{\"frameworks\":{\"net450\":{\"dependencies\":{\"Yanyitec\":\"\"}}}";
+            projDir.PutText("project.json",json);
+
+            var loader = new ArtifactLoader(packageDir, outputDir);
+            var artifact = loader.Load(name);
+            var type = artifact.Assembly.DefinedTypes.FirstOrDefault(p=>p.Name == "UserWrapper");
+            var obj = Activator.CreateInstance(type);
+            var methodInfo = type.GetMethods().FirstOrDefault(p=>p.Name== "GetIdentity");
+            var result = methodInfo.Invoke(obj, new object[] { "yanyi"});
+
+        }
+
     }
 }

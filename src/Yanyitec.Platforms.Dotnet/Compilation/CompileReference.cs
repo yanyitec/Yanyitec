@@ -14,6 +14,11 @@ namespace Yanyitec.Compilation
             this.MetadataReference = MetadataReference.CreateFromFile(assembly.Location);
         }
 
+        public CompileReference(IArtifact artifact)
+        {
+            this.MetadataReference = MetadataReference.CreateFromFile(artifact.AssemblyLocation.FullName);
+        }
+
         public CompileReference(string assembly)
         {
             this.MetadataReference = MetadataReference.CreateFromFile(assembly);

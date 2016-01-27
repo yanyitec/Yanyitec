@@ -12,13 +12,13 @@ namespace Yanyitec.Compilation
 
     public class CSharpCompiler : ICompiler
     {
-        public CSharpCompiler(object  locker=null) {
-            this.SynchronizingObject = locker;
+        public CSharpCompiler(System.Threading.ReaderWriterLockSlim  locker=null) {
+            this.SynchronizingObject = locker?? new System.Threading.ReaderWriterLockSlim();
         }
 
         readonly SortedDictionary<string, SyntaxTree> _syntaxTrees = new SortedDictionary<string, SyntaxTree>();
 
-        public object SynchronizingObject { get; private set; }
+        public System.Threading.ReaderWriterLockSlim SynchronizingObject { get; private set; }
 
         /// <summary>
         /// 添加或替换代码
@@ -26,7 +26,7 @@ namespace Yanyitec.Compilation
         /// <param name="key"></param>
         /// <param name="code"></param>
         /// <returns>该代码的语法分析树</returns>
-        public object AddOrReplaceCode(string key, string code, object syncLocker = null) {
+        public object AddOrReplaceCode(string key, string code, System.Threading.ReaderWriterLockSlim syncLocker = null) {
             SyntaxTree tree = null;
             if (SynchronizingObject == null || syncLocker == SynchronizingObject) {
                 tree = SyntaxFactory.ParseSyntaxTree(code);
@@ -34,12 +34,17 @@ namespace Yanyitec.Compilation
                 else _syntaxTrees.Add(key,tree);
                 return tree;
             }
-            lock(this.SynchronizingObject) {
+            this.SynchronizingObject.EnterWriteLock();
+            try
+            {
                 tree = SyntaxFactory.ParseSyntaxTree(code);
                 if (_syntaxTrees.ContainsKey(key)) _syntaxTrees[key] = tree;
                 else _syntaxTrees.Add(key, tree);
                 return tree;
-            } 
+            }
+            finally {
+                this.SynchronizingObject.ExitWriteLock();
+            }
         }
 
         readonly List<CompileReference> _references = new List<CompileReference>();
@@ -53,11 +58,16 @@ namespace Yanyitec.Compilation
             return true;
         }
 
-        public bool AddReference(string assemblyLocation,object locker = null) {
+        public bool AddReference(string assemblyLocation,System.Threading.ReaderWriterLockSlim locker = null) {
             if (this.SynchronizingObject == null || locker == this.SynchronizingObject) return this.InternalAddReference(assemblyLocation);
-            lock(this.SynchronizingObject) {
+            this.SynchronizingObject.EnterWriteLock();
+            try
+            {
                 return this.InternalAddReference(assemblyLocation);
-            } 
+            }
+            finally {
+                this.SynchronizingObject.ExitWriteLock();
+            }
         }
 
         bool InternalAddReference(Assembly assembly)
@@ -70,22 +80,52 @@ namespace Yanyitec.Compilation
             return true;
         }
 
-        public bool AddReference(Assembly assembly, object locker = null)
+        public bool AddReference(Assembly assembly, System.Threading.ReaderWriterLockSlim locker = null)
         {
             if (this.SynchronizingObject == null || locker == this.SynchronizingObject) return this.InternalAddReference(assembly);
-            lock (this.SynchronizingObject)
+            this.SynchronizingObject.EnterWriteLock();
+                try
+                {
+                    return this.InternalAddReference(assembly);
+                }
+                finally {
+                    this.SynchronizingObject.ExitWriteLock();
+                }
+        }
+
+        public bool AddReference(IArtifact artifact, System.Threading.ReaderWriterLockSlim locker = null)
+        {
+            if (this.SynchronizingObject == null || locker == this.SynchronizingObject) return this.InternalAddReference(artifact);
+            this.SynchronizingObject.EnterWriteLock();
+            try
             {
-                return this.InternalAddReference(assembly);
+                return this.InternalAddReference(artifact);
+            }
+            finally
+            {
+                this.SynchronizingObject.ExitWriteLock();
             }
         }
 
-        
-        public bool AddReference(Type keytype, object locker = null)
+        bool InternalAddReference(IArtifact artifact) {
+            var refc = new CompileReference(artifact);
+            var existed = _references.Find(p => p.MetadataReference.Equals(refc));
+            if (existed != null) return false;
+            _references.Add(refc);
+            return true;
+        }
+
+
+        public bool AddReference(Type keytype, System.Threading.ReaderWriterLockSlim locker = null)
         {
             if (this.SynchronizingObject == null || locker == this.SynchronizingObject) return this.InternalAddReference(keytype.Assembly);
-            lock (this.SynchronizingObject)
+            this.SynchronizingObject.EnterWriteLock();
+            try
             {
                 return this.InternalAddReference(keytype.Assembly);
+            }
+            finally {
+                this.SynchronizingObject.ExitWriteLock();
             }
         }
         #endregion
@@ -97,7 +137,7 @@ namespace Yanyitec.Compilation
             set { this.SetLocation(value); }
         }
         IStorageFile _location;
-        public IStorageFile GetLocation(object locker = null)
+        public IStorageFile GetLocation(System.Threading.ReaderWriterLockSlim locker = null)
         {
             if (this.SynchronizingObject == null || locker == this.SynchronizingObject) return _location;
             lock(this.SynchronizingObject)
@@ -107,7 +147,7 @@ namespace Yanyitec.Compilation
             
         }
 
-        public void SetLocation(IStorageFile file, object locker = null)
+        public void SetLocation(IStorageFile file, System.Threading.ReaderWriterLockSlim locker = null)
         {
             if (this.SynchronizingObject == null || locker == this.SynchronizingObject) _location = file;
             else lock(this.SynchronizingObject)
@@ -117,7 +157,7 @@ namespace Yanyitec.Compilation
             
         }
 
-        public void SetLocation(string file, object locker = null)
+        public void SetLocation(string file, System.Threading.ReaderWriterLockSlim locker = null)
         {
             if (this.SynchronizingObject == null || locker == this.SynchronizingObject) _location = new Yanyitec.Storaging.StorageFile(file);
             else lock(this.SynchronizingObject)
@@ -128,7 +168,7 @@ namespace Yanyitec.Compilation
         }
         #endregion
 
-        public Assembly Compile(string name, object locker = null) {
+        public Assembly Compile(string name, System.Threading.ReaderWriterLockSlim locker = null) {
             if (this.SynchronizingObject == null || locker == this.SynchronizingObject) return this.InternalCompile(name);
             lock(this.SynchronizingObject)
             {

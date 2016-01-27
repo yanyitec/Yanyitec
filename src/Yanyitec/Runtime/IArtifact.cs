@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Yanyitec.Storaging;
 
 namespace Yanyitec
 {
@@ -13,14 +14,20 @@ namespace Yanyitec
 
         event Action<IArtifact, ArtifactChangeEventArgs> Changed;
 
+        void AttachChangeHandler(Action<IArtifact, ArtifactChangeEventArgs> handler, System.Threading.ReaderWriterLockSlim syncObject = null);
+        void DetechChangeHandler(Action<IArtifact, ArtifactChangeEventArgs> handler, System.Threading.ReaderWriterLockSlim syncObject = null);
+
+
         //bool IsValid { get; }
         string Name { get; }
-
+        Assembly GetAssembly(System.Threading.ReaderWriterLockSlim syncObject = null);
         Assembly Assembly { get; }
+
+        IStorageFile AssemblyLocation { get; }
 
         string CacheName { get; }
 
-
+        string GetCacheName(System.Threading.ReaderWriterLockSlim syncObject = null);
         //Type GetType(string name);
         IEnumerable<TypeInfo> GetTypeInfos();
 

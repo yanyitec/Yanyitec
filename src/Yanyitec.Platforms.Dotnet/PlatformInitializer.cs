@@ -10,7 +10,7 @@ namespace Yanyitec.Platforms
     public static class Dotnet
     {
         public static void Init() {
-            Yanyitec.Platform.SetDotnetVersion("net451");
+            Yanyitec.Platform.SetDotnetVersion("net450");
             Yanyitec.Runtime.ProjectArtifact.CreateComplierFunc = (syncObject) => new CSharpCompiler();
         }
     }
