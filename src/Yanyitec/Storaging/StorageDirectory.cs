@@ -115,6 +115,16 @@ namespace Yanyitec.Storaging
             return  await this.GetItemAsync(path, StorageTypes.Directory, createdIfNotExisted) as IStorageDirectory;
         }
 
+        public IStorageFile GetFile(string path, bool createdIfNotExisted = false)
+        {
+            return this.GetItem(path, StorageTypes.File, createdIfNotExisted) as IStorageFile;
+        }
+        public async Task<IStorageFile> GetFileAsync(string path, bool createdIfNotExisted = false)
+        {
+            return await this.GetItemAsync(path, StorageTypes.File, createdIfNotExisted) as IStorageFile;
+        }
+
+
         public void AppendText(string path, string text, Encoding encoding = null)
         {
             var filename  =new AbsolutePath(path, this);

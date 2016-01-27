@@ -11,18 +11,28 @@ namespace Yanyitec.Runtime
 {
     public class ProjectArtifact : IArtifact
     {
+        /// <summary>
+        /// 如果第一个同步参数没有设置，就认为是独立的项目，会自己监听源代码目录
+        /// 如果设置了第一个参数，则认为不是独立项目，由外面的来监听目录变化，调用Source_Changed
+        /// ArtifactLoader 中使用
+        /// </summary>
+        /// <param name="synchronizingObject"></param>
+        /// <param name="sourceDir"></param>
+        /// <param name="outputDir"></param>
+        /// <param name="assemblyLoader"></param>
         public ProjectArtifact(System.Threading.ReaderWriterLockSlim synchronizingObject,IStorageDirectory sourceDir, IStorageDirectory outputDir, IArtifactLoader assemblyLoader)
         {
             
             this.SynchronizingObject = synchronizingObject ?? new System.Threading.ReaderWriterLockSlim();
+            if(synchronizingObject==null)this.SourceStorage.Changed += Source_Changed;
             this.Location = sourceDir;
             this.SourceStorage = sourceDir.AsStorage();
-            this.SourceStorage.Changed += SourceStorage_Changed;
+            
             this.OutputDirectory = outputDir;
             this.ArtifactLoader = assemblyLoader;
         }
 
-        private void SourceStorage_Changed(IStorageDirectory sender, ItemChangedEventArgs e)
+        protected internal void Source_Changed(IStorageDirectory sender, ItemChangedEventArgs e)
         {
             if (!e.ChangedItem.FullName.EndsWith(".cs")) return;
             if (e.SynchronizingObject == this.SynchronizingObject)
@@ -44,7 +54,6 @@ namespace Yanyitec.Runtime
         }
 
         void InternalClear(ChangedEventArgs sourceEvt=null) {
-            
             this._assembly = null;
             this._name = null;
             this._configuration = null;
@@ -76,8 +85,8 @@ namespace Yanyitec.Runtime
 
         Json.JObject _configuration;
         public Json.JObject Configuration { get; set; }
-
-        public string CompairName { get { return Name; } }
+        string _nameWithVersion;
+        public string CacheName { get { return _nameWithVersion; } }
                
         public IArtifactLoader ArtifactLoader { get; private set; }
 
@@ -221,7 +230,7 @@ namespace Yanyitec.Runtime
                 } else {
                     opt = new ArtifactLoaderOptions(pair.Value) { Name = pair.Key };
                 }
-                var artifact = this.ArtifactLoader.Load(pair.Key,opt);
+                var artifact = this.ArtifactLoader.Load(opt);
                 if (artifact != null) result.Add(artifact);
             }
         }

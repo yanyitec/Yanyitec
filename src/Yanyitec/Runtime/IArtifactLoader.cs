@@ -1,22 +1,17 @@
-﻿
+﻿using System.Threading;
+using Yanyitec.Storaging;
+
 namespace Yanyitec.Runtime
 {
-    using Storaging;
-    using System.IO;
-    using System.Reflection;
     public interface IArtifactLoader
     {
-        IArtifact Load(IStorageItem location);
-
-        IArtifact Load(string name, ArtifactLoaderOptions opts);
-
-        
-
-        IArtifact LoadProject(IStorageDirectory projectDirectory);
-        IArtifact LoadAssembly(Assembly assembly ,string name=null);
-
-        IArtifact LoadPackage(IStorageDirectory packageDirectory);
-
-        IArtifact LoadStream(Stream assembly, Stream pcd = null);
+        IStorageDirectory OutputDirectory { get; set; }
+        IStorageDirectory PackageDirectory { get; set; }
+        ArtifactLoader Parent { get; set; }
+        ReaderWriterLockSlim SynchronizingObject { get; }
+        IArtifact Load(ArtifactLoaderOptions opt);
+        IArtifact Load(string name, string version = null);
+        IArtifact LoadPackage(string name, string version = null, ReaderWriterLockSlim synchonizingObject = null);
+        IArtifact LoadProject(IStorageDirectory projectDir, ReaderWriterLockSlim synchonizingObject = null);
     }
 }

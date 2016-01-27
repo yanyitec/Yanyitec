@@ -23,6 +23,9 @@ namespace Yanyitec.Storaging
         IStorageDirectory GetDirectory(string path, bool createIfNotExisted = false);
         Task<IStorageDirectory> GetDirectoryAsync(string path, bool createIfNotExisted = false);
 
+        IStorageFile GetFile(string path, bool createIfNotExisted = false);
+        Task<IStorageFile> GetFileAsync(string path, bool createIfNotExisted = false);
+
         string GetText(string path, Encoding encoding = null);
         Task<string> GetTextAsync(string path, Encoding encoding = null);
         IList<IStorageItem> ListItems(string path, StorageTypes itemType = StorageTypes.All);

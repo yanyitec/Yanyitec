@@ -32,6 +32,18 @@
           "lib/dotnet5.4/Microsoft.CSharp.dll": {}
         }
       },
+      "System.AppContext/4.0.1-rc2-23629": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet5.4/System.AppContext.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.AppContext.dll": {}
+        }
+      },
       "System.Collections/4.0.11-rc2-23629": {
         "type": "package",
         "dependencies": {
@@ -524,6 +536,18 @@
         },
         "runtime": {
           "runtimes/win7/lib/DNXCore50/System.Threading.dll": {}
+        }
+      },
+      "System.AppContext/4.0.1-rc2-23629": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet5.4/System.AppContext.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.AppContext.dll": {}
         }
       },
       "System.Collections/4.0.11-rc2-23629": {
@@ -1040,6 +1064,18 @@
         },
         "runtime": {
           "runtimes/win7/lib/DNXCore50/System.Threading.dll": {}
+        }
+      },
+      "System.AppContext/4.0.1-rc2-23629": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.0.0"
+        },
+        "compile": {
+          "ref/dotnet5.4/System.AppContext.dll": {}
+        },
+        "runtime": {
+          "lib/DNXCore50/System.AppContext.dll": {}
         }
       },
       "System.Collections/4.0.11-rc2-23629": {
@@ -1592,6 +1628,39 @@
         "runtimes/win7/lib/DNXCore50/System.Threading.dll",
         "runtimes/win7/lib/netcore50/System.Threading.dll",
         "runtimes/win8-aot/lib/netcore50/System.Threading.dll"
+      ]
+    },
+    "System.AppContext/4.0.1-rc2-23629": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "YScdCzXHh8BHV2pY+GZU+498kTOA7fn2FwJtkp6+F47RdUDaogtaMrJlNo2PDLDHvnsnJ768TWVrea54pRPMZA==",
+      "files": [
+        "lib/DNXCore50/System.AppContext.dll",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net46/System.AppContext.dll",
+        "lib/netcore50/System.AppContext.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "ref/dotnet5.4/de/System.AppContext.xml",
+        "ref/dotnet5.4/es/System.AppContext.xml",
+        "ref/dotnet5.4/fr/System.AppContext.xml",
+        "ref/dotnet5.4/it/System.AppContext.xml",
+        "ref/dotnet5.4/ja/System.AppContext.xml",
+        "ref/dotnet5.4/ko/System.AppContext.xml",
+        "ref/dotnet5.4/ru/System.AppContext.xml",
+        "ref/dotnet5.4/System.AppContext.dll",
+        "ref/dotnet5.4/System.AppContext.xml",
+        "ref/dotnet5.4/zh-hans/System.AppContext.xml",
+        "ref/dotnet5.4/zh-hant/System.AppContext.xml",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net46/System.AppContext.dll",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
+        "System.AppContext.4.0.1-rc2-23629.nupkg",
+        "System.AppContext.4.0.1-rc2-23629.nupkg.sha512",
+        "System.AppContext.nuspec"
       ]
     },
     "System.Collections/4.0.11-rc2-23629": {
@@ -2797,7 +2866,8 @@
       "System.IO.FileSystem.Watcher >= 4.0.0-*",
       "System.Runtime.Loader >= 4.0.0-*",
       "System.Reflection >= 4.0.10-*",
-      "System.Reflection.TypeExtensions >= 4.0.1-*"
+      "System.Reflection.TypeExtensions >= 4.0.1-*",
+      "System.AppContext >= 4.0.1-*"
     ]
   }
 }

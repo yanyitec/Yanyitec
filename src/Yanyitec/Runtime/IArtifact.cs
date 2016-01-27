@@ -18,7 +18,7 @@ namespace Yanyitec
 
         Assembly Assembly { get; }
 
-        string CompairName { get; }
+        string CacheName { get; }
 
 
         //Type GetType(string name);

@@ -190,6 +190,16 @@
             <param name="type"></param>
             <returns></returns>
         </member>
+        <member name="P:Yanyitec.Runtime.ArtifactLoader.PackageDirectory">
+            <summary>
+            运行时包的位置
+            </summary>
+        </member>
+        <member name="P:Yanyitec.Runtime.ArtifactLoader.OutputDirectory">
+            <summary>
+            动态编译的输出位置
+            </summary>
+        </member>
         <member name="M:Yanyitec.Runtime.PrecompiledArtifact.GetResource(System.String)">
             <summary>
             获取资源
@@ -202,6 +212,17 @@
             获取资源字符串
             </summary>
             <returns></returns>
+        </member>
+        <member name="M:Yanyitec.Runtime.ProjectArtifact.#ctor(System.Threading.ReaderWriterLockSlim,Yanyitec.Storaging.IStorageDirectory,Yanyitec.Storaging.IStorageDirectory,Yanyitec.Runtime.IArtifactLoader)">
+            <summary>
+            如果第一个同步参数没有设置，就认为是独立的项目，会自己监听源代码目录
+            如果设置了第一个参数，则认为不是独立项目，由外面的来监听目录变化，调用Source_Changed
+            ArtifactLoader 中使用
+            </summary>
+            <param name="synchronizingObject"></param>
+            <param name="sourceDir"></param>
+            <param name="outputDir"></param>
+            <param name="assemblyLoader"></param>
         </member>
         <member name="P:Yanyitec.Runtime.ProjectArtifact.SourceStorage">
             <summary>

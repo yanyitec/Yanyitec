@@ -12,41 +12,99 @@ namespace Yanyitec.Runtime
 
     public class PrecompiledArtifact: IArtifact
     {
-        readonly object SynchronizingObject = new object();
-        public event Action<IArtifact, ArtifactChangeEventArgs> Changed;
+        public System.Threading.ReaderWriterLockSlim SynchronizingObject { get; private set; }
 
-        public PrecompiledArtifact(IStorageFile location = null)
+        public PrecompiledArtifact(IStorageFile location, System.Threading.ReaderWriterLockSlim synchronizingObject=null)
         {
-
             this.Location = location;
-
+            this.AssemblyLocation = location;
+            this.SynchronizingObject = synchronizingObject ?? new System.Threading.ReaderWriterLockSlim();
         }
 
 
-        public PrecompiledArtifact(Assembly assembly, IStorageFile location =null) {
-            this.Assembly = assembly;
-            
+        public PrecompiledArtifact(Assembly assembly, IStorageFile location =null, System.Threading.ReaderWriterLockSlim synchronizingObject = null) {
+            this._assembly = assembly;
+            this.SynchronizingObject = synchronizingObject ?? new System.Threading.ReaderWriterLockSlim();
             this.Location = location;
-            
+            this.AssemblyLocation = location;
         }
-
-        public string CompairName {
-            get { return this.Assembly.FullName + "-" + this.Assembly.GetName().Version.ToString(); }
+        public string Name
+        {
+            get { return this.Assembly.GetName().Name; }
+        }
+        public string CacheName {
+            get { return this.Assembly.GetName().Name + "." + this.Assembly.GetName().Version.ToString(); }
         }
         
 
-        public IArtifactLoader AsemblyLoader { get; private set; }
+        public IStorageFile AssemblyLocation { get; private set; }
 
         public IStorageItem Location { get; private set; }
 
-        public string Name {
-            get { return this.Assembly.FullName; }
+        
+
+        Action<IArtifact, ArtifactChangeEventArgs> _changed;
+        public event Action<IArtifact, ArtifactChangeEventArgs> Changed
+        {
+            add
+            {
+                this.SynchronizingObject.EnterWriteLock();
+                try
+                {
+                    _changed += value;
+                }
+                finally
+                {
+                    this.SynchronizingObject.ExitWriteLock();
+                }
+            }
+            remove
+            {
+                this.SynchronizingObject.EnterWriteLock();
+                try
+                {
+                    _changed -= value;
+                }
+                finally
+                {
+                    this.SynchronizingObject.ExitWriteLock();
+                }
+            }
         }
 
-
-       
+        Assembly _assembly;
         public Assembly Assembly {
-            get; private set;
+            get {
+                this.SynchronizingObject.EnterUpgradeableReadLock();
+                try {
+                    if (_assembly != null) return _assembly;
+                    if (this.AssemblyLocation == null) return null;
+                    IStorageFile pdbFile=null;
+                    if (AssemblyLoader.CanLoadPDB) {
+                        var dotAt = this.AssemblyLocation.Name.LastIndexOf(".");
+                        if (dotAt >= 0) {
+                            var name = this.AssemblyLocation.Name.Substring(0, dotAt);
+                            var pdbFilename = name + "pdb";
+                            pdbFile = this.AssemblyLocation.Parent.GetFile(pdbFilename);
+                        }
+                    }
+                    using (var assembly = this.AssemblyLocation.GetStream()) {
+                        if (pdbFile != null)
+                        {
+                            using (var pdb = pdbFile.GetStream())
+                            {
+                                _assembly = AssemblyLoader.Load(assembly, pdb);
+                            }
+                        }
+                        else {
+                            _assembly = AssemblyLoader.Load(assembly);
+                        }
+                    }
+                    return _assembly;
+                } finally {
+                    this.SynchronizingObject.ExitUpgradeableReadLock();
+                }
+            }
         }
 
         public IEnumerable<TypeInfo> GetTypeInfos() {
@@ -83,5 +141,7 @@ namespace Yanyitec.Runtime
         public static implicit operator Assembly(PrecompiledArtifact artifact) {
             return artifact.Assembly;
         }
+
+        
     }
 }
