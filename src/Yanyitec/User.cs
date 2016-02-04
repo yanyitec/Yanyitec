@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Yanyitec.SSO
+namespace Yanyitec
 {
-    public class Identity
+    public class User
     {
-        public Identity(Guid id, string username) {
+        public User(Guid id, string username) {
             this.Id = id;
             this.Username = username;
         }

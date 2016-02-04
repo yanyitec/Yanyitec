@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.SSO
 {
-    public class OnlineUser: Identity
+    public class OnlineUser: User
     {
         Dictionary<string, string> _data;
         public OnlineUser(Guid uid,string uname):base(uid,uname) {
