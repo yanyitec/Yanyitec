@@ -30,6 +30,13 @@
     <DnxInvisibleCompile Include="DependenceInject\v0.0.1.0\ItemCollection.cs" />
     <DnxInvisibleCompile Include="DependenceInject\v0.0.1.0\RegisterResults.cs" />
     <DnxInvisibleCompile Include="DependenceInject\v0.0.1.0\TypeProvider.cs" />
+    <DnxInvisibleCompile Include="Workflow\Definations\ProccessDefination.cs" />
+    <DnxInvisibleCompile Include="Workflow\Definations\TransactionDefination.cs" />
+    <DnxInvisibleCompile Include="Workflow\Infos\ActivityInfo.cs" />
+    <DnxInvisibleCompile Include="Workflow\Infos\ExecutionInfo.cs" />
+    <DnxInvisibleCompile Include="Workflow\Infos\Info.cs" />
+    <DnxInvisibleCompile Include="Workflow\Infos\ProccessInfo.cs" />
+    <DnxInvisibleCompile Include="Workflow\Infos\TransactionInfo.cs" />
   </ItemGroup>
   <Import Project="$(VSToolsPath)\DNX\Microsoft.DNX.targets" Condition="'$(VSToolsPath)' != ''" />
 </Project>

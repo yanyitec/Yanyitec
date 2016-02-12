@@ -343,7 +343,7 @@ namespace Yanyitec
             }
             
             
-            return null;
+            //return null;
         }
         static Func<string, object> GenEnumConverter(Type targetType) {
             bool isNullable = targetType.FullName.StartsWith("System.Nullable");
