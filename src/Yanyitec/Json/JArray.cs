@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Json
 {
-    public class JArray : JToken
+    public class JArray : JToken,IEnumerable<JToken>
     {
         public JArray() : base(ValueType.Array) {
             this.Value = new List<JToken>();
@@ -102,6 +103,16 @@ namespace Yanyitec.Json
             StringBuilder sb = new StringBuilder();
             this.ToJson(sb);
             return sb.ToString();
+        }
+
+        public IEnumerator<JToken> GetEnumerator()
+        {
+            return this.Value.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.Value.GetEnumerator();
         }
     }
 }

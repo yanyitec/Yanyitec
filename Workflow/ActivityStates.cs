@@ -5,44 +5,44 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Workflow
 {
+    
     public enum ActivityStates
     {
-        /// <summary>
-        /// 还未激活
-        /// </summary>
-        Inactive =0,
-        Actived = 1,
+        Initial,
+
         /// <summary>
         /// 可能是手动设置状态为WaitingStart
         /// 或该活动已经激活但被前置条件阻塞,
-        /// 无论何种状态，Process.Run时，都会运行TryStart
+        /// 无论何种状态，Execute时，都会运行TryStart
         /// 不再检查 StartMode
         /// </summary>
-        WaitingStart = 2,
+        WaitingStart ,
        
-       
-        Started = 3,
+        /// <summary>
+        /// 已经开始
+        /// </summary>
+        Started ,
         /// <summary>
         /// 执行中，还没有结果
         /// </summary>
-        Dealing = 4,
+        Dealing,
         /// <summary>
-        /// 挂起,等待再次激活
+        /// 挂起了，下次还会执行
         /// </summary>
-        Suspending = 5,
+        WaitingDeal,
         /// <summary>
-        /// 已经处理
+        /// 已经处理，Activiy上有执行结果
         /// </summary>
-        Dealed = 6,
+        Dealed ,
         /// <summary>
         /// 等待结束，但后置条件不满足
         /// </summary>
-        WaitingFinish = 7,
-       
+        WaitingFinish ,
         /// <summary>
-        /// 已经执行过了
+        /// 已经结束
         /// </summary>
-        Finished = 8
+        Finished
+       
 
     }
 }

@@ -44,7 +44,7 @@ namespace Yanyitec.Json
                 var data = this.Value as Dictionary<string, JToken>;
                 JToken result = null;
                 if (data.TryGetValue(key, out result)) { return result; }
-                return JUndefined.Default;
+                return null;
             }
 
             set

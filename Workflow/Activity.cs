@@ -21,13 +21,19 @@ namespace Yanyitec.Workflow
             this.SyncObject = new System.Threading.ReaderWriterLockSlim( System.Threading.LockRecursionPolicy.SupportsRecursion);
         }
 
-        public int Id { get; private set; }
+        public Guid Id { get; private set; }
 
         public GroupActivity Container { get; private set; }
-        
 
-        
+        internal ExecutionStates _ExecutionState;
+        /// <summary>
+        /// 一个Activity相当于一个ThreadTask
+        /// Engine调度用 set ，其他的不应该使用 set
+        /// </summary>
+        public ExecutionStates ExecutionState { get; internal set; }
 
+        DateTime _ResumeTime;
+        public DateTime ResumeTime { get;  internal set; }
 
 
         /// <summary>
@@ -42,6 +48,34 @@ namespace Yanyitec.Workflow
         /// 该字段受SyncObject锁保护
         /// </summary>
         internal ActivityStates _State;
+
+        public ActivityStates Status
+        {
+            get
+            {
+                SyncObject.EnterReadLock();
+                try
+                {
+                    return _State;
+                }
+                finally
+                {
+                    SyncObject.ExitReadLock();
+                }
+            }
+            set
+            {
+                SyncObject.EnterWriteLock();
+                try
+                {
+                    _State = value;
+                }
+                finally
+                {
+                    SyncObject.ExitWriteLock();
+                }
+            }
+        }
 
         public ActivityStates State {
             get {
@@ -148,46 +182,46 @@ namespace Yanyitec.Workflow
             switch (state)
             {
                 //还没激活，试图激活它
-                case ActivityStates.Inactive:
-                    if (this.StartMode == ExecutionModes.Manual) break;
-                    TryStart(); break;
-                case ActivityStates.Actived:
-                    if (this.StartMode == ExecutionModes.Manual) break;
-                    TryStart(); break;
-                case ActivityStates.WaitingStart:
-                    #region 上次就没满足前置条件，这次再测试前置条件
-                    TryStart(); break;
-                    #endregion
-                case ActivityStates.Started:
-                    ///手动设置成Started
-                    TryDeal(); break;
-                case ActivityStates.Dealing:
-                    //正在处理中，什么都不要做，等待任务完成
-                    break;
-                case ActivityStates.Suspending:
-                    #region 挂起
-                    var dealResult = this._dealResult as DealResult;
-                    if (dealResult != null) {
-                        if (dealResult.RetryTime < DateTime.Now)
-                        {
-                            TryDeal();
-                        }
+                //case ActivityStates.Inactive:
+                //    if (this.StartMode == ExecutionModes.Manual) break;
+                //    TryStart(); break;
+                //case ActivityStates.Actived:
+                //    if (this.StartMode == ExecutionModes.Manual) break;
+                //    TryStart(); break;
+                //case ActivityStates.WaitingStart:
+                //    #region 上次就没满足前置条件，这次再测试前置条件
+                //    TryStart(); break;
+                //    #endregion
+                //case ActivityStates.Started:
+                //    ///手动设置成Started
+                //    TryDeal(); break;
+                //case ActivityStates.Dealing:
+                //    //正在处理中，什么都不要做，等待任务完成
+                //    break;
+                //case ActivityStates.Suspending:
+                //    #region 挂起
+                //    var dealResult = this._dealResult as DealResult;
+                //    if (dealResult != null) {
+                //        if (dealResult.RetryTime < DateTime.Now)
+                //        {
+                //            TryDeal();
+                //        }
                         
-                    }
-                    #endregion
-                    break;
-                //还没激活，试图激活它
-                case ActivityStates.Dealed:
-                    if (this.FinishMode == ExecutionModes.Manual) break;
-                    TryFinish(); break;
+                //    }
+                //    #endregion
+                //    break;
+                ////还没激活，试图激活它
+                //case ActivityStates.Dealed:
+                //    if (this.FinishMode == ExecutionModes.Manual) break;
+                //    TryFinish(); break;
 
-                case ActivityStates.WaitingFinish:
-                    #region 上次就没满足后置条件，这次再测试后置条件
-                    TryFinish(); break;
-                    #endregion
-                case ActivityStates.Finished:
-                    ///已经结束过了的，什么都不做
-                    break;
+                //case ActivityStates.WaitingFinish:
+                //    #region 上次就没满足后置条件，这次再测试后置条件
+                //    TryFinish(); break;
+                //    #endregion
+                //case ActivityStates.Finished:
+                //    ///已经结束过了的，什么都不做
+                //    break;
                     
             }
             return _State;

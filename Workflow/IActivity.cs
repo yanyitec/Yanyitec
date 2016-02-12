@@ -5,19 +5,18 @@ using System.Threading.Tasks;
 
 namespace Yanyitec.Workflow
 {
-    public enum ExecutionStates
+    public interface IActivity
     {
         /// <summary>
-        /// 已经处理完成
+        /// 活动的唯一编号
         /// </summary>
-        Completed,
+        Guid Id { get; }
         /// <summary>
-        /// 正在运行，还没处理完
+        /// 活动的状态
         /// </summary>
-        Running,
-        /// <summary>
-        /// 挂起
-        /// </summary>
-        Suspended
+        ActivityStates State { get; }
+        object Result { get; }
+
+        string this[string key] { get; }
     }
 }
