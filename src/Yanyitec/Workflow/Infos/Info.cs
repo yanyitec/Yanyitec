@@ -17,8 +17,7 @@ namespace Yanyitec.Workflow.Infos
             this.Id = Guid.NewGuid();
             this.ProccessId = processId;
             this.Alias = defination.Alias;
-            this.InstanceType = defination.InstanceType;
-            
+
             if (defination.Extras.Count > 0) {
                 foreach (var pair in defination.Extras) {
                     this._extras.Add(pair.Key,pair.Value);

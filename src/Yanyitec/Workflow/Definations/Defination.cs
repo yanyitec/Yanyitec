@@ -14,9 +14,7 @@ namespace Yanyitec.Workflow.Definations
         }
         public Defination(Defination other) {
             this.Alias = other.Alias;
-            this.Container = other.Container;
-            this.Proccess = other.Proccess;
-            this.InstanceType = other.InstanceType;
+            
             foreach (var pair in other._extras)
             {
                 this._extras[pair.Key] = pair.Value;
@@ -27,13 +25,11 @@ namespace Yanyitec.Workflow.Definations
 
         public Defination(JObject data) {
             
-            this.Proccess = data["Proccess"]?.ToString();
-            this.Container = data["Container"]?.ToString();
             this.Alias = data["Alias"]?.ToString();
 
             this.Name = data["Name"]?.ToString();
             this.Description = data["Description"]?.ToString();
-            this.InstanceType = data["InstanceType"].ToString();
+            
 
             var extra = data["Extra"] as JObject;
             if (extra != null)
@@ -49,9 +45,7 @@ namespace Yanyitec.Workflow.Definations
         protected virtual void ToJson(ObjectBuilder builder)
         {
             if(!string.IsNullOrEmpty(this.Alias))builder.Member("Alias", this.Alias);
-            if(!string.IsNullOrEmpty(this.Proccess))builder.Member("Proccess", this.Proccess);
-            if(!string.IsNullOrEmpty(this.Container))builder.Member("Container", this.Container);
-            builder.Member("InstanceType",this.InstanceType);
+            
             
             if (!string.IsNullOrEmpty(this.Name))builder.Member("Name", this.Name);
             if(!string.IsNullOrEmpty(this.Description))builder.Member("Description", this.Description);
@@ -80,21 +74,9 @@ namespace Yanyitec.Workflow.Definations
                 return writer.ToString();
             }
         }
-
-
         public string Alias { get; set; }
 
-        public string InstanceType { get; set; }
-
-        /// <summary>
-        /// The container's alias
-        /// </summary>
-        public string Container { get; set; }
-        /// <summary>
-        /// the process's alias
-        /// </summary>
-        public string Proccess { get; set; }
-
+        
         public string Name { get; set; }
 
         public string Description { get; set; }

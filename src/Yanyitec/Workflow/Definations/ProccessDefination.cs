@@ -18,14 +18,16 @@ namespace Yanyitec.Workflow.Definations
         public ProccessDefination(JObject data) : base(data)
         {
             this.Block = data["Block"].ToString();
+            this.PackageAlias = data["PackageAlias"].ToString();
         }
 
         protected override void ToJson(ObjectBuilder builder)
         {
             base.ToJson(builder);
             builder.Member("Block", this.Block);
+            builder.Member("PackageAlias", this.PackageAlias);
         }
-
+        public string PackageAlias { get; set; }
         public string Block { get; set; }
     }
 }
