@@ -300,6 +300,12 @@
             已经结束
             </summary>
         </member>
+        <member name="P:Yanyitec.Workflow.Execution.SyncObject">
+            <summary>
+            与Proccess 共用同步锁
+            该锁为可重入的读写锁
+            </summary>
+        </member>
         <member name="T:Yanyitec.Workflow.ExecutionModes">
             <summary>
             执行模式
@@ -338,6 +344,16 @@
         <member name="F:Yanyitec.Workflow.ExecutionStates.Completed">
             <summary>
             已经结束，不在执行队列中
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.Proccess._actived">
+            <summary>
+            已激活的Execution
+            </summary>
+        </member>
+        <member name="P:Yanyitec.Workflow.Proccess.SyncObject">
+            <summary>
+            可重入的读写锁
             </summary>
         </member>
         <member name="P:Yanyitec.Workflow.Definations.Defination.Container">

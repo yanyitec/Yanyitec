@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Yanyitec.Unitest
+﻿namespace Yanyitec.Unitest
 {
+    using System;
     using Yanyitec.Testing;
     [Testing.Test]
     public class StringConvertExtension_Unittest

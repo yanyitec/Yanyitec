@@ -6,7 +6,7 @@ using Yanyitec.Json;
 
 namespace Yanyitec.Workflow.Definations
 {
-    public class ActivityDefination:Defination
+    public class ActivityDefination:ExecutionDefination
     {
         public ActivityDefination() : base() { }
 

@@ -69,7 +69,7 @@ namespace Yanyitec.Workflow.Infos
 
         public ExecutionStates ExecutionState { get; set; }
 
-        DateTime? ResumeTime { get; set; }
+        public DateTime? ResumeTime { get; set; }
 
         public string Result { get; set; }
     }
