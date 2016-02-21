@@ -18,95 +18,131 @@ namespace Yanyitec.Workflow.Repositories
             this.Storage = storage;
         }
 
-        public IStorage Storage { get;private set; }
+        public IStorage Storage { get;protected set; }
 
-        static string GetShortAlias(string alias, string parentAlias) {
-            if (alias.Length <= parentAlias.Length) return null;
-            var sub = alias.Substring(parentAlias.Length);
-            if (!sub.StartsWith("/")) return null;
-            return sub.TrimStart('/').Replace("/","_");
+        static bool CheckExecutionAlias(string alias, string proccessAlias) {
+            if (alias == null || proccessAlias == null) return false;
+            if (!alias.StartsWith(proccessAlias)) return false;
+            if (alias[proccessAlias.Length] != '/') return false;
+            return true;
         }
 
-        static string GetShortAlias(string alias, int deep)
-        {
-            var als = alias.Split('/');
-            var result = string.Empty;
-            for (var i = deep; i < als.Length; i++) {
-                if (result != string.Empty) result += "_";
-                result += als[i];
+        public static string CheckExecutionAliases(ExecutionDefination defination) {
+            var alias = defination.Alias;
+            if (string.IsNullOrWhiteSpace(alias)) throw new ArgumentException("Alias should not be empty");
+            
+            var at = alias.IndexOf("/");
+            if (at < 0) throw new ArgumentException("Alias[" + alias + "] is invalid. It should has / at least once.");
+            if (++at == alias.Length) throw new ArgumentException("Alias[" + alias + "] is invalid. It should contains proccess part.");
+            var at1 = alias.IndexOf("/",at);
+            if (at1 < 0) throw new ArgumentException("Alias[" + alias + "] is invalid. It should has / at least twice.");
+            if (++at1 == alias.Length) throw new ArgumentException("Alias[" + alias + "] is invalid. It should contains execution part.");
+            var proccessAlias1 = alias.Substring(0,at1-1);
+            var proccessAlias = defination.ProccessAlias;
+            if (proccessAlias == null)
+            {
+                defination.ProccessAlias = proccessAlias1;
             }
-            return result;
+            else {
+                if(defination.ProccessAlias!= proccessAlias1) throw new ArgumentException("Alias[" + alias + "] is invalid. It's proccess alias["+proccessAlias1+"] is not match the execution alias.");
+            }
+            var at0 = alias.LastIndexOf('/');
+            if (++at0==alias.Length) throw new ArgumentException("Alias[" + alias + "] is invalid. It should contains execution part.");
+            return alias.Substring(at0);
+        }
+
+        static string GetShortAlias(string alias) {
+            var at0 = alias.LastIndexOf('/');
+            if (++at0 == alias.Length) throw new ArgumentException("Alias[" + alias + "] is invalid. It should contains execution part.");
+            return alias.Substring(at0);
+        }
+
+        public static string CheckProccessAliases(ProccessDefination proccess)
+        {
+            var alias = proccess.Alias;
+            if (string.IsNullOrWhiteSpace(alias)) throw new ArgumentException("ProccessDefination.Alias is required.");
+            var at = alias.IndexOf("/");
+            if (at < 0) throw new ArgumentException("Proccess alias is invalid. It should contains / at least once");
+            if (at == alias.Length - 1) throw new ArgumentException("Proccess alias["+alias+"] is invalid.");
+            var at1 = alias.IndexOf("/", at+1);
+            if (at1 >= 0) throw new ArgumentException("Proccess alias is invalid. It should contains / only once.");
+            var shortAlias = alias.Substring(at + 1);
+            if (string.IsNullOrEmpty(shortAlias)) throw new ArgumentException("ProccessDefination.Alias is not correct. It should be 'packageAlias/proccessId'. ");
+
+            if (!CheckExecutionAlias(proccess.StartAlias, alias)) throw new ArgumentException("StartAlias is invalid");
+            if (!CheckExecutionAlias(proccess.FinishAlias, alias)) throw new ArgumentException("FinishAlias is invalid");
+
+            return shortAlias;
+        }
+
+        public static string CheckTransactionAliases(TransactionDefination transaction) {
+            var shortAlias = CheckExecutionAliases(transaction);
+            if (!CheckExecutionAlias(transaction.FromAlias,transaction.ProccessAlias)) throw new ArgumentException("FromAlias is invalid");
+            if (!CheckExecutionAlias(transaction.ToAlias, transaction.ProccessAlias)) throw new ArgumentException("ToAlias is invalid");
+
+            return shortAlias;
         }
 
         public void SavePackageDefination(PackageDefination packageDefination)
         {
             var alias = packageDefination.Alias;
+
             if (string.IsNullOrWhiteSpace(alias)) throw new ArgumentException("PackageDefination.Alias is required.");
-            
+            if (alias.Contains("/")) throw new ArgumentException("Invalid package alias. package alias cannot contain /");
+
             var dir = this.Storage.GetDirectory(alias,true);
-            dir.PutText(alias + ".json",packageDefination.ToJson());
+            this.Storage.PutText(alias + ".package.json",packageDefination.ToJson());
         }
 
         public PackageDefination GetPackageDefination(string alias)
         {
             if (string.IsNullOrWhiteSpace(alias)) throw new ArgumentException("alias is required.");
-            var dir = this.Storage.GetDirectory(alias, true);
-            var jsonText = dir.GetText(alias + ".json");
-            if(jsonText==null) throw new ArgumentException("Package is not existed or damaged.");
+            if (alias.Contains("/")) throw new ArgumentException("Invalid package alias. package alias cannot contain /");
+           
+            var jsonText = this.Storage.GetText(alias + ".package.json");
+            if(jsonText==null) throw new ArgumentException("Package["+alias+"] is not existed or damaged.");
             var data = new Json.Parser().Parse(jsonText) as JObject;
-            if(data==null) throw new ArgumentException("Package is damaged.");
+            if(data==null) throw new ArgumentException("Package["+alias+"] is damaged.");
             return new PackageDefination(data);
         }
 
         public IList<PackageDefination> ListPackages()
         {
-            var items = this.Storage.ListItems(false, StorageTypes.Directory);
+            var items = this.Storage.ListItems(false, StorageTypes.File);
             List<PackageDefination> result = new List<PackageDefination>();
             foreach (var item in items) {
+                if (!item.Name.EndsWith(".package.json")) continue;
                 try
                 {
-                    var def = this.GetPackageDefination(item.Name);
-                    if (def != null) result.Add(def);
+                    var jsonText = this.Storage.GetText(item.Name);
+                    if (jsonText == null) throw new ArgumentException("Package[" + item.Name + "] is not existed or damaged.");
+                    var data = new Json.Parser().Parse(jsonText) as JObject;
+                    if (data == null) throw new ArgumentException("Package[" + item.Name + "] is damaged.");
+                    var pack= new PackageDefination(data);
+                    result.Add(pack);
                 }
                 catch (ArgumentException) { }
             }
             return result;
         }
 
+        
+
         public void SaveProccessDefination(ProccessDefination proccess)
         {
-            var packageAlias = proccess.PackageAlias;
-            if (string.IsNullOrWhiteSpace(packageAlias)) throw new ArgumentException("ProccessDefination.PackageAlias is required.");
             var alias = proccess.Alias;
-            if (string.IsNullOrWhiteSpace(alias)) throw new ArgumentException("ProccessDefination.Alias is required.");
-            var shortAlias = GetShortAlias(alias, packageAlias);
-            if(string.IsNullOrEmpty(shortAlias))    throw new ArgumentException("ProccessDefination.Alias is not correct. It should be 'packageAlias/proccessId'. ");
-
-            var packDir = this.Storage.GetDirectory(packageAlias);
-            if (packDir == null) {
-                var packDef = new PackageDefination()
-                {
-                    Name = packageAlias,
-                    Alias = packageAlias,
-                    Description = "System generated"
-                };
-                this.SavePackageDefination(packDef);
-                packDir = this.Storage.GetDirectory(packageAlias);
-            }
-
+            var shortAlias = CheckProccessAliases(proccess);
+            
             var dir = this.Storage.GetDirectory(alias, true);
-            dir.PutText(shortAlias + ".json", proccess.ToJson());
+            this.Storage.PutText(alias + ".proccess.json", proccess.ToJson());
         }
 
         public ProccessDefination GetProccessDefination(string alias)
         {
-            if (string.IsNullOrWhiteSpace(alias)) throw new ArgumentException("alias is required.");
-            var dir = this.Storage.GetDirectory(alias, true);
-            var shortAlias = GetShortAlias(alias,1);
-            var jsonText = dir.GetText(shortAlias + ".json");
-            if (jsonText == null) throw new ArgumentException("Proccess is not existed or damaged.");
+            var jsonText = this.Storage.GetText(alias + ".proccess.json");
+            if (jsonText == null) throw new ArgumentException("Proccess["+alias+"] is not existed or damaged.");
             var data = new Json.Parser().Parse(jsonText) as JObject;
-            if (data == null) throw new ArgumentException("Proccess is damaged.");
+            if (data == null) throw new ArgumentException("Proccess["+alias+"] is damaged.");
             return new ProccessDefination(data);
         }
 
@@ -114,13 +150,12 @@ namespace Yanyitec.Workflow.Repositories
         {
             var packDir = this.Storage.GetDirectory(packageAlias);
             if (packDir == null) return null;
-            var items = packDir.ListItems(false, StorageTypes.Directory);
+            var items = packDir.ListItems(false, StorageTypes.File);
             List<ProccessDefination> result = new List<ProccessDefination>();
             foreach (var item in items)
             {
-                var proccessDir = item as IStorageDirectory;
-                if (proccessDir == null) continue;
-                var jsonText = proccessDir.GetText( item.Name + ".json");
+                if (!item.Name.EndsWith(".proccess.json")) continue;
+                var jsonText = packDir.GetText( item.Name);
                 if (jsonText == null) continue;
                 var data = new Json.Parser().Parse(jsonText) as JObject;
                 if (data == null) continue;
@@ -132,27 +167,21 @@ namespace Yanyitec.Workflow.Repositories
 
         public void SaveActivityDefination(ActivityDefination activityDefination)
         {
-            var alias = activityDefination.Alias;
-            if (string.IsNullOrWhiteSpace(alias)) throw new ArgumentException("ActivityDefination.Alias is required.");
-            var proccessAlias = activityDefination.ProccessAlias;
-            if (string.IsNullOrWhiteSpace(proccessAlias)) throw new ArgumentException("ActivityDefination.ProccessAlias is required.");
-            var prcDir = this.Storage.GetDirectory(proccessAlias);
-            if(prcDir==null) throw new ArgumentException("ActivityDefination.ProccessAlias is invalid.Please save the ProccessDefination first.");
-            var shortAlias = GetShortAlias(alias, proccessAlias);
+            var shortAlias =  CheckExecutionAliases(activityDefination);
             if (string.IsNullOrEmpty(shortAlias)) throw new ArgumentException("ActivityDefination.Alias is not correct. It should be 'packageAlias/proccessId/activityId'. ");
-
-            prcDir.PutText(shortAlias + ".activity.json", activityDefination.ToJson());
+            
+            this.Storage.PutText(activityDefination.Alias + ".activity.json", activityDefination.ToJson());
         }
 
         public ActivityDefination GetActivityDefination(string alias)
         {
             if (string.IsNullOrWhiteSpace(alias)) throw new ArgumentException("alias is required.");
-            var dir = this.Storage.GetDirectory(alias, true);
-            var shortAlias = GetShortAlias(alias, 2);
-            var jsonText = dir.GetText(shortAlias + ".activity.json");
-            if (jsonText == null) throw new ArgumentException("Activity is not existed or damaged.");
+            
+            var shortAlias = GetShortAlias(alias);
+            var jsonText = this.Storage.GetText(alias + ".activity.json");
+            if (jsonText == null) throw new ArgumentException("Activity["+alias+"] is not existed or damaged.");
             var data = new Json.Parser().Parse(jsonText) as JObject;
-            if (data == null) throw new ArgumentException("Activity is damaged.");
+            if (data == null) throw new ArgumentException("Activity["+alias+"] is damaged.");
             return new ActivityDefination(data);
         }
 
@@ -162,25 +191,19 @@ namespace Yanyitec.Workflow.Repositories
         {
             var alias = transactionDefination.Alias;
             if (string.IsNullOrWhiteSpace(alias)) throw new ArgumentException("TransactionDefination.Alias is required.");
-            var proccessAlias = transactionDefination.ProccessAlias;
-            if (string.IsNullOrWhiteSpace(proccessAlias)) throw new ArgumentException("TransactionDefination.ProccessAlias is required.");
-            var prcDir = this.Storage.GetDirectory(proccessAlias);
-            if (prcDir == null) throw new ArgumentException("TransactionDefination.ProccessAlias is invalid.Please save the ProccessDefination first.");
-            var shortAlias = GetShortAlias(alias, proccessAlias);
-            if (string.IsNullOrEmpty(shortAlias)) throw new ArgumentException("TransactionDefination.Alias is not correct. It should be 'packageAlias/proccessId/activityId'. ");
-
-            prcDir.PutText(shortAlias + ".transaction.json", transactionDefination.ToJson());
+            CheckTransactionAliases(transactionDefination);
+            Storage.PutText(alias + ".transaction.json", transactionDefination.ToJson());
         }
 
         public TransactionDefination GetTransactionDefination(string alias)
         {
             if (string.IsNullOrWhiteSpace(alias)) throw new ArgumentException("alias is required.");
-            var dir = this.Storage.GetDirectory(alias, true);
-            var shortAlias = GetShortAlias(alias, 2);
-            var jsonText = dir.GetText(shortAlias + ".transaction.json");
-            if (jsonText == null) throw new ArgumentException("Transaction is not existed or damaged.");
+            
+           
+            var jsonText = this.Storage.GetText(alias + ".transaction.json");
+            if (jsonText == null) throw new ArgumentException("Transaction["+alias+"] is not existed or damaged.");
             var data = new Json.Parser().Parse(jsonText) as JObject;
-            if (data == null) throw new ArgumentException("Transaction is damaged.");
+            if (data == null) throw new ArgumentException("Transaction["+alias+"] is damaged.");
             return new TransactionDefination(data);
         }
 
@@ -194,11 +217,11 @@ namespace Yanyitec.Workflow.Repositories
             
         }
 
-        public IList<ExecutionDefination> ListExecutionDefinations(string proccessAlias)
+        public IList<ExecutionDefination> ListExecutionDefinations(string containerAlias)
         {
-            var pcrDir = this.Storage.GetDirectory(proccessAlias);
-            if (pcrDir == null) return null;
-            var items = pcrDir.ListItems(false, StorageTypes.Directory);
+            var dir = this.Storage.GetDirectory(containerAlias);
+            if (dir == null) return null;
+            var items = dir.ListItems(true, StorageTypes.File);
             List<ExecutionDefination> result = new List<ExecutionDefination>();
             foreach (var item in items)
             {
@@ -227,6 +250,39 @@ namespace Yanyitec.Workflow.Repositories
             }
             return result;
         }
-        
+
+        public bool ModifyAlias(string oldAlias, string shortAlias) {
+            var dir = this.Storage.GetDirectory(oldAlias);
+            var pdir = dir.Parent;
+            if (dir == null) return false;
+            #region rename the defination file name
+            var filename = oldAlias + ".proccess.json";
+            if (pdir.GetItem(filename) != null) pdir.Rename(shortAlias + ".proccess.json");
+            else {
+                filename = oldAlias + ".activity.json";
+                if (pdir.GetItem(filename) != null) pdir.Rename(shortAlias + ".activity.json");
+                else {
+                    filename = oldAlias + ".transaction.json";
+                    if (pdir.GetItem(filename) != null) pdir.Rename(shortAlias + ".transaction.json");
+                    else
+                    {
+
+                        filename = oldAlias + ".package.json";
+                        if (pdir.GetItem(filename) != null) pdir.Rename(shortAlias + ".package.json");
+                        else
+                        {
+
+                            filename = null;
+                        }
+                    }
+                }
+            }
+            #endregion
+            if (filename == null) return false;
+
+            
+
+            return true;
+        }
     }
 }

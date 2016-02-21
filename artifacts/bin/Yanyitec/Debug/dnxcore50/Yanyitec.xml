@@ -356,11 +356,6 @@
             可重入的读写锁
             </summary>
         </member>
-        <member name="P:Yanyitec.Workflow.Definations.ExecutionDefination.ContainerAlias">
-            <summary>
-            The container's alias
-            </summary>
-        </member>
         <member name="P:Yanyitec.Workflow.Definations.ExecutionDefination.ProccessAlias">
             <summary>
             the process's alias

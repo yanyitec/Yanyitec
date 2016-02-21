@@ -15,36 +15,36 @@ namespace Yanyitec.Workflow.Definations
 
             this.ConstraintKind = other.ConstraintKind;
             this.Constraint = other.Constraint;
-            this.From = other.From;
-
+            this.FromAlias = other.FromAlias;
+            this.ToAlias = other.ToAlias;
         }
 
         public TransactionDefination(JObject data) : base(data)
         {
-            this.From = data["From"].ToString();
-            this.To = data["To"].ToString();
+            this.FromAlias = data["FromAlias"].ToString();
+            this.ToAlias = data["ToAlias"].ToString();
             this.ConstraintKind = (ConstraintKinds)Enum.Parse(typeof(ConstraintKinds), data["ConstraintKind"].ToString());
-            if (this.ConstraintKind != ConstraintKinds.None && !string.IsNullOrEmpty(this.Constraint)) this.Constraint = data["Constraint"].ToString();
+            if (this.ConstraintKind != ConstraintKinds.None) this.Constraint = data["Constraint"]?.ToString();
 
         }
 
-        //protected override void ToJson(ObjectBuilder builder)
-        //{
-        //    base.ToJson(builder);
-        //    builder.Member("From", this.From);
-        //    builder.Member("To", this.To);
-        //    builder.Member("ConstraintKind", Enum.GetName(typeof(ConstraintKinds), this.ConstraintKind));
-        //    if (this.ConstraintKind != ConstraintKinds.None && !string.IsNullOrEmpty(this.Constraint)) builder.Member("Constraint", this.Constraint);
+        protected override void ToJson(ObjectBuilder builder)
+        {
+            base.ToJson(builder);
+            builder.Member("FromAlias", this.FromAlias);
+            builder.Member("ToAlias", this.ToAlias);
+            builder.Member("ConstraintKind", Enum.GetName(typeof(ConstraintKinds), this.ConstraintKind));
+            if (this.ConstraintKind != ConstraintKinds.None && !string.IsNullOrEmpty(this.Constraint)) builder.Member("Constraint", this.Constraint);
 
-        //}
+        }
 
 
         public string Constraint { get; set; }
         public ConstraintKinds ConstraintKind { get; set; }
 
-        public string From { get; set; }
+        public string FromAlias { get; set; }
 
-        public string To { get; set; }
+        public string ToAlias { get; set; }
 
     }
 }

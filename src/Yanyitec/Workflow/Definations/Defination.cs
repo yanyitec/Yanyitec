@@ -10,11 +10,12 @@ namespace Yanyitec.Workflow.Definations
     public class Defination
     {
         public Defination() {
-            
+            this.UpdateTime = this.CreateTime = DateTime.Now;
         }
         public Defination(Defination other) {
             this.Alias = other.Alias;
-            
+            this.CreateTime = other.CreateTime;
+            this.UpdateTime = other.UpdateTime;
             foreach (var pair in other._extras)
             {
                 this._extras[pair.Key] = pair.Value;
@@ -29,9 +30,11 @@ namespace Yanyitec.Workflow.Definations
 
             this.Name = data["Name"]?.ToString();
             this.Description = data["Description"]?.ToString();
+            this.CreateTime = DateTime.Parse(data["CreateTime"].ToString().Replace("T", " "));
+            this.UpdateTime = DateTime.Parse(data["UpdateTime"].ToString().Replace("T", " "));
             
 
-            var extra = data["Extra"] as JObject;
+            var extra = data["Extras"] as JObject;
             if (extra != null)
             {
                 foreach (var pair in extra)
@@ -45,11 +48,10 @@ namespace Yanyitec.Workflow.Definations
         protected virtual void ToJson(ObjectBuilder builder)
         {
             if(!string.IsNullOrEmpty(this.Alias))builder.Member("Alias", this.Alias);
-            
-            
             if (!string.IsNullOrEmpty(this.Name))builder.Member("Name", this.Name);
             if(!string.IsNullOrEmpty(this.Description))builder.Member("Description", this.Description);
-
+            builder.Member("CreateTime", this.CreateTime.ToString("yyyy-MM-ddThh:mm:ss"));
+            builder.Member("UpdateTime", this.UpdateTime.ToString("yyyy-MM-ddThh:mm:ss"));
             if (this._extras.Count > 0) {
                 using (var extra = builder.ObjectMember("Extras"))
                 {
@@ -80,6 +82,10 @@ namespace Yanyitec.Workflow.Definations
         public string Name { get; set; }
 
         public string Description { get; set; }
+
+        public DateTime CreateTime { get; set; }
+
+        public DateTime UpdateTime { get; set; }
 
         readonly Dictionary<string, string> _extras = new Dictionary<string, string>();
 

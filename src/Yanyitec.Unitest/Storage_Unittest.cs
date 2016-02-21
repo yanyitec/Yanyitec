@@ -10,7 +10,7 @@ namespace Yanyitec.Unitest
     [Test]
     public class Storage_Unittest
     {
-        const string BasePath = "d:/yanyi_test/basic";
+        const string BasePath = "d:/yanyi_test/storage/";
         [Test("相对目录操作")]
         public void Relative() {
             var storage = new Storaging.Storage(BasePath);

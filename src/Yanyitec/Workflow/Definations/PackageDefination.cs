@@ -16,7 +16,16 @@ namespace Yanyitec.Workflow.Definations
 
         public PackageDefination(JObject data) : base(data)
         {
+            
         }
+
+        protected override void ToJson(ObjectBuilder builder)
+        {
+            base.ToJson(builder);
+            
+        }
+
+        
 
     }
 }

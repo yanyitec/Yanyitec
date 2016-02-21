@@ -45,11 +45,19 @@ namespace Yanyitec.Storaging
             return null;
         }
 
-        public virtual void Delete()
+        public override void Delete()
         {
             if (this.FileSystemInfo != null)
             {
-                this.FileSystemInfo.Delete();
+                var dir = this.FileSystemInfo as DirectoryInfo;
+                var subDirs = dir.GetDirectories();
+                foreach (var subdir in subDirs) {
+                    new StorageDirectory(subdir).Delete();
+                }
+                var files = dir.GetFiles();
+                foreach (var file in files) {
+                    file.Delete();
+                }
             }else throw new InvalidOperationException("Cannot delete the system root.");
         }
 
@@ -64,6 +72,7 @@ namespace Yanyitec.Storaging
             return false;
         }
 
+        
 
         public async Task<IStorageItem> CreateItemAsync(string path, StorageTypes itemType = StorageTypes.Directory) {
             return await Task.Run(()=>this.CreateItem(path,itemType));

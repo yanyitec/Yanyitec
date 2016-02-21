@@ -24,7 +24,8 @@ namespace Yanyitec.Workflow.Repositories
         ActivityDefination GetActivityDefination(string alias);
         TransactionDefination GetTransactionDefination(string alias);
 
-        IList<ExecutionDefination> ListExecutionDefinations(string proccessAlias);
+        IList<ExecutionDefination> ListExecutionDefinations(string parentAlias);
 
+        bool ModifyAlias(string oldAlias, string shortAlias);
     }
 }

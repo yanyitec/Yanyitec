@@ -11,8 +11,9 @@ namespace Yanyitec.Storaging
 
         bool IsExisted { get; }
 
-       
+        void Rename(string newName);
 
+        void Delete();
         //event Action<IStorageItem, StorageChangeEventArgs> OnChange;
 
         string RelativeName { get; }

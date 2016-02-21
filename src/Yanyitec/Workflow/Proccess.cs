@@ -184,8 +184,8 @@ namespace Yanyitec.Workflow
                 var tranDef = defination as TransactionDefination;
                 if (tranDef != null) {
                     var tran = new TransactionInfo(proccessId, tranDef);
-                    tran.From = GetOrNewId(tranDef.From,maps);
-                    tran.To = GetOrNewId(tranDef.To,maps);
+                    tran.From = GetOrNewId(tranDef.FromAlias,maps);
+                    tran.To = GetOrNewId(tranDef.ToAlias,maps);
                     trans.Add(tran);
                     //_inactived.Add(new);
                     continue;

@@ -22,13 +22,13 @@ namespace Yanyitec.Workflow.Definations
 
         public ActivityDefination(JObject data) :base(data){
             
-            this.Deal = data["Deal"].ToString();
+            this.Deal = data["Deal"]?.ToString();
             this.StartMode = (ExecutionModes)Enum.Parse(typeof(ExecutionModes), data["StartMode"].ToString());
             this.FinishMode = (ExecutionModes)Enum.Parse(typeof(ExecutionModes), data["FinishMode"].ToString());
             this.StartConstraintKind = (ConstraintKinds)Enum.Parse(typeof(ConstraintKinds), data["StartConstraintKind"].ToString());
             this.FinishConstraintKind = (ConstraintKinds)Enum.Parse(typeof(ConstraintKinds), data["FinishConstraintKind"].ToString());
-            if (this.StartConstraintKind != ConstraintKinds.None )this.StartConstraint = data["StartConstraint"].ToString();
-            if( this.FinishConstraintKind != ConstraintKinds.None )this.FinishConstraint = data["FinishConstraint"].ToString();
+            if (this.StartConstraintKind != ConstraintKinds.None )this.StartConstraint = data["StartConstraint"]?.ToString();
+            if( this.FinishConstraintKind != ConstraintKinds.None )this.FinishConstraint = data["FinishConstraint"]?.ToString();
         }
 
         protected override void ToJson(ObjectBuilder builder)

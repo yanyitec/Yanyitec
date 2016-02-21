@@ -36,6 +36,14 @@ namespace Yanyitec.Storaging
             throw new InvalidOperationException("Can not delete storage.");
         }
 
+        public void Clear() {
+            lock (this.SynchronizingObject) {
+                var items = this.ListItems(false);
+                foreach (var item in items) item.Delete();
+            }
+            
+        }
+
         public new object SynchronizingObject {
             get {
                 return base.SynchronizingObject;

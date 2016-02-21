@@ -23,7 +23,7 @@ namespace Yanyitec.Unitest
       
             var test = new Testing.TestArtifactInfo(new PrecompiledArtifact(typeof(Program).GetTypeInfo().Assembly));
 
-            test.TestMethods("Cache%");
+            test.TestMethods("Workflow%");
             Console.Write("Press q to exit..");
             while (Console.Read() != 'q');
         }

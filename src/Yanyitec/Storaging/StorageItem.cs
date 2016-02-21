@@ -22,6 +22,25 @@ namespace Yanyitec.Storaging
         protected object SynchronizingObject {
             get { return _synchronizingObject; }
         }
+
+        public virtual void Delete() {
+            this.FileSystemInfo.Delete();
+            
+        }
+
+        public void Rename(string newName) {
+            if (this.FileSystemInfo != null) {
+                if (this.FileSystemInfo.Name != newName) {
+                    var fi = this.FileSystemInfo as FileInfo;
+                    if (fi != null) fi.MoveTo(fi.DirectoryName + "/" + newName);
+                    else {
+                        var di = this.FileSystemInfo as FileInfo;
+                        di.MoveTo(di.DirectoryName + "/" + newName);
+                    }
+                }
+            }
+        }
+
        
 
         public bool IsExisted {
