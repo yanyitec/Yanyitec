@@ -190,6 +190,34 @@
             <param name="type"></param>
             <returns></returns>
         </member>
+        <member name="M:Yanyitec.ORM.EntityDefine`1.HasOne(System.Linq.Expressions.Expression{System.Func{`0,System.Object}},System.Linq.Expressions.Expression{System.Func{`0,System.Object}})">
+            <summary>
+            Role HasOne( Role.Department,Role.DepartmentId);
+            means-> Department HasOne Role or Department has many role
+            </summary>
+            <typeparam name="TForeign"></typeparam>
+            <param name="property"></param>
+            <param name="foreignKeyExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.ORM.EntityDefine`1.HasMany``1(System.Linq.Expressions.Expression{System.Func{`0,``0}},System.Linq.Expressions.Expression{System.Func{``0,System.Object}})">
+            <summary>
+            Department.HasMany(d.Roles);
+            </summary>
+            <typeparam name="TReference"></typeparam>
+            <param name="referenceExpression"></param>
+            <param name="referenceFieldExpression"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.ORM.EntityDefine`1.HasMany``1(System.Linq.Expressions.Expression{System.Func{`0,``0}},System.String,System.Linq.Expressions.Expression{System.Func{``0,System.Object}},System.Linq.Expressions.Expression{System.Func{``0,System.Object}})">
+            <summary>
+            Department.HasMany(d.Roles);
+            </summary>
+            <typeparam name="TReference"></typeparam>
+            <param name="referenceExpression"></param>
+            <param name="referenceFieldExpression"></param>
+            <returns></returns>
+        </member>
         <member name="P:Yanyitec.Runtime.ArtifactLoader.PackageDirectory">
             <summary>
             运行时包的位置
