@@ -7,11 +7,14 @@ namespace Yanyitec.ORM
 {
     public class ReferenceInfo
     {
-        public ReferenceInfo(EntityInfo primary, EntityInfo referenceEntity, ReferenceKinds kind) {
+        public ReferenceInfo(string name, EntityInfo primary, EntityInfo referenceEntity, ReferenceKinds kind) {
             this.PrimaryEntityInfo = primary;
             this.ReferenceEntityInfo = referenceEntity;
             this.Kind = kind;
+            this.Name = name;
         }
+
+        public string Name { get; private set; }
         public EntityInfo PrimaryEntityInfo { get;private set; }
 
         public EntityInfo ReferenceEntityInfo { get; private set; }

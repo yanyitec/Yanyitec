@@ -19,11 +19,17 @@ namespace Yanyitec.ORM
 
         
 
-        internal EntityInfo GetOrCreateEntity(Type entityType) {
+        internal EntityInfo GetOrCreateEntityInfo(Type entityType) {
             EntityInfo result=null;
             if (_entities.TryGetValue(entityType.GetHashCode(), out result)) return result;
             _entities.Add(entityType.GetHashCode(), result = new EntityInfo(entityType));
             return result;
+        }
+
+        public EntityInfo GetEntityInfo(int typeid) {
+            EntityInfo result = null;
+            if (_entities.TryGetValue(typeid, out result)) return result;
+            return null;
         }
 
         public EntityDefine<T> Define<T>() {

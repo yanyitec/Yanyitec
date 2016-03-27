@@ -34,8 +34,6 @@ namespace Yanyitec
         public ParameterExpression Parameter { get; private set; }
         public Expression Expression { get; private set; }
 
-        
-
         public Expression<Func<T, bool>> ToLamda()
         {
             if (this.Expression == null) return null;

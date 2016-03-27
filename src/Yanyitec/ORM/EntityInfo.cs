@@ -38,6 +38,11 @@ namespace Yanyitec.ORM
         readonly List<ReferenceInfo> _references = new List<ReferenceInfo>();
         public IReadOnlyList<ReferenceInfo> References { get { return _references; } }
 
+        public ReferenceInfo GetReference(string name) {
+            foreach (var rel in _references) if (rel.Name == name) return rel;
+            return null;
+        }
+
         public ReferenceInfo GetReference(EntityInfo referenceEntity, ReferenceKinds kind)
         {
             foreach (var rel in _references)
@@ -51,10 +56,10 @@ namespace Yanyitec.ORM
             return null;
         }
 
-        public ReferenceInfo GetOrCreateReference(EntityInfo referenceEntity,ReferenceKinds kind) {
+        public ReferenceInfo GetOrCreateReference(string name, EntityInfo referenceEntity,ReferenceKinds kind) {
             var result = this.GetReference(referenceEntity,kind);
             if (result == null) {
-                result = new ReferenceInfo(this, referenceEntity, kind);
+                result = new ReferenceInfo(name, this, referenceEntity, kind);
                 this._references.Add(result);
             }
             

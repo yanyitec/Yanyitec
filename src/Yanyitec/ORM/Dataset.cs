@@ -8,7 +8,11 @@ namespace Yanyitec.ORM
 {
     public class Dataset
     {
-        public Dataset(string connectionString) { }
+        public Dataset(string connectionString) {
+            this.ConnectionString = connectionString;
+        }
+
+        public string ConnectionString { get; private set; }
 
         public IRepository<TEntity, TPrimary> GetRepository<TEntity, TPrimary>() { return null; }
 
@@ -20,7 +24,7 @@ namespace Yanyitec.ORM
 
         public void Commit() { }
 
-        public IList<TEntity> ExecuteSql<TEntity>(string sql) {
+        public IList<TEntity> ExecuteSql<TEntity, TPrimary>(string sql) {
             return null;
         }
 
@@ -29,29 +33,28 @@ namespace Yanyitec.ORM
         }
 
         public TEntity GetById<TEntity, TPrimary>(TPrimary id) {
-            return default(TEntity);
+            return this.GetRepository<TEntity, TPrimary>().GetById(id);
         }
 
-        public IList<TEntity> List<TEntity>(Expression<Func<TEntity,bool>> condition=null)
+        public CriteriaResult<TEntity> List<TEntity, TPrimary>(Criteria<TEntity> criteria)
         {
-            return null;
+            return this.GetRepository<TEntity, TPrimary>().List(criteria);
         }
 
-        public bool Save<TEntity>(TEntity entity)
+        public bool Save<TEntity, TPrimary>(TEntity entity)
         {
-            return false;
+            return this.GetRepository<TEntity, TPrimary>().Save(entity);
         }
 
-        public bool Insert<TEntity>(TEntity entity) {
-            return false;
+        public bool Add<TEntity, TPrimary>(TEntity entity) {
+            return this.GetRepository<TEntity, TPrimary>().Add(entity);
         }
 
-        public bool Delete<TEntity, TPrimary>(TPrimary id) {
-            return false;
-        }
-        public bool Delete<TEntity>(Expression<Func<TEntity, bool>> condition)
+        public bool Remove<TEntity, TPrimary>(TPrimary id) {return this.GetRepository<TEntity, TPrimary>().Remove(id);}
+
+        public int Delete<TEntity, TPrimary>(Criteria<TEntity> crieria)
         {
-            return false;
+            return this.GetRepository<TEntity, TPrimary>().Delete(crieria);
         }
     }
 }

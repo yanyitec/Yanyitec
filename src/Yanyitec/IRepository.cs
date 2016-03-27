@@ -10,16 +10,16 @@ namespace Yanyitec
     {
         TEntity GetById(TPrimary id);
 
-        IList<TEntity> List(Expression<Func<TEntity, bool>> condition);
+        CriteriaResult<TEntity> List(Criteria<TEntity> criteria);
 
         bool Add(TEntity entity);
 
-        bool DeleteById(TPrimary id);
+        bool Remove(TPrimary id);
 
-        int Delete(Expression<Func<TEntity, bool>> condition);
+        int Delete(Criteria<TEntity> criteria);
 
         bool Save(TEntity entity);
 
-        int Update(string members, TEntity value, Expression<Func<TEntity, bool>> condition);
+        int Update(string members, TEntity value, Criteria<TEntity> criteria);
     }
 }

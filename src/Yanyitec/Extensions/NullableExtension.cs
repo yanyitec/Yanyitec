@@ -25,14 +25,16 @@ namespace Yanyitec
             , { typeof(double?).GetHashCode(),GenValueGetter(typeof(double?))}
             , { typeof(decimal?).GetHashCode(),GenValueGetter(typeof(decimal?))}
             , { typeof(DateTime?).GetHashCode(),GenValueGetter(typeof(DateTime?))}
+            , { typeof(Guid?).GetHashCode(),GenValueGetter(typeof(Guid?))}
         };
         static readonly SortedDictionary<int, Func<object, object>> _customerValueGetters = new SortedDictionary<int, Func<object, object>>();
-        public static object GetValue(object nullableValue) {
+        public static object GetValue(object nullableValue,bool searchCustomerType = false) {
             if (nullableValue == null) return null;
             Func<object, object> getter = null;
             var type = nullableValue.GetType();
             var typeid = type.GetHashCode();
             if (_valueGetters.TryGetValue(typeid, out getter)) return getter(nullableValue);
+            if (searchCustomerType == false) return nullableValue;
             GlobalLocker.InternalSynchronizingObject.EnterUpgradeableReadLock();
             try {
                 if (_customerValueGetters.TryGetValue(typeid, out getter)) return getter(nullableValue);

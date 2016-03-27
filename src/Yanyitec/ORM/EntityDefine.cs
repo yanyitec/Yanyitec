@@ -11,7 +11,7 @@ namespace Yanyitec.ORM
     {
         public EntityDefine(DatasetInfo ds) {
             this.DatasetInfo = ds;
-            this.EntityInfo = ds.GetOrCreateEntity(typeof(TEntity));
+            this.EntityInfo = ds.GetOrCreateEntityInfo(typeof(TEntity));
         }
         public DatasetInfo DatasetInfo { get; set; }
 
@@ -38,8 +38,8 @@ namespace Yanyitec.ORM
         public EntityDefine<TEntity> HasOne(Expression<Func<TEntity, object>> referenceExpression, Expression<Func<TEntity,object>> primaryExpression=null) {
             var referenceMember = referenceExpression.Body as MemberExpression;
             var referenceProp = referenceMember.Member as PropertyInfo;
-            var referenceEntityInfo = this.DatasetInfo.GetOrCreateEntity(referenceProp.DeclaringType);
-            var relation = this.EntityInfo.GetOrCreateReference(referenceEntityInfo, ReferenceKinds.ManyToOne);
+            var referenceEntityInfo = this.DatasetInfo.GetOrCreateEntityInfo(referenceProp.DeclaringType);
+            var relation = this.EntityInfo.GetOrCreateReference(referenceProp.Name,referenceEntityInfo, ReferenceKinds.ManyToOne);
             if (primaryExpression != null) {
                 var primaryMember = primaryExpression.Body as MemberExpression;
                 var primaryProp = referenceMember.Member as PropertyInfo;
@@ -53,8 +53,8 @@ namespace Yanyitec.ORM
         {
             var referenceMember = referenceExpression.Body as MemberExpression;
             var referenceProp = referenceMember.Member as PropertyInfo;
-            var referenceEntityInfo = this.DatasetInfo.GetOrCreateEntity(referenceProp.DeclaringType);
-            var relation = this.EntityInfo.GetOrCreateReference(referenceEntityInfo, ReferenceKinds.ManyToOne);
+            var referenceEntityInfo = this.DatasetInfo.GetOrCreateEntityInfo(referenceProp.DeclaringType);
+            var relation = this.EntityInfo.GetOrCreateReference(referenceProp.Name,referenceEntityInfo, ReferenceKinds.ManyToOne);
             if (referenceFieldExpression != null)
             {
                 var fieldMember = referenceFieldExpression.Body as MemberExpression;
@@ -76,8 +76,8 @@ namespace Yanyitec.ORM
         {
             var referenceMember = referenceExpression.Body as MemberExpression;
             var referenceProp = referenceMember.Member as PropertyInfo;
-            var referenceEntityInfo = this.DatasetInfo.GetOrCreateEntity(referenceProp.DeclaringType);
-            var relation = this.EntityInfo.GetOrCreateReference(referenceEntityInfo, ReferenceKinds.OneToMany);
+            var referenceEntityInfo = this.DatasetInfo.GetOrCreateEntityInfo(referenceProp.DeclaringType);
+            var relation = this.EntityInfo.GetOrCreateReference(referenceProp.Name,referenceEntityInfo, ReferenceKinds.OneToMany);
             if (referenceFieldExpression != null)
             {
                 var fieldMember = referenceFieldExpression.Body as MemberExpression;
@@ -100,8 +100,8 @@ namespace Yanyitec.ORM
         {
             var referenceMember = referenceExpression.Body as MemberExpression;
             var referenceProp = referenceMember.Member as PropertyInfo;
-            var referenceEntityInfo = this.DatasetInfo.GetOrCreateEntity(referenceProp.DeclaringType);
-            var relation = this.EntityInfo.GetOrCreateReference(referenceEntityInfo, ReferenceKinds.ManyToMany);
+            var referenceEntityInfo = this.DatasetInfo.GetOrCreateEntityInfo(referenceProp.DeclaringType);
+            var relation = this.EntityInfo.GetOrCreateReference(referenceProp.Name,referenceEntityInfo, ReferenceKinds.ManyToMany);
             var referenceFieldMember = referenceFieldExpression.Body as MemberExpression;
             var referenceFieldProp = referenceFieldMember.Member as PropertyInfo;
             var primaryFieldMember = primaryFieldExpression.Body as MemberExpression;
