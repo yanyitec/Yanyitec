@@ -1,0 +1,22 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+	<meta charset="utf-8" />
+	<link href="Themes/default/yi.css" type="text/css" rel='stylesheet'></link>
+</head>
+<body>
+<script type="text/javascript" src="Scripts/yi.common.js"></script>
+<script type="text/javascript">
+$module.config({
+	baseUrl : "Scripts/",
+	paths : {}
+}).load("jquery-1.6.4","yi.ui").done(function(jq,cor,ui){
+	$module("jquery",function(){return $;});
+	$y.messageBox({
+		text:"hello"
+	}).done(function(rs){alert(rs);});
+});
+</script>
+</body>
+</html>
