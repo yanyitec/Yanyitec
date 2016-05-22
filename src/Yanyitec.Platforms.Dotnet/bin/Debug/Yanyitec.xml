@@ -1,0 +1,370 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Yanyitec</name>
+    </assembly>
+    <members>
+        <member name="T:Yanyitec.IRWLocker">
+            <summary>
+            读写锁的抽象接口
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.EnterReadLock">
+            <summary>
+            进入读锁临界区
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.ExitReadLock">
+            <summary>
+            退出读锁临界区
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.EnterWriteLock">
+            <summary>
+            进入写锁临界区
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.ExitWriteLock">
+            <summary>
+            退出写锁临界区
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.UpgradeToWriteLock">
+            <summary>
+            升级到写锁临界区
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.DowngradeToReadLock">
+            <summary>
+            降级到读锁
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.ExitLock">
+            <summary>
+            退出锁保护临界区
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.ReadCritical">
+            <summary>
+            usage: 
+            using(locker.ReadCritical()){...}
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.IRWLocker.WriteCritical">
+            <summary>
+            usage: 
+            using(locker.WriteCritical()){...}
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.Injecting.Injection.LoadFromArtifact(Yanyitec.IArtifact,Yanyitec.Injecting.ItemCollection)">
+            <summary>
+            该函数不是线程安全安全的，没有用Lock保护
+            </summary>
+            <param name="artifact"></param>
+            <param name="items"></param>
+        </member>
+        <member name="F:Yanyitec.Injecting.InjectionKinds.Singleon">
+            <summary>
+            单例，每次CreateInstance只会得到一个值。
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.InjectionKinds.Container">
+            <summary>
+            容器，createInstance根本不能使用
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.InjectionKinds.Constant">
+            <summary>
+            固定值，在Register时就规定好了值(可能由constantValue传入，或者在SetItem时就运行instanceFactory)
+            
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.InjectionKinds.NewOnce">
+            <summary>
+            每次创建只创建一次
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.InjectionKinds.AlwaysNew">
+            <summary>
+            总是重新创建
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Injecting.InjectionKinds.Create">
+            <summary>
+            动态创建.生成的代码不是new T(),而是 dependentItem.CreateInstance();
+            </summary>
+        </member>
+        <member name="M:Yanyitec.Injecting.InstanceFactoryGenerator.ValueExpression(System.Collections.Generic.List{System.Linq.Expressions.ParameterExpression},System.Collections.Generic.Dictionary{System.Int32,System.Linq.Expressions.ParameterExpression},System.Collections.Generic.Dictionary{System.String,System.Linq.Expressions.ParameterExpression},System.Collections.Generic.List{System.Linq.Expressions.Expression},System.Type)">
+            <summary>
+            该函数会被其他的Generator调用
+            </summary>
+            <param name="locals"></param>
+            <param name="typedVars"></param>
+            <param name="namedVars"></param>
+            <param name="creations"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.JQuery.Filter.Check(Yanyitec.Dom.IHtmlElement,Yanyitec.Dom.IHtmlElement)">
+            <summary>
+            检查是否符合要求
+            </summary>
+            <param name="elem">要检查的元素</param>
+            <param name="root">根元素context，检查到这里为止。如果是null就表示检查整个document</param>
+            <returns>下一次检查的元素，null表示检查失败，不用再检查</returns>
+        </member>
+        <member name="M:Yanyitec.JQuery.Selector.GenChildFilter(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="expression"></param>
+            <exception cref="T:System.NotSupportedException"></exception>
+            <returns></returns>
+        </member>
+        <member name="T:Yanyitec.JQuery.AttributeFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.ChildFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.ClassFilter">
+            <summary>
+            .success
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.DescendantFilter">
+            <summary>
+            div .error
+            descendant selector
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.GroupFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.IdFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.MultFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.NthChildFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.NthOfTypeFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.PseudoChildFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.PseudoFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="T:Yanyitec.JQuery.TagFilter">
+            <summary>
+            div
+            </summary>
+        </member>
+        <member name="M:Yanyitec.Mvc.IInputData.GetContextValue(System.Type)">
+            <summary>
+            根据类型得到上下文相关变量的值
+            </summary>
+            <param name="type"></param>
+            <returns></returns>
+        </member>
+        <member name="P:Yanyitec.Runtime.ArtifactLoader.PackageDirectory">
+            <summary>
+            运行时包的位置
+            </summary>
+        </member>
+        <member name="P:Yanyitec.Runtime.ArtifactLoader.OutputDirectory">
+            <summary>
+            动态编译的输出位置
+            </summary>
+        </member>
+        <member name="M:Yanyitec.Runtime.PrecompiledArtifact.GetResource(System.String)">
+            <summary>
+            获取资源
+            </summary>
+            <param name="name"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.Runtime.PrecompiledArtifact.GetResourceText(System.String,System.Text.Encoding)">
+            <summary>
+            获取资源字符串
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.Runtime.ProjectArtifact.#ctor(System.Threading.ReaderWriterLockSlim,Yanyitec.Storaging.IStorageDirectory,Yanyitec.Storaging.IStorageDirectory,Yanyitec.Runtime.IArtifactLoader)">
+            <summary>
+            如果第一个同步参数没有设置，就认为是独立的项目，会自己监听源代码目录
+            如果设置了第一个参数，则认为不是独立项目，由外面的来监听目录变化，调用Source_Changed
+            ArtifactLoader 中使用
+            </summary>
+            <param name="synchronizingObject"></param>
+            <param name="sourceDir"></param>
+            <param name="outputDir"></param>
+            <param name="assemblyLoader"></param>
+        </member>
+        <member name="P:Yanyitec.Runtime.ProjectArtifact.SourceStorage">
+            <summary>
+            文件变化时重新编译源及其后继依赖
+            </summary>
+        </member>
+        <member name="P:Yanyitec.Runtime.ProjectArtifact.OutputDirectory">
+            <summary>
+            编译文件输出目录
+            </summary>
+        </member>
+        <member name="M:Yanyitec.IArtifact.GetResource(System.String)">
+            <summary>
+            获取资源
+            </summary>
+            <param name="name"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Yanyitec.IArtifact.GetResourceText(System.String,System.Text.Encoding)">
+            <summary>
+            获取资源字符串
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="P:Yanyitec.Storaging.StorageItem.RelativeName">
+            <summary>
+            Root = ""
+            Storage = "/"
+            其他的返回 /dir/filename
+            </summary>
+        </member>
+        <member name="M:Yanyitec.Testing.TestClassInfo.RunMethods(System.String)">
+            <summary>
+            运行类的测试方法
+            </summary>
+            <param name="methodName">null 表示所有的方法， 可以用 like表达式</param>
+            <param name="result">方法名，结果</param>
+            <returns></returns>
+        </member>
+        <member name="F:Yanyitec.Workflow.ActivityStates.WaitingStart">
+            <summary>
+            可能是手动设置状态为WaitingStart
+            或该活动已经激活但被前置条件阻塞,
+            无论何种状态，Execute时，都会运行TryStart
+            不再检查 StartMode
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.ActivityStates.Started">
+            <summary>
+            已经开始
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.ActivityStates.Dealing">
+            <summary>
+            执行中，还没有结果
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.ActivityStates.WaitingDeal">
+            <summary>
+            挂起了，下次还会执行
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.ActivityStates.Dealed">
+            <summary>
+            已经处理，Activiy上有执行结果
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.ActivityStates.WaitingFinish">
+            <summary>
+            等待结束，但后置条件不满足
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.ActivityStates.Finished">
+            <summary>
+            已经结束
+            </summary>
+        </member>
+        <member name="P:Yanyitec.Workflow.Execution.SyncObject">
+            <summary>
+            与Proccess 共用同步锁
+            该锁为可重入的读写锁
+            </summary>
+        </member>
+        <member name="T:Yanyitec.Workflow.ExecutionModes">
+            <summary>
+            执行模式
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.ExecutionModes.Automatic">
+            <summary>
+            自动执行
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.ExecutionModes.Manual">
+            <summary>
+            手动执行
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.ExecutionStates.Inactive">
+            <summary>
+            还未激活,不在执行队列里
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.ExecutionStates.Actived">
+            <summary>
+            已经进入到了执行队列
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.ExecutionStates.Running">
+            <summary>
+            正在执行中
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.ExecutionStates.Suspended">
+            <summary>
+            挂起，但还在队列中
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.ExecutionStates.Completed">
+            <summary>
+            已经结束，不在执行队列中
+            </summary>
+        </member>
+        <member name="F:Yanyitec.Workflow.Proccess._actived">
+            <summary>
+            已激活的Execution
+            </summary>
+        </member>
+        <member name="P:Yanyitec.Workflow.Proccess.SyncObject">
+            <summary>
+            可重入的读写锁
+            </summary>
+        </member>
+        <member name="P:Yanyitec.Workflow.Definations.Defination.Container">
+            <summary>
+            The container's alias
+            </summary>
+        </member>
+        <member name="P:Yanyitec.Workflow.Definations.Defination.Proccess">
+            <summary>
+            the process's alias
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,17 @@
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\Yanyitec.Platforms.Dotnet.exe.config
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\Yanyitec.Platforms.Dotnet.exe
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\Yanyitec.Platforms.Dotnet.pdb
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\Microsoft.CodeAnalysis.CSharp.dll
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\Microsoft.CodeAnalysis.dll
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\System.Collections.Immutable.dll
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\System.Reflection.Metadata.dll
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\Yanyitec.dll
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\Microsoft.CodeAnalysis.xml
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\Microsoft.CodeAnalysis.CSharp.xml
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\System.Collections.Immutable.xml
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\System.Reflection.Metadata.xml
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\Yanyitec.pdb
+D:\Portal\src\Yanyitec.Platforms.Dotnet\bin\Debug\Yanyitec.xml
+D:\Portal\src\Yanyitec.Platforms.Dotnet\obj\Debug\Yanyitec.Platforms.Dotnet.csprojResolveAssemblyReference.cache
+D:\Portal\src\Yanyitec.Platforms.Dotnet\obj\Debug\Yanyitec.Platforms.Dotnet.exe
+D:\Portal\src\Yanyitec.Platforms.Dotnet\obj\Debug\Yanyitec.Platforms.Dotnet.pdb
