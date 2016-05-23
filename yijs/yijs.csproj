@@ -158,7 +158,7 @@
     <Content Include="Scripts\modernizr-2.6.2.js" />
     <Content Include="Scripts\respond.js" />
     <Content Include="Scripts\respond.min.js" />
-    <Content Include="Scripts\yi.common.js" />
+    <Content Include="Scripts\yi.core.js" />
     <Content Include="Scripts\yi.ui.js" />
     <Content Include="Scripts\_references.js" />
     <Content Include="Themes\default\yi.css" />

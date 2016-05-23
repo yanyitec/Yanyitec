@@ -8,47 +8,211 @@ var global = window;
 //********************************
 var yi = global.yi =global.$y = {};
 
+var extend = yi.extend = function(target,opts,path,isConfig){
+	if(target!=this){
+		if(isConfig && target.config) return target.config(opts,path);
+		if(target.extend && target!=yi) target.extend(opts,path);
+	}
+	if(!path)path = "";
+	for(var n in opts){
+		var it = opts[n];
+		var exst = target[n];
+		if(exst===undefined) target[n] = it;
+		else if(isFunction(exst)){
+			if(!it)continue;
+			if(!isFunction(it))throw path + "." + n + " must be a function.";
+			else target[n] = it;
+		}else if(isArray(exst)){
+			if(!it)continue;
+			if(!isArray(it)) throw path + "." + n + " must be an array.";
+			else {
+				for(var i=0,j=it.length;i<j;i++){
+					var val = it[i];hasIt = false;
+					for(var p=0,m=exst.length;p<m;p++)if(exist[p]===val) {hasIt=true;break;}
+					if(!hasIt) exst.push(val);
+				}
+			}
+		}else if(typeof exst==="object"){
+			if(!it) continue;
+			if(typeof it !=="object") throw path + "." + n + " must be an object.";
+			extend(exst,it,path + "." + n);
+		}else{
+			target[n] = it;
+		}
+	}
+	return target;
+}
+yi.config = function(opts){return extend(yi,opts,"yi",true);}
+yi.override = function(target){
+	for(var i=1,j=arguments.length;i<j;i++){
+		var src = arguments[i];
+		for(var n in src) target[n] = src[n];
+	}
+	return target;
+}
+
+/// 扩展string
 var sp_ = String.prototype;
-/// <summary>去掉字符串两头的空格</summary>
-/// <returns type="String">去掉空格后的字符串</returns> 
-sp_.$trim = function(){return this.replace(/^\s+|\s+$/g,"");}
+sp_.$trim = yi.trim = function(){
+	/// <summary>去掉字符串两头的空格</summary>
+	/// <returns type="String">去掉空格后的字符串</returns> 
+	return this.replace(/^\s+|\s+$/g,"");
+}
 
-/// <summary>去掉字符串前面的空格</summary>
-/// <returns type="String">去掉空格后的字符串</returns> 
-sp_.$trimStart = function(){this.replace(/^\s+/g,"");}
-
-/// <summary>去掉字符串后面的空格</summary>
-/// <returns type="String">去掉空格后的字符串</returns> 
-sp_.$trimEnd = function(){this.replace(/\s+$/g,"");}
-
-/// <summary>判断字符串是否以s字符串作为开头</summary>
-/// <param name="s" type="String">可能 前导字符串</param>
-/// <returns type="Boolean">如果是以s开头返回true,否则返回false</returns> 
-sp_.$startWith=function(s){return this.substr(0, s.length) === s;}
-
-/// <summary>判断字符串是否以s字符串作为结束</summary>
-/// <param name="s" type="String">可能的后置字符串</param>
-/// <returns type="Boolean">如果是以s结束返回true,否则返回false</returns>
-sp_.$endWith=function(s){return (this.substr(this.length - s.length) === s);}
-
-/// <summary>判断字符串包含s作为子串</summary>
-/// <param name="s" type="String">子串</param>
-/// <returns type="Boolean">如果包含返回true,否则返回false</returns>
-sp_.$contains = function(s){return this.indexOf(s)>=0;}
+sp_.$trimStart = function(){
+	/// <summary>去掉字符串前面的空格</summary>
+	/// <returns type="String">去掉空格后的字符串</returns> 
+	this.replace(/^\s+/g,"");
+}
 
 
+sp_.$trimEnd = function(){
+	/// <summary>去掉字符串后面的空格</summary>
+	/// <returns type="String">去掉空格后的字符串</returns> 
+	this.replace(/\s+$/g,"");
+}
 
-sp_.$camelize = function camelize() {
+
+sp_.$startWith = yi.startWith =function(s,i){
+	/// <summary>判断字符串是否以s字符串作为开头</summary>
+	/// <param name="s" type="String">可能 前导字符串</param>
+	/// <param name="i" type="Boolean">是否忽略大小写</param>
+	/// <returns type="Boolean">如果是以s开头返回true,否则返回false</returns> 
+	return i?this.substr(0,s.length).toLowerCase() === s.toLowerCase():this.substr(0, s.length) === s;
+}
+
+
+sp_.$endWith = yi.endWith =function(s){
+	/// <summary>判断字符串是否以s字符串作为结束</summary>
+	/// <param name="s" type="String">可能的后置字符串</param>
+	/// <param name="i" type="Boolean">是否忽略大小写</param>
+	/// <returns type="Boolean">如果是以s结束返回true,否则返回false</returns>
+	return (this.substr(this.length - s.length) === s);
+}
+
+
+sp_.$contains = function(s){
+	/// <summary>判断字符串包含s作为子串</summary>
+	/// <param name="s" type="String">子串</param>
+	/// <param name="i" type="Boolean">是否忽略大小写</param>
+	/// <returns type="Boolean">如果包含返回true,否则返回false</returns>
+	return i? this.toLowerCase().indexOf(s.toLowerCase())>=0 : this.indexOf(s)>=0;
+}
+
+
+
+sp_.$camelize = yi.camelize = function camelize() {
   // /\-(\w)/g 正则内的 (\w) 是一个捕获，捕获的内容对应后面 function 的 letter
   // 意思是将 匹配到的 -x 结构的 x 转换为大写的 X (x 这里代表任意字母)
   return this.replace(/\-(\w)/g, function(all, letter) {return letter.toUpperCase();});
 }
+var format_regex = /\{(\d+)\}/g;
+yi.format = function(format){
+	var inputs = arguments;
+	return format.replace(format_regex,function(match,at){
+		return  inputs[parseInt(match.length==3?match[1]:match.substr(1,match.length-2))];
+	});
+}
 
-/// <summary>绑定函数的this 或 参数</summary>
-/// <param name="m" type="Object">this指针指向的对象,不可以为空</param>
-/// <param name="a" type="Array">指定的调用参数列表</param>
-/// <returns type="Function">形成一个新的函数。该函数的this指针总指向m。如果设置了a参数，无论给予新函数怎么样的参数表，其调用参数总是为指定的参数</returns>
-Function.prototype.$bind = function(m,a){var s = this;return function(){return self.apply(m,a||arguments);};}
+/// 扩展Array
+var arp_ = Array.prototype;
+arp_.$contains = function(it){for(var i=0,j=this.length;i<j;i++)if(this[i]===it)return true;return false;}
+arp_.$add = function(){ for(var i=0,j=arguments.length;i<j;i++)this.push(arguments[i]);return this;}
+var arrRemove = arp_.$remove = function(it){var k;for(var i=0,j=this.length;i<j;i++)if((k=this.shift())!==it) this.push(it);return k===it;}
+var otstr = Object.prototype;
+var isFunc = yi.isFunction = function (it) {return otstr.call(it) === '[object Function]';}
+var isArray= yi.isArray =  function (it) {return otstr.call(it) === '[object Array]';}
+arp_.$format = yi.formatArray = function(format){
+	var me = this;
+	return format.replace(format_regex,function(match,at){
+		return  me[parseInt(match.length==3?match[1]:match.substr(1,match.length-2))-1];
+	});
+}
+var ArrayObject = yi.ArrayObject = function(){
+	this.length = 0;
+	this.push = function(it){
+		this[this.length++] = it; return this;
+	}
+	this.pop = function(){
+		var rs = this[--this.length];
+		delete this[this.length];
+		return rs;
+	}
+	this.add = this.unshift = function(it){
+		for(var i=this.length++;i>0;i--) this[i] = this[i-1];
+		this[0] = it; return this;
+	}
+	this.shift = function(){
+		var rs = this[0];
+		for(var i= 0,j=this.length--;i<j;i++) this[i] = this[i+1];
+		delete this[this.length];
+	}
+	this.remove = function(it){
+		var at = 0,len = this.length;
+		for(var i= 0,j=len;i<j;i++) {
+			var exst = this[i];
+			if(exst!==it) this[at++] = exst;
+		}
+		for(var i=at;i<len;i++) delete this[i];
+		this.length = at+1;
+		return this;
+	}
+	return this;
+}
+
+/// 扩展function
+Function.prototype.$bind = function(m,a){
+	/// <summary>绑定函数的this 或 参数</summary>
+	/// <param name="m" type="Object">this指针指向的对象,不可以为空</param>
+	/// <param name="a" type="Array">指定的调用参数列表</param>
+	/// <returns type="Function">形成一个新的函数。该函数的this指针总指向m。如果设置了a参数，无论给予新函数怎么样的参数表，其调用参数总是为指定的参数</returns>
+	var s = this;return function(){return s.apply(m,a||arguments);};
+}
+yi.bind = function(f,m,a){
+	/// <summary>绑定函数的this 或 参数</summary>
+	/// <param name="f" type="Function">要绑定的函数</param>
+	/// <param name="m" type="Object">this指针指向的对象,不可以为空</param>
+	/// <param name="a" type="Array">指定的调用参数列表</param>
+	/// <returns type="Function">形成一个新的函数。该函数的this指针总指向m。如果设置了a参数，无论给予新函数怎么样的参数表，其调用参数总是为指定的参数</returns>
+	return function(){return f.apply(m,a||arguments);};
+}
+var Disable = yi.Disable = function(){throw "disabled";}
+var Enable = yi.Enable = function(){return "enabled";}
+var Cancel = yi.Cancel = function(){throw "canceled";}
+
+var dele = yi.delegate = function(){
+	var fs=[];
+	var dele = function(){
+		for(var i=0,j=fs.length;i<j;i++){
+			var f = fs.shift();
+			var rs = f.apply(this,arguments);
+			if(rs!==Disable) fs.push(f);
+			if(rs===Cancel)break;
+		}
+	}
+	dele["@funcs"] = fs;
+	dele.add = function(f){fs.push(f);return this;}
+	dele.remove = function(f){
+		var fn;
+		for(var i=0,j=fs.length;i<j;i++) if((fn=fs.shift())!==f) fs.push(fn);
+		return this;
+	}
+	dele.clear = function(){
+		this["@funcs"] = fs = [];return this;
+	}
+}
+
+//CreateInstance
+var typenameRegex = /^[\$_a-zA-Z][_a-zA-Z\$0-9]*(.[_a-zA-Z\$][_a-zA-Z\$0-9]*)*$/g;
+var cachedActivators = {};
+yi.createObject = function(tn,a){
+	var exst = cachedActivators[tn];
+	if(exst)return exst(a || []);
+	if(!tn.match(typenameRegex)) throw  "[" + tn + "] is not a valid type name.";
+	exst = cachedActivators[tn] = new Function("args","return new " + tn + "(args);");
+	return exst(a || []);
+};
+
 
 /// <summary>格式化日期</summary>
 /// <usage>
@@ -57,7 +221,7 @@ Function.prototype.$bind = function(m,a){var s = this;return function(){return s
 /// </usage>
 /// <param name="fmt" type="String">格式字符串</param>
 /// <returns type="String">格式化后的时间字符串</returns>
-Date.prototype.$format = function (fmt) { 
+Date.prototype.$format = yi.formatDate = function (fmt) { 
 
 	//author: meizz 
     var o = {
@@ -92,24 +256,9 @@ yi.parseDate = function(text){
 	
 	return new Date(y,M-1,d,h,m,s);
 }
-var arp_ = Array.prototype;
-arp_.$contains = function(it){for(var i=0,j=this.length;i<j;i++)if(this[i]===it)return true;return false;}
-arp_.$add = function(){ for(var i=0,j=arguments.length;i<j;i++)this.push(arguments[i]);return this;}
-arp_.$remove = function(it){var k;for(var i=0,j=this.length;i<j;i++)if((k=this.shift())!==it) this.push(it);return k===it;}
-var otstr = Object.prototype;
-var isFunc = yi.isFunction = function (it) {return otstr.call(it) === '[object Function]';}
-var isArray= yi.isArray =  function (it) {return otstr.call(it) === '[object Array]';}
 
-//CreateInstance
-var typeRegex = /^[\$_a-zA-Z][_a-zA-Z\$0-9]*(.[_a-zA-Z\$][_a-zA-Z\$0-9]*)*$/g;
-yi.createInstance = function(type,initArgs){
-	if(!type.match(typeRegex))return;
-	initArgs || (initArgs=[]);
-	var code = type + ".apply(type,initArgs);";
-	type = {};
-	eval(code);
-	return type;
-};
+
+
 
 var uuid_chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
 var uuid = yi.guid = function uuid(len, radix) {
@@ -135,6 +284,14 @@ var uuid = yi.guid = function uuid(len, radix) {
     }
     return uuid.join('');
 }
+var nextId1 = new Date().$format(".yyMMddhhmmssSS"),nextId0 = 0;
+yi.nextid = function(){
+	if(nextId0==9999) {
+		nextId1 = yi.formatDate.call(new Date(),".yyMMddhhmmssSS"));
+	}
+	return (nextId0++) + nextId1;
+}
+
 
 var slice = Array.prototype.slice;
 /// <summary>写日志函数</summary>
@@ -192,13 +349,18 @@ yi.keys = function(obj){
 	var ret = [];
 	for(var n in obj) ret.push(n);return ret;
 }
+yi.containKey = function(o,k,i){
+	if(i){k=k.toLowerCase();for(var n in obj) if(n.toLowerCase()===k)return true;}
+	else for(var n in o) if(n===k)return true;
+	return false;
+}
 yi.values = function(obj){
 	var ret = [];
 	for(var n in obj) ret.push(obj[n]);return ret;
 }
-
-var disabled = yi.disabled = function(){throw "disabled";}
-yi.enabled = {};
+yi.contains = function(o,k){
+	for(var i in o)if(o[i]===k)return true;
+}
 
 
 /// <summary>异步延迟对象(机制)</summary>
@@ -211,14 +373,15 @@ yi.enabled = {};
 var Deferred = yi.Deferred = function(fn,delay){
 	this.deferredStatus = function(){return this["@deferred.status"];}
 	this.deferredResult = function(){return this._deferredResult;}
-	this.isWaiting = function(){return this["@deferred.status"]=="waiting";}
+	this.deferredWaiting = function(){return this["@deferred.status"]=="waiting";}
+	this.deferredFinished = function(){var stat = this["@deferred.status"];return stat==='done'|| stat==='fail';}
 	this.when = function(fn,delay){
 		if(!fn)return this;
 		var me = this;
 		var f = function(){
 			var stat = this["@deferred.status"];
 			if(stat && stat!='waiting')throw "already done or fail.";
-			var  rv = fn.call(me,me);
+			var  retValue = fn.call(me,me);
 			if(!me["@deferred.status"]) return me.resolve(rv);
 		}
 		if(typeof delay==='number')setTimeout(fn,delay);
@@ -239,40 +402,50 @@ var Deferred = yi.Deferred = function(fn,delay){
 	this.done = function(cb){
 		if(!cb)return this;
 		var done = this["@deferred.status"]=="done";
-		if(done){ if(cb.call(this,this._deferredResult,true,this)===disabled)return this;}
-		 else (this["@deferred.done"] || (this["@deferred.done"]=[])).push(cb);
+		if(done){ 
+			var rs = this["@deferred.apply"]?cb.apply(this,this._deferredResult):cb.call(this,this._deferredResult,true);
+			if(rs===Disable)return this;
+		} 
+		(this["@deferred.done"] || (this["@deferred.done"]=[])).push(cb);
 		return this;
 	}
 	this.fail = function(cb){
 		if(!cb)return this;
 		var fail = this["@deferred.status"]=="fail";
-		if(fail){ if( cb.call(this,this._deferredResult,false,this)==disabled) return this;}
-		else (this["@deferred.fail"] || (this["@deferred.fail"]=[])).push(cb);
+		if(fail){ 
+			var rs = this["@deferred.apply"]?cb.apply(this,this._deferredResult):cb.call(this,this._deferredResult,true);
+			if(rs===Disable)return this;
+		} 
+		(this["@deferred.fail"] || (this["@deferred.fail"]=[])).push(cb);
 		return this;
 	}
 	this.then = function(cb){
 		if(!cb)return this;
-		var st = this["@deferred.status"],rd = status=='done' || status=='fail';
-		if(rd){ if(cb.call(this,this._deferredResult,st=='done',this)===disabled)return this ;}
-		else (this["@deferred.fail"] || (this["@deferred.fail"]=[])).push(cb);
+		var st = this["@deferred.status"],rd = st=='done' || st=='fail';
+		if(rd){ 
+			var rs = this["@deferred.apply"]?cb.apply(this,this._deferredResult):cb.call(this,this._deferredResult,this,true);
+			if(rs===Disable)return this;
+		}
+		(this["@deferred.then"] || (this["@deferred.then"]=[])).push(cb);
 		return this;
 	}
 	this.wait = function(){this["@deferred.status"]="waiting";return this;}
+	
 	this.resolve = function(call_v,apply_v){ 
 		this["@deferred.status"]='done';
 		this._deferredResult = apply_v|| call_v;
-		if(apply_v)this["@isApply"] = true;
+		if(apply_v)this["@deferred.apply"] = true;
 		var its;
 		if(its=this["@deferred.done"])for(var i=0,j=its.length;i<j;i++){
 			var it = its.shift();
 			var ctne = apply_v?it.apply_v(this,apply_v):it.call(this,call_v,this,true);
-			if(ctne!==disabled) its.push(it);
+			if(ctne!==Disable) its.push(it);
 		}
 		if(its=this["@deferred.then"]){
 			for(var i=0,j=its.length;i<j;i++){
 				var it = it=its.shift();
 				var ctne = apply_v?it.apply(this,apply_v):it.call(this,call_v,this,true);
-				if(ctne!==disabled) its.push(it);	
+				if(ctne!==Disable) its.push(it);	
 			}
 		}
 	}
@@ -280,18 +453,18 @@ var Deferred = yi.Deferred = function(fn,delay){
 	this.reject = function(call_v,apply_v){ 
 		this["@deferred.status"]='fail';
 		this._deferredResult = apply_v|| call_v;
-		if(apply_v)this["@isApply"] = true;
+		if(apply_v)this["@deferred.apply"] = true;
 		var its;
 		if(its=this["@deferred.fail"])for(var i=0,j=its.length;i<j;i++){
 			var it = its.shift();
 			var ctne = apply_v?it.apply_v(this,apply_v):it.call(this,call_v,this,false);
-			if(ctne!==disabled) its.push(it);
+			if(ctne!==Disable) its.push(it);
 		}
 		if(its=this["@deferred.then"]){
 			for(var i=0,j=its.length;i<j;i++){
 				var it = it=its.shift();
 				var ctne = apply_v?it.apply(this,apply_v):it.call(this,call_v,this,false);
-				if(ctne!==disabled) its.push(it);	
+				if(ctne!==Disable) its.push(it);	
 			}
 		}
 	}
@@ -358,7 +531,7 @@ var Timer = yi.Timer = function(tick,initFuncs,isTimeout){
 				var fn;
 				for(var i=0,j=funcs.length;i<j;i++){
 					fn=funcs.shift();
-					if(fn.call(this,this)!==disabled) funcs.push(fn);
+					if(fn.call(this,this)!==Disable) funcs.push(fn);
 				}
 			},tick);
 		}
@@ -381,10 +554,210 @@ var Timer = yi.Timer = function(tick,initFuncs,isTimeout){
 var immediate = Timer.immediate = new Timer(0);
 var fiftyTimer = Timer.fifty = new Timer(50);
 
-})(global,document);
+/********************************************
+/ Resource
+/********************************************/
+var res = yi.res={};
+var protocols = res.protocols = ["http://","https://"];
+res.basUrl = "";
+
+var paths = res.paths ={},resolvedPaths = res["@resolvedUrls"]={};
+res.cached = {};
+
+var isAbsoluteUrl = res.isAbsoluteUrl = function(url){
+	for(var i=0,j=protocols.length;i<j;i++)
+		if(yi.startWith.call(url,protocols[i],true))return true;
+	return false;
+}
+var resolveUrl = res.resolveUrl = function(name,nocache){
+	var url,replaced = false;
+	if(url = resolvedPaths[name])return url;else url = name;
+	for(var n in paths){
+		if(name.indexOf(n)==0 && name[n.length]==='/'){
+			var k = paths[n];
+			url =  k + name.substring(n.length);
+			replaced = k;
+			break;
+		}
+	}
+	if(isAbsoluteUrl(url)){
+		if(!replaced)return url;
+		if(isAbsoluteUrl(replaced)){
+			
+		}else url = (res.basUrl|| "") + url;
+	}
+	
+	if(url.indexOf("?")<0 && !nocache) resolvedPaths[name] = url;
+	return url;
+}
+var imgexts = res.imageExts = [".gif",".png",".jpg"];
+var isImageExt = res.isImageExt = function(ext){
+	for(var i=0,j=imgexts.length;i<j;i++) if(imgexts[i]===ext)return true;
+	return false;
+}
+
+
+var resElementCreators = res.elementCreateors = {
+	".js" : function(url){
+		var dfd = new  Deferred();
+		dfd.url = url;dfd.type = ".js";
+		var elm =dfd.element = document.createElement("script");
+		elm.type = "text/javascript";
+		elm.src = url;
+		
+		if(elm.onload==null)elm.onload = function(){dfd.done(dfd);};
+		else elm.onreadystatechange = function(){if(elm.readyState==4 || elm.readyState=='complete') {dfd.done(dfd);}}
+		elm.onerror = function(e){dfd.fail(null,[dfd,".js",url,e]);};
+		return dfd;
+	} ,
+	".img" : function(url){
+		var dfd = new  Deferred();
+		dfd.url = url;dfd.type = ".img";
+		var elm  =dfd.element = document.createElement("img");
+		elm.src = url;
+		
+		if(elm.onload==null)elm.onload = function(){dfd.done(dfd);};
+		else elm.onreadystatechange = function(){if(elm.readyState==4 || elm.readyState=='complete') dfd.done(dfd);}
+		elm.onerror = function(){dfd.fail(null,[dfd,".img",url,e]);};
+		return dfd;
+	},
+	".css" : function(url){
+		var dfd = new  Deferred();
+		dfd.url = url;dfd.type = ".css";
+		var elm = dfd.element = document.createElement("link");
+		elm.type = "text/css";elem.rel = "stylesheet";
+		elm.href = url;
+		
+		if(elm.onload==null)elm.onload = function(){dfd.done(dfd);};
+		else elm.onreadystatechange = function(){if(elm.readyState==4 || elm.readyState=='complete') dfd.done(dfd);}
+		elm.onerror = function(){dfd.fail(dfd);};
+		return dfd;
+	}
+}
+var loadRes = res.loadRes= yi.loadRes = function(url,type){
+	var hd = document.getElementsByTagName("HEAD");
+	hd = hd[0]|| document.body || document.documentElement;
+	var getResType = function(url){
+		var at = url.lastIndexOf(".");
+		if(at<=0){log(format.call("trade res {1} as .js",url));return ".js";}
+		var ext = url.substr(at).toLowerCase();
+		if(isImageExt(ext))return ".img";
+		return ext;
+	}
+	loadRes = yi.loadRes = function(url,type){
+		type ||(type = getResType(url));
+		var dfd = resElementCreators[type](url);
+		dfd.wait();
+		if(type!=='.img')hd.appendChild(elm);
+		return dfd;
+	}
+	return loadRes(url,type);
+}
+
+var Module = function(init_fn,dep_c){
+	
+	this.tryComplete = function(){
+		//还有依赖项没有加载完成
+		if(--dep_c!=0)return false;
+		//所有依赖项都已经加载完成，从loading列表中移除
+		arrRemove.call(Module.loadings,this);
+		if(init_fn){
+			//模块有初始化函数，调用初始化函数
+			var args =[],deps = this.deps;
+			for(var n in deps) args.push(deps[n].returnValue);
+			var rs = init_fn.apply(mod,args);
+			//调用模块初始化函数没有在等待状态，就结束掉调用模块
+			if(!this.isWaiting())this.resolve(rs);
+			//否则就等待 init_fn
+		}else{
+			//调用模块没有初始化函数,可以直接结束
+			this.resolve();
+		}
+		this.tryComplete =function(){}
+		//调用模块告诉它的调用模块，没有正在加载的模块。
+		return true;
+	}
+	this.deps = {};
+}
+Module.prototype = new Deferred();
+Module.loadings = [];
+Module.cached = {};
+Module.findLoadings = function(dep_res){
+	var loadings = Module.loadings;
+	var rs = [];
+	for(var i in loadings){
+		var ctx = loadings[i];
+		if(ctx.deps[dep_res.name]) rs.push(ctx);
+	}
+	return rs;
+}
+
+
+var load = function(dep_names,init_fn){
+	
+	if(typeof dep_names==="string"){
+		//处理这种用法 : define("jquery",function(){return $;});
+		var res = output_mod = new Deferred(init_fn);
+		res.name = dep_names;
+		cachedRes[dep_names] = res;
+		return res;
+	}
+	//依赖项数量
+	var dep_c = dep_names.length,err;
+	var mod  = new Module(init_fn,dep_c);//一开始就是initing的.
+	var deps = mod.deps;
+	
+	//依赖项加载后的回调函数
+	var dep_loaded = function(dep_res){
+		//有错误就立即终止
+		if(err)return Disable;
+		var ctxs = Module.findLoadings(dep_res);
+		for(var i in ctxs){
+			var ctx = ctxs[i];
+			ctx.tryComplete();
+		}
+		
+		//该函数被加载到了被加载项的done里面，只要done掉，就应该从done事件中移除。
+		return Disable;
+	};
+	for(var i=0,j=dep_c;i<j;i++){
+		var dep_name = dep_names[i];
+		if(!dep_name)continue;
+		//依赖项必须是唯一的
+		if(deps[dep_name]) throw "Name in depdences must be unique.";
+		//试图从缓存中获取依赖项的资源
+		var dep_res = cachedRes[dep_name];
+		if(dep_res){
+			//有缓存，把dep_loaded函数加入到依赖项资源的done事件中
+			deps[dep_name] = {res:dep_res,name:dep_name,mod:mod};
+			dep_res.done(dep_loaded);
+		}else{
+			//没有缓存，第一次加载
+			//调用loadRes函数真正加载
+			var url = resolveUrl(dep_name);
+			dep_res = cachedRes[dep_name] = loadRes(url).done(dep_loaded).fail(function(res){err= res;throw "cannot load resource:" + res.name;});
+			dep_res.name = dep_name;
+			deps[dep_name] = {res:dep_res,name:dep_name,mod:mod};
+		}
+		
+	} 	
+	return mod;
+}
+
+res.require = yi.require = global.$require = function(){
+
+
+
+res.config = function(opts){return yi.extend(res,opts,"yi.res",opts,true);}
+
+//module.load = function(deps){return module.apply(this,arguments)}
+
+
+})(global,document,location);
+
 
 (function(global,document,undefined){
-var yi = global.$y,isArray = yi.isArray,isFunction = yi.isFunction,disabled = yi.disabled,enabled = yi.enabled;
+var yi = global.$y,isArray = yi.isArray,isFunction = yi.isFunction,Disable = yi.Disable,enabled = yi.enabled;
 var increment_id = 0;
 //兼容google 的代码，google的函数这些文字在function中是保留属性名
 var  reservedPropertyNames = {
@@ -472,7 +845,7 @@ var Observable =yi.Observable= function(name,target){
 		/// <param name="evtname" type="String">事件名。如果该函数第2个参数没有，evtname='valuechange'.如果该值设置为enabled/disabled对象，表示启用/禁用事件</param>
 		/// <param name="evt" type="Object">事件对象</param>
 		/// <returns type="Object">监听器本身</returns>
-		if(evtname===disabled){
+		if(evtname===Disable){
 			this["@trigger_disabled"] = true;
 			return this;
 		}
@@ -893,159 +1266,6 @@ yi.ajax = global.$ajax  = function(opts){return new HttpRequest(opts).send(opts.
 
 
 
-(function(global,document,location,undefined){
-//module/require
-var yi = global.$y,Deferred = yi.Deferred,extend = yi.extend,disabled = yi.disabled,keys = yi.keys,values = yi.values;
-var scptPths = {},resolvedPths={},scptBas = "";
-var cachedScpts ={};
-var resolveUrl = function(pths,bas,name,exts){
-	var url = name;
-	for(var n in pths){
-	if(name.indexOf(n)==0 && name[n.length]==='/'){
-		var k = pths[n];
-		url =  k + name.substring(n.length);
-		break;
-		}
-	}
-	if(exts && !url.$endWith(exts)) url += exts;
-	return bas + url;
-}
-var lastCompleteScript;
-var loadScript = yi.loadScript = function(url,initFn){
-	var hd = document.getElementsByTagName("HEAD");
-	hd = hd[0]|| document.body || document.documentElement;
-	loadScript = yi.loadScript = function(url){
-		var scpt = new  Deferred();
-		scpt.url = url;
-		var elm  =scpt.element = document.createElement("script");
-		elm.type = "text/javascript";
-		elm.src = url;
-		var loaded = function(){
-			lastCompleteScript = scpt;
-			if(!cb)return scpt.resolve(scpt);
-			//initFn.
-		}
-		if(elm.onload==null)elm.onload = function(){
-			scpt.resolve(scpt);
-		};
-		else elm.onreadystatechange = function(){
-			if(elm.readyState==4 || elm.readyState=='complete') scpt.resolve(scpt);
-		}
-		elm.onerror = function(err){scpt.fail(err);}
-		hd.appendChild(elm);
-		scpt.wait();
-		return scpt;
-	}
-	return loadScript(url);
-}
-
-var require  = yi.require = global.$require = function(names,nocache){
-	//if(typeof nocache ==='function'){cb = nocache;nocache = false;}
-	var dfd = new Deferred(),c = names.length,err;
-
-	var ready = function(scpt){
-		if(err)return disabled;
-		if(!nocache) {cachedScpts[scpt.name] = scpt;scpt.cached = true;}
-		if(--c==0)dfd.resolve();
-	};
-	for(var i=0,j=c;i<j;i++){
-		var n = names[i];
-		var xst = cachedScpts[n];
-		if(xst){
-			if(!nocache){
-				dfd.reject(err=xst);
-				return dfd.promise();
-			}else{
-				xst.done(ready);continue;
-			}
-			
-		}
-		var url = resolvedPths[n]||(resolvedPths[n]=resolveUrl(scptPths,scptBas,n));
-		var scpt = loadScript(url).done(ready).fail(function(scpt){dfd.reject(err = scpt);return disabled;});
-		if(!nocache)cachedScpts[n] = scpt;
-		scpt.name = n;
-	} 
-	return dfd.promise();
-};
-var output_mod,mod_id=1;
-
-var module = global.$module = yi.module = function(_deps,_cb){
-	var deps=_deps,cb = _cb;
-	if(typeof deps==="string"){
-		if( typeof cb==='function'){
-			var mod = output_mod = new Deferred(cb);
-			mod.name = deps;
-			cachedScpts[mod.name] = mod;
-			return mod;
-		}else {
-			deps =arguments;
-			cb= null;
-		}
-		
-	}
-	var curr_mod =output_mod = new Deferred(),c = deps.length,dnc=0,rslt = {},err;
-	if(cb===null) output_mod = null;
-	curr_mod.id = (++mod_id>2100000000)?1:mod_id;
-	var tryDone = function(){
-		if(--c==0){
-			var curr_rs ;
-			if(cb) {
-				curr_rs = cb.apply(curr_mod,values(rslt));
-				if(!curr_mod.isWaiting()){
-					curr_mod.resolve(curr_rs);
-				}
-			}else{
-				curr_mod.resolve(values(rslt),true);
-			}
-			//else wait cb invoke resolve
-		}
-	};	
-	var ready = function(scpt){
-		if(err)return disabled;
-		var dep_mod = output_mod;
-		if(dep_mod) {
-			dep_mod.name = scpt.name;
-			dep_mod.element = scpt.element;
-			dep_mod.done(function(val){
-				rslt[scpt.name] = val;
-				tryDone(); 
-			});
-		}else {
-			tryDone();
-		} 
-		
-		output_mod = null;
-		return disabled;
-	};
-	for(var i=0,j=c;i<j;i++){
-		var dep_n = deps[i];
-		if(!dep_n)continue;
-		rslt[dep_n] = null;
-		var existed = cachedScpts[dep_n];
-		if(existed)cachedScpts.done(ready);
-		else{
-			var url = resolvedPths[dep_n]||(resolvedPths[dep_n]=resolveUrl(scptPths,scptBas,dep_n,".js"));
-			var scpt = cachedScpts[dep_n] = loadScript(url).done(ready).fail(function(scpt){throw "cannot load " + scpt.name;});
-			
-			scpt.name = dep_n;
-		}
-	} 	
-	return curr_mod;
-}
-yi.require = global.$require = module;
-
-module.config = require.config = function(opts){
-	if(opts.baseUrl !==undefined){
-		scptBas = opts.baseUrl;
-		if(scptBas[scptBas.length-1]!='/')scptBas += "/";
-	}
-	if(opts.paths) extend(scptPths,opts.paths);
-	return module;
-}
-module.load = function(deps){return module.apply(this,arguments)}
-
-
-})(global,document,location);
 
 (function(window,document,undefined){
 var yi = window.$y;
