@@ -190,7 +190,7 @@ var Disable = yi.Disable = function(){throw "disabled";}
 var Enable = yi.Enable = function(){return "enabled";}
 var Cancel = yi.Cancel = function(){throw "canceled";}
 
-var dele = yi.delegate = function(){
+var delegate = yi.delegate = function(){
 	var fs=[];
 	var dele = function(){
 		for(var i=0,j=fs.length;i<j;i++){
@@ -210,6 +210,7 @@ var dele = yi.delegate = function(){
 	dele.clear = function(){
 		this["@funcs"] = fs = [];return this;
 	}
+	return dele;
 }
 
 //CreateInstance
@@ -606,8 +607,8 @@ var isImageExt = res.isImageExt = function(ext){
 	return false;
 }
 var resElementCreators = res.elementCreateors = {
-	".js" : function(url){
-		var dfd = new  Deferred();
+	".js" : function(url,dfd){
+		dfd || (dfd = new  Deferred());
 		dfd.url = url;dfd.type = ".js";
 		var elm =dfd.element = document.createElement("script");
 		elm.type = "text/javascript";
@@ -618,8 +619,8 @@ var resElementCreators = res.elementCreateors = {
 		elm.onerror = function(e){dfd.fail(null,[dfd,".js",url,e]);};
 		return dfd;
 	} ,
-	".img" : function(url){
-		var dfd = new  Deferred();
+	".img" : function(url,dfd){
+		dfd || (dfd = new  Deferred());
 		dfd.url = url;dfd.type = ".img";
 		var elm  =dfd.element = document.createElement("img");
 		elm.src = url;
@@ -629,8 +630,8 @@ var resElementCreators = res.elementCreateors = {
 		elm.onerror = function(){dfd.fail(null,[dfd,".img",url,e]);};
 		return dfd;
 	},
-	".css" : function(url){
-		var dfd = new  Deferred();
+	".css" : function(url,dfd){
+		dfd || (dfd = new  Deferred());
 		dfd.url = url;dfd.type = ".css";
 		var elm = dfd.element = document.createElement("link");
 		elm.type = "text/css";elem.rel = "stylesheet";
@@ -642,25 +643,150 @@ var resElementCreators = res.elementCreateors = {
 		return dfd;
 	}
 }
-var loadRes = res.loadRes= yi.loadRes = function(url,type){
-	var hd = document.getElementsByTagName("HEAD");
-	hd = hd[0]|| document.body || document.documentElement;
-	var getResType = function(url){
-		var at = url.lastIndexOf(".");
-		if(at<=0){log(format.call("trade res {1} as .js",url));return ".js";}
-		var ext = url.substr(at).toLowerCase();
-		if(isImageExt(ext))return ".img";
-		return ext;
-	}
-	loadRes = yi.loadRes = function(url,type){
-		type ||(type = getResType(url));
-		var dfd = resElementCreators[type](url);
-		dfd.wait();
-		if(type!=='.img')hd.appendChild(elm);
+var docHead;
+var getResType = function(url){
+	var at = url.lastIndexOf(".");
+	if(at<=0){log(format.call("trade res {1} as .js",url));return ".js";}
+	var ext = url.substr(at).toLowerCase();
+	if(isImageExt(ext))return ".img";
+	return ext;
+}
+
+loadRes = res.loadRes = function(url,type){
+	var dfd = new Deferred().wait();
+	type ||(type = getResType(url));
+	if(loadRes.suspend_tail){
+		var params = suspend_tail.load_params = {url:url,type:type,dfd :dfd};
+		loadRes.suspending(params);
 		return dfd;
 	}
-	return loadRes(url,type);
+	resElementCreators[type](url,dfd);
+	if(!docHead){
+		docHead = document.getElementsByTagName("HEAD");
+		docHead = hd[0]|| document.body || document.documentElement;
+	}
+	if(type!=='.img')docHead.appendChild(dfd.element);
+	return dfd;
 }
+
+//挂起加载
+//执行该操作有，其后所有的loadRes都不是真的执行了，而是进入到了队列
+loadRes.suspend = function(resume_cb){
+	var tail = loadRes["@suspendTail"];
+	if(!tail){
+		loadRes["@suspendTail"] = loadRes["@suspendHead"] ={load_params:[],resume_cb:resume_cb}; 
+		return;
+	}
+	var next = {load_params:[],resume_cb:resume_cb}; 
+	tail.next = next;
+	loadRes["@suspendTail"] = next;
+}
+
+//恢复加载
+//把前面挂起的
+loadRes.resume = function(){
+	var head = loadRes["@suspendHead"];
+	if(!head) throw "Not session began.or you invoke resume much more time than invoke suspend.";
+	var next = head.next;
+	if(next){
+		loadRes["@suspendHead"] = next;
+	}
+	
+	if(head.resume_cb)head.resume_cb.call(head);
+	var loads = head.load_params;
+	for(var i in loads){
+		var param = loads[i];
+		resElementCreators[param.type](param.url,param.dfd);
+		if(type!=='.img')docHead.appendChild(dfd.element);
+	}
+}
+loadRes.getSuspending = function(i){
+	if(typeof i ==='number'){
+		var c = loadRes["@suspendHead"],at=0;
+		while(c){
+			if(i===at++)return c;
+			c= c.next;
+		}
+	}
+	if(i==='head')return loadRes["@suspendHead"];
+	else if(i==='tail')return loadRes["@suspendTail"];
+	throw "invalid argument type";
+}
+
+//一个隐藏在闭包中的全局变量(针对module函数)
+//因为有用 loadSession
+//所以该变量的值只会是下列情形之一:
+// 1 null 本轮load已经结束或以前也没开始用过module
+// 2 当前module
+// 3 其依赖项产生的 ctx
+var waitingModules=[],waitingModule;
+var loadModule = function(dep_names,init,dfd){
+	if(loadingModule){
+		dfd.wait();
+		waitingModules.push(function(){loadModule(dep_names,init,dfd);});
+	}
+
+	loadingModule = dfd;
+	
+	//if(define.loading) throw "define.loading has value. A file should invoke define ONLY once.";
+	//依赖项数量,已加载数量，已完成数量
+	var dep_c = dep_names.length,loaded_c = 0,complete_c=0;
+	var deps = ctx.deps = {},loaded_ctxs = [];
+	loaded_ctx = ctx;
+	var tryAddToWaitingList = function(loadedDep,loadedCtx,waitingCtxs){
+		for(var i in waitingCtxs)if(waitingCtxs[i]===loadedCtx) return false;
+		var deps = loadedCtx.depts;
+		for(var n in deps) {
+			var dep = deps[n];
+			if(dep.res===loadedDep){
+				waitingCtxs.push(loadedCtx);
+			}
+		}
+	}
+	var try_complete = function(){
+		//还有依赖项没加载
+		if(--dep_c!=0)return false;
+		var args =[];
+		for(var n in deps) args.push(deps[n].returnValue);
+		var rs = init.apply(ctx,args);
+		if(!ctx.reenterable && ctx.name){
+			require.cached[ctx.name] = ctx;
+			ctx.depnames = dep_names;
+		}
+		if(!ctx.isWaiting()){
+			//init已经完成
+			ctx.resolve(rs);
+		}
+		return true;
+	}
+	//依赖项加载后的回调函数
+	var dep_loaded = function(dep_res){
+		//有错误就立即终止
+		if(err)return Disable;
+		
+		tryAddCtxs(loaded_ctx);
+		//该函数被加载到了被加载项res的done里面，只要done掉，就应该从done事件中移除。
+		return Disable;
+	};
+	//挂起资源加载，直到本模块的所有依赖项加载完成
+	
+	for(var i=0,j=dep_names.length;i<j;i++){
+		var dep_name = dep_names[i];
+		if(!dep_name)continue;
+		//依赖项必须是唯一的
+		if(deps[dep_name]) throw "Name in depdences must be unique.";
+		
+		var url = resolveUrl(dep_name);
+		var dep_res = loadRes(url).done(dep_loaded).fail(function(res){err= res;throw "cannot load resource:" + res.name;});
+		dep_res.name = dep_name;
+		//模块的依赖项，总被被当作模块，进入模块缓存
+		module.cached[dep_name] = dep_res;
+		deps[dep_name] = {res:dep_res,name:dep_name,ctx:ctx,index:i};
+	} 
+	return mod;
+}
+
+
 //每个文件只能调用define一次,但在define里面可以再调用define(name,function(){}).
 var require = function(dep_names,init){
 	var dep_c ,err;
@@ -681,9 +807,10 @@ var require = function(dep_names,init){
 	//if(define.loading) throw "define.loading has value. A file should invoke define ONLY once.";
 	//依赖项数量
 	dep_c = dep_names.length;
-	var ctx =  new Deferred();
-	ctx.init = init;
-	if(init) require.loaded  = ctx;
+	//请求上下文
+	var req_ctx = require.__last_ctx =  Referred();
+	
+	req_ctx.deps = {};
 	var deps = ctx.deps;
 	var try_complete = function(){
 		//还有依赖项没加载
@@ -705,9 +832,13 @@ var require = function(dep_names,init){
 	var dep_loaded = function(dep_res){
 		//有错误就立即终止
 		if(err)return Disable;
-		var dep_define = require.loaded;
-		//清除数据，等待下次调用define
-		require.loaded = null;
+		var last_ctx = require.__last_ctx;
+		//上次产生的上下文跟返回后得到的上下文一致
+		//表示 dep_res里面的脚本有
+		if(last_cxt === req_ctx){
+		
+		}
+		__last_ctx.loaded = null;
 		if(!init){ try_complete();return Disable;}
 		if(dep_define && dep_define!=ctx){
 			//刚加载依赖项调用了define
@@ -733,13 +864,12 @@ var require = function(dep_names,init){
 		if(!dep_name)continue;
 		//依赖项必须是唯一的
 		if(deps[dep_name]) throw "Name in depdences must be unique.";
-		var dep_define = require.cached[dep_name];
-		if(dep_define){
-			if(dep_define.reenterable){
-				require(dep_define.depnames,dep_define.init);
-			}
-			else deps[dep_name] = { res:dep_res,name:dep_name,ctx:ctx,returnValue : dep_define.returnValue};
-			continue;
+		var dep_mod = require.cached[dep_name];
+		if(dep_mod){
+			//dep_mod.loaded(function(mod){
+			//	deps[dep_name].instance = mod.instance();
+			//	try_complete();
+			//});
 		}
 		var url = resolveUrl(dep_name);
 		var dep_res = loadRes(url).done(dep_loaded).fail(function(res){err= res;throw "cannot load resource:" + res.name;});
