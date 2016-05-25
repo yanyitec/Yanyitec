@@ -3,10 +3,335 @@
 <head>
     <title></title>
 	<meta charset="utf-8" />
+<script>
+var Global = window;
+(function(Global,document){
+var yi = Global.yi = function(){}
+
+/// <summary>异步延迟对象(机制)</summary>
+/// <usage>
+/// new defer(function(dfd){dfd.resolve('ok');}).done(function(result){yi.log(result);});
+/// </usage>
+/// <param name="fn" type="Function">有耗费时间的操作的函数，可以为空。如果该参数为空，后面的delay参数不起作用</param>
+/// <param name="delay" type="Boolean">该函数不会立即执行，而是随后执行。</param>
+/// <returns type="Object">defer对象</returns>
+var Defer = yi.Defer = function(cb,delay){
+	if(!cb) return this;
+	if(delay===undefined) {cb.call(this,this);return this;}
+	setTimeout(function(){cb.call(this,this);},parseInt(delay)||0);
+	return this;
+}
+
+Defer.prototype = {
+	"@defer.result":undefined
+	,"!defer.success":undefined
+	,"!defer.fail":undefined
+	,"!defer.change":undefined
+	,"@defer.status":undefined
+	,"*defer.makeArray":makeArray
+	,"@defer.disabled":Disabled
+	,resolve : function(rs){
+		this["@defer.status"]='defer.success';
+		this["@defer.result"] = rs;
+		var its ,it, dis = this["@defer.disabled"];
+		if(its=this["!defer.change"])
+			for(var i=0,j=its.length;i<j;i++) 
+				if((it=its.shift()).call(this,'defer.success')!==dis)its.push(it);
+		if(its=this["!defer.success"])
+			for(var i=0,j=its.length;i<j;i++) 
+				if((it=its.shift()).call(this,rs)!==dis)its.push(it);
+		return this;
+	}
+	,resolveWith : function(){ 
+		this["@defer.status"]='defer.success';
+		var rs = this["@defer.result"] = this["*defer.makeArray"](arguments);rs.isApply = true;
+		var its ,it, dis = this["@defer.disabled"];
+		if(its=this["!defer.change"])
+			for(var i=0,j=its.length;i<j;i++) 
+				if((it=its.shift()).call(this,'defer.success')!==dis)its.push(it);
+		if(its=this["!defer.success"])
+			for(var i=0,j=its.length;i<j;i++) 
+				if((it=its.shift()).apply(this,rs)!==dis)its.push(it);
+		return this;
+	}
+	,reject : function(rs){
+		this["@defer.status"]='!defer.fail~';
+		this["@defer.result"] = rs;
+		var its ,it, dis = this["@defer.disabled"];;
+		if(its=this["!defer.change"])
+			for(var i=0,j=its.length;i<j;i++) 
+				if((it=its.shift()).call(this,'defer.fail')!==dis)its.push(it);
+		if(its=this["!defer.fail"])
+			for(var i=0,j=its.length;i<j;i++) 
+				if((it=its.shift()).call(this,rs)!==dis)its.push(it);
+		return this;
+	}
+	,rejectWith : function(){ 
+		this["@defer.status"]='!defer.fail~';
+		var rs = this["@defer.result"] = this["*defer.makeArray"](arguments);rs.isApply = true;
+		var its ,it, dis = this["@defer.disabled"];;
+		if(its=this["!defer.change"])
+			for(var i=0,j=its.length;i<j;i++) 
+				if((it=its.shift()).call(this,'defer.fail')!==dis)its.push(it);
+		if(its=this["!defer.fail"])
+			for(var i=0,j=its.length;i<j;i++) 
+				if((it=its.shift()).apply(arguments)!==dis)its.push(it);
+		return this;
+	}
+	,wait : function(){
+		return this.notify("defer.waiting");
+	}
+	,notify : function(status){
+		var its ,it;
+		this["@defer.status"] = status, dis = this["@defer.disabled"];;
+		if(its=this["!defer.change"])
+			for(var i=0,j=its.length;i<j;i++) 
+				if((it=its.shift()).apply(arguments)!==dis)its.push(it);
+		return this;
+	}
+	
+	
+	,when:function(it){
+		this["@defer.result"] = it;
+		return this;
+	}
+	,whenWith:function(){
+		var rs = this["@defer.result"] = this["*defer.makeArray"](arguments);rs.isApply = true;
+		return this;
+	}
+
+	,success : function(cb){
+		if(!cb)return this;
+		var status = this["@defer.status"];
+		if(status=="defer.success"){ 
+			var rs = this["@defer.result"];
+			(rs && rs.isApply)?cb.apply(this,rs):cb.call(this,rs);
+			if(rs===this["@defer.disabled"])return this;
+		} 
+		(this["!defer.success"] || (this["!defer.success"]=[])).push(cb);
+		return this;
+	}
+	,fail : function(cb){
+		if(!cb)return this;
+		var status = this["@defer.status"];
+		if(status=="defer.fail"){ 
+			(rs && rs.isApply)?cb.apply(this,rs):cb.call(this,rs);
+			if(rs===this["@defer.disabled"])return this;
+		} 
+		(this["!defer.fail"] || (this["!defer.fail"]=[])).push(cb);
+		return this;
+	}
+	
+	,then : function(success,fail,change){
+		if(cuccess) this.cuccess(success);
+		if(fail)this.fail(fail);
+		if(change) (this["!defer.change"] || (this["!defer.change"]=[])).push(change);
+		return this;
+	}
+	
+	,promise : function(tgt){
+		if(!tgt){
+			if(this["@defer.promiseFrom"]) return this;
+			tgt = {};
+		}else if(tgt===this) throw "Can not promise self.";
+		//tgt.deferResult = function(){return me._referredResult;}
+		//tgt.deferStatus = function(){return me["@defer.status"];}
+		tgt.then = function(succcess,fail,change){tgt["@defer.promiseFrom"].then(success,fail,change);return this;}
+		tgt.success = function(cb){tgt["@defer.promiseFrom"].success(cb);return this;}
+		tgt.fail = function(cb){tgt["@defer.promiseFrom"].fail(cb);return this;}
+		tgt.promise = function(targ){return (!targ || targ==this) ? this : tgt["@defer.promiseFrom"].promise(targ);}
+		tgt["@defer.promiseFrom"] = me;
+		return tgt;
+	}
+	
+	,result : function(){return this["@defer.result"];}
+	,status : function(){return this["@defer.status"];}
+	,waiting : function(){return this["@defer.status"]=="defer.waiting";}
+	,failure : function(){return this["@defer.status"]=="defer.fail";}
+	,successful : function(){return this["@defer.status"]=="defer.success";}
+	,done : function(){var stat = this["@defer.status"];return stat==='defer.success'|| stat==='defer.fail';}
+}
+
+var makeArray = yi.makeArray = function(its){
+	var ret =[];for(var i in its) ret.push(its[i]);return ret;
+}
+var defer = yi.defer = Global.$defer = function(func,delay){
+	if(typeof func==='function') return new Defer(func,delay);
+	var ret = new Defer(function(df){
+		var rs =func.length && func.push && func.pop ? []:{};
+		var c = 0;
+		for(var n in func){
+			var item = {};
+			var it =func[n];
+			if(typeof it ==='function') it = new Defer(it);
+			dfs[n]=it;
+			it.success(function(val){ 
+				rs[this.name] = val;
+				if(--c===0) df.resolve(rs);
+			}).fail(function(e){df.reject(e);});
+			c++;
+		}
+	},delay);
+	return ret;
+	
+}
+Function.prototype.$deferred = function(){
+	return new Defer(this);
+}
+yi.delay = Global.$delay = function(tick){
+	var df = new Defer();
+	setTimeout(function(){df.resolve();},parseInt(tick) || 0);
+	return df;
+}
+
+var require = function(deps,cb){
+	
+}
+var protocols = res.protocols = ["http://","https://"];
+
+var isAbsoluteUrl = yi.isAbsoluteUrl = function(url){
+	for(var i=0,j=protocols.length;i<j;i++)
+		if(yi.startWith.call(url,protocols[i],true))return true;
+	return false;
+}
+var resolveUrl = yi.resolveUrl = function(name,nocache){
+	var url,replaced = false;
+	if(url = resolvedPaths[name])return url;else url = name;
+	for(var n in paths){
+		if(name.indexOf(n)==0 && name[n.length]==='/'){
+			var k = paths[n];
+			url =  k + name.substring(n.length);
+			replaced = k;
+			break;
+		}
+	}
+	if(isAbsoluteUrl(url)){
+		if(!replaced)return url;
+		if(isAbsoluteUrl(replaced)){
+			
+		}else url = (res.basUrl|| "") + url;
+	}
+	
+	if(url.indexOf("?")<0 && !nocache) resolvedPaths[name] = url;
+	return url;
+}
+var imgexts = require.imageExts = [".gif",".png",".jpg"];
+var isImageExt = require.isImageExt = function(ext){
+	for(var i=0,j=imgexts.length;i<j;i++) if(imgexts[i]===ext)return true;
+	return false;
+}
+var resElementCreators = res.elementCreateors = {
+	".js" : function(url){
+		var dfd = new  Deferred();
+		dfd.url = url;dfd.type = ".js";
+		var elm =dfd.element = document.createElement("script");
+		elm.type = "text/javascript";
+		elm.src = url;
+		
+		if(elm.onload==null)elm.onload = function(){dfd.done(dfd);};
+		else elm.onreadystatechange = function(){if(elm.readyState==4 || elm.readyState=='complete') {dfd.done(dfd);}}
+		elm.onerror = function(e){dfd.fail(null,[dfd,".js",url,e]);};
+		return dfd;
+	} ,
+	".img" : function(url){
+		var dfd = new  Deferred();
+		dfd.url = url;dfd.type = ".img";
+		var elm  =dfd.element = document.createElement("img");
+		elm.src = url;
+		
+		if(elm.onload==null)elm.onload = function(){dfd.done(dfd);};
+		else elm.onreadystatechange = function(){if(elm.readyState==4 || elm.readyState=='complete') dfd.done(dfd);}
+		elm.onerror = function(){dfd.fail(null,[dfd,".img",url,e]);};
+		return dfd;
+	},
+	".css" : function(url){
+		var dfd = new  Deferred();
+		dfd.url = url;dfd.type = ".css";
+		var elm = dfd.element = document.createElement("link");
+		elm.type = "text/css";elem.rel = "stylesheet";
+		elm.href = url;
+		
+		if(elm.onload==null)elm.onload = function(){dfd.done(dfd);};
+		else elm.onreadystatechange = function(){if(elm.readyState==4 || elm.readyState=='complete') dfd.done(dfd);}
+		elm.onerror = function(){dfd.fail(dfd);};
+		return dfd;
+	}
+}
+var hd = document.getElementsByTagName("HEAD");
+hd = hd[0]|| document.body || document.documentElement;
+
+var load = require.load= function(url,type){
+	if(!type){
+		var at = url.lastIndexOf(".");
+		if(at<=0){log(format.call("trade res {1} as .js",url));type = ".js";}
+		else {
+			var ext = url.substr(at).toLowerCase();
+			if(isImageExt(ext))type ".img";
+		}
+	}
+	var dfd = resElementCreators[type](url);
+	if(type!=='.img')hd.appendChild(elm);
+	return dfd;
+}
+
+
+
+
+var Observable = yi.Observable = function(){
+	this.subscribe = function(name,listener){
+		var ob = this["@observable.events"] || (this["@observable.events"]={});
+		var listeners = ob[name] || (ob[name]=[]);
+		listeners.push(tgt);
+		return this;
+	}
+	this.unsubscribe = function(name,listener){
+		var ob = this["@observable.events"];if(!ob)return this;
+		var listeners = ob[name];if(!listeners)return this;
+		for(var i=0,j-listeners.length;i<j;i++){
+			var fn;
+			if((fn=listeners.shift())!==listener) listeners.push(fn);
+		}
+		return this;
+	}
+	this.emit = function(name,args,apply){
+		var ob = this["@observable.events"];if(!ob)return this;
+		var listeners = ob[name];if(!listeners)return this;
+		var dis = Disabled,cc = Canceled;
+		for(var i=0,j-listeners.length;i<j;i++){
+			var listener = listeners[i];
+			var rs = (apply) ? listener.apply(this,args):listener.call(this,args);
+			if(rs!==Dis)listeners.push(listener);
+			if(rs===cc)return cc;
+		}
+		return this;
+	}
+}
+var Disabled = yi.Disabled = {toString : function(){return "disabled";}};
+var Enable = yi.Enabled = {toString : function(){return "enabled";}};
+var Canceled = yi.Canceled = {toString : function(){return "canceled";}};
+})(Global,document);
+
+</script>
 </head>
 <body>
-<script>
-
+<script type="text/javascript">
+<!--
+var fn1 = function(a){
+	this["@a"]=1;
+	this.m = function(){
+		this["@a"]++;
+	}
+}
+var fn2 = function(a){
+	this.m = function(){
+		a++;
+	}
+}
+var t = new Date();
+var o = new fn2();
+//for(var i=0;i<100000000;i++) o.m();
+//alert(new Date() - t);
+//-->
 </script>
 </body>
 </html>
