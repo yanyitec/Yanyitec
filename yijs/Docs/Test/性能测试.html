@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="Generator" content="EditPlus®">
+  <meta name="Author" content="">
+  <meta name="Keywords" content="">
+  <meta name="Description" content="">
+  <title>Document</title>
+ </head>
+ <body>
+ <div id="rs"></div>
+ （X*X+A）/(2*X)=X
+ A代表被开方数，X代表开方数，
+ 可以看出上式是一个恒等式，所以只需要随意带入一个X值就可以计算出更准确的X值了。
+ 例如：
+ 将7开平方：
+ （1*1+7）/（2*1）=4
+ （4*4+7）/（2*4）=2.875
+ （2.875*2.875+7）/（2*2.875）=2.654189……
+ （2.65*2.65+7）/（2*2.65）=2.645754……
+ 7的开方数为：2.64575131106……
+
+ 此方法也同样适用于更高次的开方，比如开立方。
+ 相应的只要把算式改成（X^3+A）/(2*X^2)=X就行了。
+ 例如：
+ 将7开立方：
+ （1^3+7）/（2*1^2）=4
+ （4^3+7）/（2*4^2）=2.21875
+ （2.21875^3+7）/（2*2.21875^2）=1.822216……
+ （1.822^3+7）/（2*1.822^2）=1.96543……
+  <script type="text/javascript">
+  <!--
+var kf = function(b,n,d){
+	//（X*X+A）/(2*X)=X
+ //A代表被开方数，X代表开方数，
+ //可以看出上式是一个恒等式，所以只需要随意带入一个X值就可以计算出更准确的X值了。
+	if(!d) d=0.000000001;r=1;
+	while(true){
+		var r = (Math.pow(r,n) + b) /(2*Math.pow(r,2));
+		if(Math.abs(Math.pow(r,n)-b)<=d){break;}
+		
+		//if((Math.abs(r,n)-b)<=d)break;
+	}
+	return r;
+}
+alert(kf(7,3));
+
+
+var Perf = function(){
+	this._execs = {};
+	this.repeat = function(val){
+		this._repeat = val;return this;
+	}
+	this.times = function(val){
+		this._times = val;return this;
+	}
+	this.prepare = function(prepare){
+		this._prepare = prepare;return this;
+	}
+	this.test = function(name,test){
+		var str = test.toString();
+		var at = str.indexOf("(");
+		var at1 = str.indexOf(")");
+		var paramName = str.substring(at + 1,at1);
+		
+		var at = str.indexOf("{",at1);
+		var at1 = str.lastIndexOf("}");
+		var body = str.substring(at+1,at1);
+
+		//var rs=[];for(var i=0,i<this._times;i++) setTimeout(,Math.random() * 1000);
+		var code = "var __$$t0$$_= new Date();for(var __$$i$$_=0;__$$i$$_<"+(this._repeat || 1000)+";__$$i$$_++){"+body+"};var __$$t1$$_ = new Date();return {'':__$$t1$$_-__$$t0$$_,'at':__$$at$$_,'name':__$$name$$_};";
+		var ocd = "var __$$t0$$_= new Date();";
+		var fn = new Function(paramName,"__$$name$$_","__$$at$$_",code);
+		this._execs[name] = fn;
+		return this;
+	}
+	this.exec = function(cb){
+		var result = {},me = this,c =0;
+		for(var n in this._execs){
+			var t = me._times;
+			for(var j=0;j<t;j++){
+				c++;
+				(function(name,at,fn,me){
+					setTimeout(function(){
+						var obj = me._prepare();
+						var func =fn;
+						var o = func.call(me,obj,name,j);
+						var sub = result[o.name] || (result[o.name]=[]);
+						sub[at] = o[""];
+						if(--c==0) cb.call(me,result);
+					},Math.random());
+				})(n,j,this._execs[n],this);
+			}
+		}
+	}
+	this.report = function(result,elem){
+		var stat = {};
+		var thead = "<thead><tr><th>Name</th>";
+		var tbody = "",tc = 0;
+		for(var n in result){
+			var data = result[n];
+			//if(!tbody) tbody += "</tr>";
+			tbody+= "<tr><th>" + n + "</th>";
+			var total =0,delta = 1;
+	
+			for(var i=0;i<this._times;i++){
+				total += data[i];delta += data[i];
+				if(!tc) {thead += "<th>" + i + "</th>";}
+				tbody += "<td>" + data[i] + "</td>";
+			}
+			tbody += "<td>"+total+"</td><td>"+total/this._times+"</td><td>"+kf(delta,this._times)+"</td>";
+			tbody += "</tr>";
+			if(!tc) thead+= "<th>Total</th><th>Avg(a)</th><th>Avg(g)</th></tr>";
+			tc++;
+			
+		}
+		var tb = "<table border='1'>" + thead + "</tr></thead>";;
+		tb += "<tbody>" + tbody + "</tr></tbody>";
+		tb+= "</table>";
+		elem.innerHTML = tb;
+		return this;
+	}
+}
+var pref = new Perf().times(10).repeat(50000000).prepare(function(){
+	var S = function(){ this._s =0;this["@s"]=0; this.m = function(){this._s++;}}
+	return new S();
+}).test("pre_",function(obj){
+	obj._s++;
+}).test("pre@",function(obj){
+	obj["@s"]++;
+}).exec(function(result){
+	this.report(result,document.getElementById("rs"));
+});
+	//var t0 = new Date();var s= new S();
+	//for(var i=0;i<1000000;i++){
+	//	
+	//}
+	//var t1 = new Date();
+	//alert(t1-t0);
+  //-->
+  </script>
+ </body>
+</html>
