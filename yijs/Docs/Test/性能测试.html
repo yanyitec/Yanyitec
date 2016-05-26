@@ -31,24 +31,10 @@
  （1.822^3+7）/（2*1.822^2）=1.96543……
   <script type="text/javascript">
   <!--
-var kf = function(b,n,d){
-	//（X*X+A）/(2*X)=X
- //A代表被开方数，X代表开方数，
- //可以看出上式是一个恒等式，所以只需要随意带入一个X值就可以计算出更准确的X值了。
-	if(!d) d=0.000000001;r=1;
-	while(true){
-		var r = (Math.pow(r,n) + b) /(2*Math.pow(r,2));
-		if(Math.abs(Math.pow(r,n)-b)<=d){break;}
-		
-		//if((Math.abs(r,n)-b)<=d)break;
-	}
-	return r;
-}
-alert(kf(7,3));
-
 
 var Perf = function(){
 	this._execs = {};
+	this._codes = {};
 	this.repeat = function(val){
 		this._repeat = val;return this;
 	}
@@ -69,8 +55,10 @@ var Perf = function(){
 		var body = str.substring(at+1,at1);
 
 		//var rs=[];for(var i=0,i<this._times;i++) setTimeout(,Math.random() * 1000);
-		var code = "var __$$t0$$_= new Date();for(var __$$i$$_=0;__$$i$$_<"+(this._repeat || 1000)+";__$$i$$_++){"+body+"};var __$$t1$$_ = new Date();return {'':__$$t1$$_-__$$t0$$_,'at':__$$at$$_,'name':__$$name$$_};";
-		var ocd = "var __$$t0$$_= new Date();";
+		var code = "var __$$t0$$_= new Date();for(var __$$i$$_=0;__$$i$$_<"+(this._repeat || 1000)+";__$$i$$_++){\n\n"+body+"\n\n};var __$$t1$$_ = new Date();";
+		this._codes[name] = code;
+		code += "return {'':__$$t1$$_-__$$t0$$_,'at':__$$at$$_,'name':__$$name$$_};";
+		
 		var fn = new Function(paramName,"__$$name$$_","__$$at$$_",code);
 		this._execs[name] = fn;
 		return this;
@@ -80,21 +68,25 @@ var Perf = function(){
 		for(var n in this._execs){
 			var t = me._times;
 			for(var j=0;j<t;j++){
-				c++;
+				//c++;
 				(function(name,at,fn,me){
-					setTimeout(function(){
-						var obj = me._prepare();
+					//setTimeout(function(){
+						var obj = me._prepare?me._prepare():undefined;
 						var func =fn;
 						var o = func.call(me,obj,name,j);
 						var sub = result[o.name] || (result[o.name]=[]);
 						sub[at] = o[""];
-						if(--c==0) cb.call(me,result);
-					},Math.random());
+					//	if(--c==0) cb.call(me,result);
+					//},parseInt(Math.random()*2000));
 				})(n,j,this._execs[n],this);
 			}
 		}
+		cb.call(me,result);
 	}
 	this.report = function(result,elem){
+		var htmlEncode = function(code){
+			return code.replace(/&/g,"&amp;").replace(/ /g,"&nbsp;").replace(/\t/g,"&nbsp;&nbsp;&nbsp;&nbsp;").replace(/</g,"&lt;").replace(/\n/g,"<br />");
+		}
 		var stat = {};
 		var thead = "<thead><tr><th>Name</th>";
 		var tbody = "",tc = 0;
@@ -102,33 +94,42 @@ var Perf = function(){
 			var data = result[n];
 			//if(!tbody) tbody += "</tr>";
 			tbody+= "<tr><th>" + n + "</th>";
-			var total =0,delta = 1;
+			var total =0;
 	
 			for(var i=0;i<this._times;i++){
-				total += data[i];delta += data[i];
+				total += data[i];
 				if(!tc) {thead += "<th>" + i + "</th>";}
 				tbody += "<td>" + data[i] + "</td>";
 			}
-			tbody += "<td>"+total+"</td><td>"+total/this._times+"</td><td>"+kf(delta,this._times)+"</td>";
+			tbody += "<td>"+total+"</td><td>"+total/this._times+"</td>";
 			tbody += "</tr>";
-			if(!tc) thead+= "<th>Total</th><th>Avg(a)</th><th>Avg(g)</th></tr>";
+			if(!tc) thead+= "<th>Total</th><th>Avg(a)</th></tr>";
 			tc++;
 			
 		}
 		var tb = "<table border='1'>" + thead + "</tr></thead>";;
 		tb += "<tbody>" + tbody + "</tr></tbody>";
+		var tfoot = "";var colspan = (this._times + 2);
+		for(var n in this._codes){
+			tfoot += "<tr><th>code:<br />" + htmlEncode(n) + "</th><td colspan='" + colspan + "'>" + htmlEncode(this._codes[n]) + "</td></tr>";
+		}
+		tb += "<tfoot>" + tfoot + "</tfoot>";
 		tb+= "</table>";
 		elem.innerHTML = tb;
 		return this;
 	}
 }
-var pref = new Perf().times(10).repeat(50000000).prepare(function(){
-	var S = function(){ this._s =0;this["@s"]=0; this.m = function(){this._s++;}}
+var pref = new Perf().times(15).repeat(50000000).prepare(function(){
+	var S = function(){ 
+		this["@evts"]=[];this["@evts"].push(function(s){return s++;});
+		this["@evt"] = function(b){return b--;}
+		
+	}
 	return new S();
-}).test("pre_",function(obj){
-	obj._s++;
-}).test("pre@",function(obj){
-	obj["@s"]++;
+}).test("obj['@evts'][0].call",function(obj){
+	obj["@evts"][0].call(obj,3);
+}).test("obj['@evt'].call",function(obj){
+	obj["@evt"].call(obj,2);
 }).exec(function(result){
 	this.report(result,document.getElementById("rs"));
 });

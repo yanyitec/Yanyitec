@@ -141,6 +141,7 @@
     <Content Include="Content\bootstrap.min.css" />
     <Content Include="Docs\Core\Defer.html" />
     <Content Include="Docs\Core\defer.js" />
+    <Content Include="Docs\Core\Observable.html" />
     <Content Include="Docs\Test\性能测试.html" />
     <Content Include="favicon.ico" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
