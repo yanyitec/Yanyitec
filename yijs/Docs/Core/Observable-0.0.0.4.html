@@ -717,8 +717,40 @@
 					}
 				}
 				return this;
-			},
-			
+			}
+			accessor : function(){
+				var me = this;
+				var accor = function(value){
+					var me = this["@observer.observer"];
+					if(value===undefined)return me["@observer.target"][me["@observer.name"]];
+					me.value(value);
+					return accor;
+				}
+				accor["@observer.observer"] = this;
+				accor.subscribe = function(evtname,subscriber){
+					var me = this["@observer.observer"];
+					me.subscribe(evtname,subscriber);
+					return accor;
+				}
+				accor.unsubscribe = function(evtname,subscriber){
+					var me = this["@observer.observer"];
+					me.unsubscribe(evtname,subscriber);
+					return accor;
+				}
+				accor.asArray = function(template){
+					var me = this["@observer.observer"];
+					me.asArray(template);
+					return accor;
+				}
+				accor.define = function(model){
+					var me = this["@observer.observer"];
+					me.define(model);
+					return actor;
+				}
+
+				this.accessor = function(){return accor;}
+				return this["@observer.accessor"]=accor;
+			} ,
 			prop : function(name,value){
 				var props = this["@observer.props"] || (this["@observer.props"]={});
 				var prop = props[name];
@@ -762,9 +794,8 @@
 				if(!defination) return this["@observer.define"];
 				if(defination.$defination===true){
 					this["@observer.define"] = defination;
-					defination = defination.value;
+					defination = defination.sub;
 				}
-				if(!defination)return this;
 				var props = this["@observer.props"] || (this["@observer.props"]={});
 				for(var pname in defination){
 					var member = defination[n];
@@ -823,45 +854,7 @@
 					return this;
 				}
 				return this;
-			},
-			accessor : function(){
-				var me = this;
-				var accor = function(value){
-					var me = this["@observer.observer"];
-					if(value===undefined)return me["@observer.target"][me["@observer.name"]];
-					me.value(value);
-					return accor;
-				}
-				accor["@observer.observer"] = this;
-				accor.subscribe = function(evtname,subscriber){
-					var me = this["@observer.observer"];
-					me.subscribe(evtname,subscriber);
-					return accor;
-				}
-				accor.unsubscribe = function(evtname,subscriber){
-					var me = this["@observer.observer"];
-					me.unsubscribe(evtname,subscriber);
-					return accor;
-				}
-				accor.asArray = function(template){
-					var me = this["@observer.observer"];
-					me.asArray(template);
-					return accor;
-				}
-				accor.define = function(model){
-					var me = this["@observer.observer"];
-					if(!model)return me["@observer.define"];
-					me.define(model);
-					return actor;
-				}
-				accor.validate = function(onlyme){
-					var me = this["@observer.observer"];
-					return me.validate(onlyme);
-				}
-
-				this.accessor = function(){return accor;}
-				return this["@observer.accessor"]=accor;
-			} 
+			}
 		};
 		var ObserverArray ={
 			isArray : true,
@@ -992,12 +985,12 @@
 		Observer.prototype = new yi.Observable();
 		for(var n in obproto) Observer.prototype[n] = obproto[n];
 
-		yi.observable = function(value,define){
+		yi.observable = function(value,model){
 			var ret = new Observer("",{"":value});
-			if(define) ret.define(define);
+			if(model) ret.define(model);
 			return ret;
 		}
-		var urlreg=new RegExp('^((https|http|ftp|rtsp|mms)?://)' 
+		var urlRegex = '^((https|http|ftp|rtsp|mms)?://)' 
 + '?(([0-9a-z_!~*\'().&=+$%-]+: )?[0-9a-z_!~*\'().&=+$%-]+@)?' //ftp的user@ 
 + '(([0-9]{1,3}.){3}[0-9]{1,3}' // IP形式的URL- 199.194.52.184 
 + '|' // 允许IP和DOMAIN（域名） 
@@ -1006,7 +999,8 @@
 + '[a-z]{2,6})' // first level domain- .com or .museum 
 + '(:[0-9]{1,4})?' // 端口- :80 
 + '((/?)|' // a slash isn't required if there is no file name 
-+ '(/[0-9a-z_!~*\'().;?:@&=+$,%#-]+)+/?)$'); 
++ '(/[0-9a-z_!~*\'().;?:@&=+$,%#-]+)+/?)$'; 
+		var urlreg=new RegExp(strRegex); 
 
 		yi.validations ={
 			"require":function(value){
@@ -1035,7 +1029,7 @@
 				return reg.test(value);
 			},
 			"number" : function(value){
-				var reg = /^[\+\-]?(?:\d{1,3}){0,1}(?:\d{3})*\d(?:.\d+)$/g;
+				var reg = /^[\+\-]?(?:\d{1,3}?\d{3}*\d(?:.\d+))$/g;
 				return reg.test(value);
 			},
 			"limit" : function(value,params){

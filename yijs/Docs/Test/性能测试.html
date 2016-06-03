@@ -10,25 +10,7 @@
  </head>
  <body>
  <div id="rs"></div>
- （X*X+A）/(2*X)=X
- A代表被开方数，X代表开方数，
- 可以看出上式是一个恒等式，所以只需要随意带入一个X值就可以计算出更准确的X值了。
- 例如：
- 将7开平方：
- （1*1+7）/（2*1）=4
- （4*4+7）/（2*4）=2.875
- （2.875*2.875+7）/（2*2.875）=2.654189……
- （2.65*2.65+7）/（2*2.65）=2.645754……
- 7的开方数为：2.64575131106……
 
- 此方法也同样适用于更高次的开方，比如开立方。
- 相应的只要把算式改成（X^3+A）/(2*X^2)=X就行了。
- 例如：
- 将7开立方：
- （1^3+7）/（2*1^2）=4
- （4^3+7）/（2*4^2）=2.21875
- （2.21875^3+7）/（2*2.21875^2）=1.822216……
- （1.822^3+7）/（2*1.822^2）=1.96543……
   <script type="text/javascript">
   <!--
 
@@ -87,7 +69,7 @@ var Perf = function(){
 		var htmlEncode = function(code){
 			return code.replace(/&/g,"&amp;").replace(/ /g,"&nbsp;").replace(/\t/g,"&nbsp;&nbsp;&nbsp;&nbsp;").replace(/</g,"&lt;").replace(/\n/g,"<br />");
 		}
-		var stat = {};
+		var stat = [],colspan = (this._times + 3);
 		var thead = "<thead><tr><th>Name</th>";
 		var tbody = "",tc = 0;
 		for(var n in result){
@@ -104,12 +86,27 @@ var Perf = function(){
 			tbody += "<td>"+total+"</td><td>"+total/this._times+"</td>";
 			tbody += "</tr>";
 			if(!tc) thead+= "<th>Total</th><th>Avg(a)</th></tr>";
+			stat.push({total:total,name:n,index:stat.length});
 			tc++;
 			
 		}
 		var tb = "<table border='1'>" + thead + "</tr></thead>";;
 		tb += "<tbody>" + tbody + "</tr></tbody>";
-		var tfoot = "";var colspan = (this._times + 2);
+		var diff = "<tr><td></td>";
+		for(i in stat) diff += "<th>" + stat[i].name + "</th>";
+		diff += "</tr>";
+		for(i in stat){
+			var row = stat[i];
+			diff += "<tr><th>" + row.name + "</th>";
+			for(var j in stat){
+				var col = stat[j];
+				 diff += "<td>" + (col.total-row.total)/row.total + "</td>";
+			}
+			diff += "</tr>";			
+		}
+		tb += "<tbody><tr><td colspan="+(colspan + 1)+"><table border='1' style='width:100%;'><tbody>" + diff + "</tbody></table></tbody>";
+		var tfoot = "";
+		
 		for(var n in this._codes){
 			tfoot += "<tr><th>code:<br />" + htmlEncode(n) + "</th><td colspan='" + colspan + "'>" + htmlEncode(this._codes[n]) + "</td></tr>";
 		}
@@ -119,17 +116,20 @@ var Perf = function(){
 		return this;
 	}
 }
-var pref = new Perf().times(15).repeat(50000000).prepare(function(){
-	var S = function(){ 
-		this["@evts"]=[];this["@evts"].push(function(s){return s++;});
-		this["@evt"] = function(b){return b--;}
-		
-	}
-	return new S();
-}).test("obj['@evts'][0].call",function(obj){
-	obj["@evts"][0].call(obj,3);
-}).test("obj['@evt'].call",function(obj){
-	obj["@evt"].call(obj,2);
+var pref = new Perf().times(15).repeat(5000000).prepare(function(){
+	return {
+		"fn":function(arg1){},
+		"arg1":function(arg1){
+			this.fn.call(this,arg1);
+		},
+		"argn":function(arg1,arg2,arg3,arg4,arg5){
+			this.fn.call(this,arg1,arg2,arg3,arg4,arg5);
+		}
+	};
+}).test("fn.call(this,arg)",function(obj){
+	obj.arg1("1");
+}).test("fn.call(this,arg1,arg2...)",function(obj){
+	obj.argn("1","2","3");
 }).exec(function(result){
 	this.report(result,document.getElementById("rs"));
 });
