@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="Generator" content="EditPlus®">
+  <meta name="Author" content="">
+  <meta name="Keywords" content="">
+  <meta name="Description" content="">
+  <title>Document</title>
+  <link href="../docs.css" type="text/css" rel="stylesheet"></link>
+  <script type="text/javascript" src="../../Scripts/yi.core.js"></script>
+  <script type="text/javascript" src="../../Scripts/yi.assert.js"></script>
+  <script type="text/javascript" src="../../Scripts/yi.assert.helper.js"></script>
+ </head>
+ <body>
+ <h1>yi.Thenable</h1>
+ <fieldset class='summary class x-able'>
+	<legend>描述</legend>
+	Promise/A+的一个实现
+ </fieldset>
+ <fieldset class='member function'>
+	<legend><h2>Done</h2></legend>
+	<table class='descriptor'>
+		<thead>
+			<tr><th colspan="3" class='name'>Description</th></tr>
+			<tr><td colspan ="3" class='description'>添加一个监听器，当Defer完成时，该监听器会被调用</td></tr>
+			<tr><th colspan="3" class='name'>Parameters</th></tr>
+			<tr><th class='name'>Name</th><th class='type'>Type</th><th class='description'>Description</th></tr>
+			
+		</thead>
+		<tbody class='parameters'>
+			<tr><td class='name'>onFullfilled</td><td class='type'>function</td><td  class='description'>完成时的回调函数</td></td>
+			<tr><td class='name return'>RETURN</td><td class='type'>object Thenable</td><td class='description'>Thenable自己，以便链式调用</td></tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<th colspan="3"></th>
+			</tr>
+		</tfoot>
+	</table>
+	<script id="yi.Thenable.done">
+$assert.begin();
+var dfd = new yi.Thenable();
+//订阅onFullfill事件
+var rs = //$assert.line
+dfd.done(function(value,d){
+	$log("recieve value in done 1:" + value);
+	$assert.Equal("promise",value);
+	$assert.Equal(dfd,this);
+	$assert.Equal(dfd,d);
+	$assert.set("times1",($assert.get("times1")||0)+1);
+});
+$assert(dfd,rs);
+dfd.done(function(value){
+	$log("recieve value in done 2:" + value);
+	$assert.set("times2",($assert.get("times2")||0)+1);
+});
+$log("resolve the dfd:");
+var rs = //$assert.line
+dfd.resolve("promise");
+$assert(rs,dfd);
+$assert.True(dfd.isFullfilled);
+$assert.False(dfd.isRejected);
+$assert.Equal(1,$assert.get("times1"));
+$assert.Equal(1,$assert.get("times2"));
+$log("add onFillfilled");
+dfd.done(function(value,d){
+	$log("recieve value in done 3:" + value);
+	$assert.Equal("promise",value);
+	$assert.Equal(dfd,this);
+	$assert.Equal(dfd,d);
+	$assert.set("times3",($assert.get("times3")||0)+1);
+});
+$assert.Equal(1,$assert.get("times3"));
+$assert.Equal(1,$assert.get("times1"));
+$assert.Equal(1,$assert.get("times2"));
+
+$assert.end("yi.Thenable.done");
+	</script>	
+ </fieldset>
+<fieldset class='member function'>
+	<legend><h2>Fail</h2></legend>
+	<table class='descriptor'>
+		<thead>
+			<tr><th colspan="3" class='name'>Description</th></tr>
+			<tr><td colspan ="3" class='description'>添加一个监听器，当Defer完成时，该监听器会被调用</td></tr>
+			<tr><th colspan="3" class='name'>Parameters</th></tr>
+			<tr><th class='name'>Name</th><th class='type'>Type</th><th class='description'>Description</th></tr>
+			
+		</thead>
+		<tbody class='parameters'>
+			<tr><td class='name'>onFullfilled</td><td class='type'>function</td><td  class='description'>完成时的回调函数</td></td>
+			<tr><td class='name return'>RETURN</td><td class='type'>object Thenable</td><td class='description'>Thenable自己，以便链式调用</td></tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<th colspan="3"></th>
+			</tr>
+		</tfoot>
+	</table>
+	<script id="yi.Thenable.fail">
+$assert.begin();
+var dfd = new yi.Thenable();
+//订阅onReject事件
+var rs = //$assert.line
+dfd.fail(function(reason,d){
+	$log("recieve reason in done 1:" + reason);
+	$assert.Equal("reject reason",reason);
+	$assert.Equal(dfd,this);
+	$assert.Equal(dfd,d);
+	$assert.set("times1",($assert.get("times1")||0)+1);
+});
+$assert(dfd,rs);
+dfd.fail(function(reason){
+	$log("recieve reason in done 2:" + reason);
+	$assert.set("times2",($assert.get("times2")||0)+1);
+});
+$log("reject the dfd:");
+var rs = //$assert.line
+dfd.reject("reject reason");
+$assert(dfd,rs);
+$assert.True(dfd.isRejected);
+$assert.False(dfd.isFullfilled);
+$assert.Equal(1,$assert.get("times1"));
+$assert.Equal(1,$assert.get("times2"));
+$log("add onReject");
+var s = dfd.fail(function(reason,d){
+	$log("recieve reason in fail 3:" + reason);
+	$assert.Equal("reject reason",reason);
+	$assert.Equal(dfd,this);
+	$assert.Equal(dfd,d);
+	$assert.set("times3",($assert.get("times3")||0)+1);
+});
+$assert.Equal(1,$assert.get("times3"));
+$assert.Equal(1,$assert.get("times1"));
+$assert.Equal(1,$assert.get("times2"));
+
+$assert.end("yi.Thenable.fail");
+	</script>	
+ </fieldset>
+
+ <fieldset class='member function'>
+	<legend><h2>resolve</h2></legend>
+	<table class='descriptor'>
+		<thead>
+			<tr><th colspan="3" class='name'>Description</th></tr>
+			<tr><td colspan ="3" class='description'>设定Thenable的状态为fullfilled.表示正常完成。该函数只能调用一次</td></tr>
+			<tr><th colspan="3" class='name'>Parameters</th></tr>
+			<tr><th class='name'>Name</th><th class='type'>Type</th><th class='description'>Description</th></tr>
+			
+		</thead>
+		<tbody class='parameters'>
+			<tr><td class='name'>value</td><td class='type'>*</td><td  class='description'>结束时的值。</td></td>
+			<tr><td class='name return'>RETURN</td><td class='type'>object Thenable</td><td class='description'>Thenable自己，以便链式调用</td></tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<th colspan="3"></th>
+			</tr>
+		</tfoot>
+	</table>
+	<script id="yi.Thenable.resolve">
+$assert.begin();
+$log("参阅done的文档");
+var dfd = new yi.Thenable();
+$log("设置dfd的状态为fullfilled");
+dfd.resolve("resolved");
+try{
+	$log("invoke resolve more than once:");
+	dfd.resolve("dd");
+}catch(ex){
+	$log("exception raised:" + ex.message);
+	$assert.set("ex1",ex);
+}
+try{
+	$log("invoke reject after resolve:");
+	dfd.reject("dd");
+}catch(ex){
+	$log("exception raised:" + ex.message);
+	$assert.set("ex2",ex);
+}
+$assert.NotNone($assert.get("ex1"));
+$assert.NotNone($assert.get("ex2"));
+$assert.end("yi.Thenable.resolve");
+	</script>	
+ </fieldset>
+ <fieldset class='member function'>
+	<legend><h2>reject</h2></legend>
+	<table class='descriptor'>
+		<thead>
+			<tr><th colspan="3" class='name'>Description</th></tr>
+			<tr><td colspan ="3" class='description'>设定Thenable的状态为reject.表示有错误发生.该函数只能调用一次</td></tr>
+			<tr><th colspan="3" class='name'>Parameters</th></tr>
+			<tr><th class='name'>Name</th><th class='type'>Type</th><th class='description'>Description</th></tr>
+			
+		</thead>
+		<tbody class='parameters'>
+			<tr><td class='name'>value</td><td class='type'>*</td><td  class='description'>拒绝的原因。</td></td>
+			<tr><td class='name return'>RETURN</td><td class='type'>object Thenable</td><td class='description'>Thenable自己，以便链式调用</td></tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<th colspan="3"></th>
+			</tr>
+		</tfoot>
+	</table>
+	<script id="yi.Thenable.reject">
+$assert.begin();
+$log("参阅fail的文档");
+var dfd = new yi.Thenable();
+$log("设置dfd的状态为rejected");
+dfd.resolve("rejected");
+try{
+	$log("invoke reject more than once:");
+	dfd.reject("dd");
+}catch(ex){
+	$log("exception raised:" + ex.message);
+	$assert.set("ex1",ex);
+}
+try{
+	$log("invoke resolve after resolve:");
+	dfd.resolve("dd");
+}catch(ex){
+	$log("exception raised:" + ex.message);
+	$assert.set("ex2",ex);
+}
+$assert.NotNone($assert.get("ex1"));
+$assert.NotNone($assert.get("ex2"));
+$assert.end("yi.Thenable.reject");
+	</script>	
+ </fieldset>
+
+ <fieldset class='member function'>
+	<legend><h2>promise</h2></legend>
+	<table class='descriptor'>
+		<thead>
+			<tr><th colspan="3" class='name'>Description</th></tr>
+			<tr><td colspan ="3" class='description'>返回一个只有done,fail,always,then,change,promise的对象.能修改状态的函数都被去掉了</td></tr>
+			<tr><th colspan="3" class='name'>Parameters</th></tr>
+			<tr><th class='name'>Name</th><th class='type'>Type</th><th class='description'>Description</th></tr>
+			
+		</thead>
+		<tbody class='parameters'>
+			<tr><td class='name'>target</td><td class='type'>object | function</td><td  class='description'>目标对象。如果设定了该参数，表示将会注入描述中提到的6个函数到该对象中去。</td></td>
+			<tr><td class='name return'>RETURN</td><td class='type'>object Thenable</td><td class='description'>消减了修改状态的Thenable。</td></tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<th colspan="3"></th>
+			</tr>
+		</tfoot>
+	</table>
+	<script id="yi.Thenable.promise">
+$assert.begin();
+var dfd = new yi.Thenable();
+var targ = dfd.promise();
+$log("promiseh后resolve的类型:" + typeof targ.resolve);
+$assert.Undefined(targ.resolve);
+$log("promiseh后reject的类型:" + typeof targ.reject);
+$assert.Undefined(targ.reject);
+targ.done(function(v){
+	$log("promise's done has occured with:value:" + v);
+	$assert("s",v);
+	$assert.set("v1",($assert.get("v1")||0)+1);
+});
+//原来的dfd还可以resolve
+dfd.resolve("s");
+$assert(1,$assert.get("v1"));
+
+$assert.end("yi.Thenable.promise");
+	</script>	
+ </fieldset>
+ </body>
+</html>

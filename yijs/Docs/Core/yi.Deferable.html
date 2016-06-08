@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="Generator" content="EditPlus®">
+  <meta name="Author" content="">
+  <meta name="Keywords" content="">
+  <meta name="Description" content="">
+  <title>Document</title>
+  <link href="../docs.css" type="text/css" rel="stylesheet"></link>
+  <script type="text/javascript" src="../../Scripts/yi.core.js"></script>
+  <script type="text/javascript" src="../../Scripts/yi.assert.js"></script>
+  <script type="text/javascript" src="../../Scripts/yi.assert.helper.js"></script>
+ </head>
+ <body>
+ <h1>yi.Deferable</h1>
+ <fieldset>
+	<legend>描述</legend>
+	Promise
+ </fieldset>
+ <fieldset>
+	<legend><h2>订阅 yi.Observable.subscribe</h2></legend>
+	<table class='details'>
+		<thead>
+			<tr><th colspan="3">Description</th></tr>
+			<tr><td colspan ="3">添加一个监听函数。当事件发生时，监听函数会被调用</td></tr>
+			<tr><th colspan="3" class='parameters'>Parameters</th></tr>
+			<tr><th>Name</th><th>Type</th><th>Description</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td class='parameter'>evtname</td>
+				<td class='type'>string</td>
+				<td>事件名</td>
+			</tr>
+			<tr>
+				<td class='parameter'>subscriber</td>
+				<td class='type'>function</td>
+				<td>订阅者/监听器，当事件被emit时，该函数会被调用</td>
+			</tr>
+			<tr><th class='returns'>RETURNS</th><td class='type'>object</td><td>this,Observable</td></tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<th colspan="3"></th>
+			</tr>
+			
+		</tfoot>
+	</table>
+	<script id="yi.Observable.subscribe">
+$assert.begin();
+var ob = new yi.Observable();
+//订阅click事件
+ob.subscribe("click",function(evt){
+	$log("click was emitted with:" + evt);
+	$assert.Equal("click arguments",evt);
+	$assert.set("fn1","click was emitted with:" + evt);
+});
+//再订阅一次click事件
+ob.subscribe("click",function(evt){
+	$log("click is catched by the second function");
+	$assert.Equal("click arguments",evt);
+	$assert.set("fn2","click is catched by the second function");
+});
+//发送click事件给订阅者
+ob.emit("click","click arguments");
+$assert.Equal("click was emitted with:click arguments",$assert.get("fn1"));
+$assert.Equal("click is catched by the second function",$assert.get("fn2"));
+$assert.end("yi.Observable.subscribe");
+	</script>	
+ </fieldset>
+
+ </body>
+</html>

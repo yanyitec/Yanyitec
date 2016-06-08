@@ -5,59 +5,33 @@
         var $_META = {
             description:"可观察对象。观察者模式的实现"
         };//META_$
-        this.subscribe = function (name, listener) {
-            var $_META = {
-                description: "订阅一个事件",
-                params: {
-                    name: "事件名",
-                    listener: "监听者，必须是函数"
-                },
-                returns : "观察者对象"
-            };//META_$
-            var ob = this["@observable.subscribes"] || (this["@observable.subscribes"]={});
-            var listeners = ob[name] || (ob[name]=[]);
-            listeners.push(listener);
+        this.subscribe = function (evtname, subscriber) {
+            var ob = this["@observable.observers"] || (this["@observable.observers"]={});
+            var subscribers = ob[evtname] || (ob[evtname]=[]);
+            subscribers.push(subscriber);
             return this;
         }
-        this.unsubscribe = function (name, listener) {
-            var $_META = {
-                description: "取消订阅一个事件",
-                params: {
-                    name: "事件名",
-                    listener: "监听者，必须是函数"
-                },
-                returns: "观察者对象"
-            };//META_$
-            var ob = this["@observable.subscribes"];if(!ob)return this;
-            var listeners = ob[name];if(!listeners)return this;
-            for(var i=0,j=listeners.length;i<j;i++){
-                var fn;
-                if((fn=listeners.shift())!==listener) listeners.push(fn);
+        this.unsubscribe = function (evtname, subscriber) {
+            
+            var ob = this["@observable.observers"];if(!ob)return this;
+            var subscribers = ob[evtname];if(!subscribers)return this;
+            for(var i=0,j=subscribers.length;i<j;i++){
+                var existed;
+                if((existed=subscribers.shift())!==subscriber) subscribers.push(existed);
             }
             return this;
         }
-        this.emit = function (name, params, isApply) {
-            var $_META = {
-                description: "发布一个事件",
-                params: {
-                    name: "事件名",
-                    params: "事件参数。默认",
-                    apply : "是否用apply方式调用"
-                },
-                returns: "观察者对象"
-            };//META_$
-
-            var ob = this["@observable.subscribes"]; if (!ob) return this;
-            var listeners = ob[name];if(!listeners)return this;
-            for(var i=0,j=listeners.length;i<j;i++){
-                var listener = listeners.shift();
-                var rs = (isApply) ? listener.apply(this,params):listener.call(this,params);
-                if(rs!=='%discard' && rs!=='%discard&interrupt')listeners.push(listener);
+        this.emit = function (evtname, evtArgs, isApply) {
+            var ob = this["@observable.observers"]; if (!ob) return this;
+            var subscribers = ob[evtname];if(!subscribers)return this;
+            for(var i=0,j=subscribers.length;i<j;i++){
+                var subscriber = subscribers.shift();
+                var rs = (isApply) ? subscriber.apply(this,evtArgs):subscriber.call(this,evtArgs);
+                if(rs!=='%discard' && rs!=='%discard&interrupt')subscribers.push(subscriber);
                 if(rs==='%interrupt' || rs==='%discard&interrupt' || rs===false)return this;
             }
             return this;
         }
-
     }
     yi.Observable.make = function (name,code) {
         var subscribeCode = "(this[\"!" + name + "\"]||(this[\"!" + name + "\"]=[])).push(listener);return this;";
@@ -70,265 +44,313 @@
         result.emitCode = new Function("params", "apply", publishCode);
         return result;
     }
-	yi.Deferable = function(){
-		this["@defer.status"]=null;
-		this["@defer.result"]=undefined;
-		this["@defer.success"]=undefined;
-		this["@defer.fail"]=undefined;
-		this["@defer.change"]=undefined;
-		this.isResolved=false;
-		this.isRejected=false;
-		this["@defer.apply"] = undefined;
-		this.resolve = function(args,apply){
-			var its,state = this["@defer.status"];
-			this.isResolved = true;this.isRejected = false;
-			this["@defer.status"]='defer.resolved';
-			this["@defer.result"] = args;
-			this["@defer.apply"] = apply;
-
-			if(its=this["@defer.success"]){
-				var reuse =[];
-				for(var i=0,j=its.length;i<j;i++) {
-					var it = its.shift();
-					var rs = apply?it.apply(this,args):it.call(this,args);
-					if(rs==='%reenter') reuse.push(it);else if(rs==='%interrupt')break;
-					else if(rs==='%reenter&interrupt'){
-						reuse.push(it);break;
+	//Observable自己就是全局监听器
+	yi.Observable.call(yi.Observable);
+	yi.bind = function(func,me,args){return function(){return func.apply(me || this,args||arguments);}}
+	var Async = function(){
+		var me = this;
+		this.waitings = [];
+		this.delays = [];
+		
+		var timeout = function(){
+			var ws = this.waitings ,ds = this.delays;
+			for(var i=0,j=ds.length;i<j;i++){
+				var it = ds.shift();
+				var ret = it["@func"].call(it,it["@param"],it);
+				if(ret=="%wait") ws.push(it);
+			}
+			if(ds.length) 
+				setTimeout(this._timeout,0);
+			if(!this.tick && ws.length) 
+				this.tick = setInterval(this._interval,this.interval||150);
+		}
+		var interval = function(){
+			var ws = this.waitings;
+			for(var i=0,j=ws.length;i<j;i++){
+				var it = ws.shift();
+				var ret = it["@func"].call(it,it["@param"],it);
+				if(ret=="%wait") ws.push(it);
+			}
+			if(ws.length===0){
+				clearInterval(this.tick);
+				this.tick = 0;
+			}
+		}
+		this.add = function(func,param){
+			if(typeof func!=="function") throw Error("delay expect an function as its arguments");//$type-check
+			if(param===false){
+				var it,hasIt = false,ds = this.delays;
+				for(var i=0,j=ds.length;i<j;i++)if((it=ds.shift())["@func"]!==func)ds.push(it);else hasIt =true;
+				var ws = this.waitings;
+				if(!hasIt)for(var i=0,j=ws.length;i<j;i++)if((it=ws.shift())["@func"]!==func)ws.push(it);
+				if(hasIt){
+					if(ds.length==0 && ws.length==0) {
+						clearInterval(this.tick);this.tick =0;
 					}
 				}
-				this["@defer.success"]=(reuse.length)?resue:[]; 
+				return hasIt;
 			}
+			delays.push({"@func":func,"@param":param});
+			if(delays.length===1){
+				setTimeout(this._timeout,0);
+				this.isRunning = true;
+			}
+			return this;
+		}
+		this._timeout = function(){timeout.call(me);}
+		this._interval = function(){interval.call(me);}
+	}
+	var async =yi.async = function(func,param){
+		async.add(func,param);		
+	};
+	Async.call(async);
+	async.isRunning = false;async.tick = 0;
+	var delays= async.delays = [];
+	var waitings = async.waitings = [];
+	
+	var Thenable = yi.Thenable = function(){
+		this["@promise.status"]="padding";
+		this["@promise.value"]=this["@promise.onFullfilled"]=this["@promise.onRejected"]=undefined;
+		this.isFullfilled=this.isRejected=false;
+		
+		this.resolve = function(value,dfd){
+			this.notify = this.resolve = this.reject = function(){throw new Error("Already fullfilled or rejected.");}
 			
-			if(its=this["@defer.change"]){
-				for(var i=0,j=its.length;i<j;i++) {
-					var it = its.shift();
-					var rs = it.call(this,'defer.resolved',state);
-					if(rs!=='%discard') its.push(it);else if(rs==='%interrupt')break;
-				}
+			this.isFullfilled = true;this.isRejected = false;
+			this["@promise.status"]='fullfilled';
+			this["@promise.value"] = value;
+			if(this["@promise.onChanged"]){
+				async(function(dfd){
+					var its,status = dfd["@promise.status"];
+					if(its=dfd["@promise.onChanged"]){
+						for(var i=0,j=its.length;i<j;i++) {
+							var it = its.shift();
+							var rs = it.call(dfd,'fullfilled',status,dfd,value,dfd);
+							if(rs!=='%discard' && rs!=='%discard&interrupt') its.push(it);
+							if(rs==='%interrupt' || rs == "%discard&interrupt" || rs == false)break;
+						}
+					}					
+				},this);
+			}
+			if(this["@promise.onFullfilled"]){
+				async(function(dfd){
+					var its = dfd["@promise.onFullfilled"],value =dfd["@promise.value"];
+					if(its){
+						for(var i=0,j=its.length;i<j;i++) its.shift().call(dfd,value,dfd);
+					}			
+				},this);
 			}
 			
 			return this;
 		};
-		this.reject = function(args,apply){
-			var its,state = this["@defer.status"];
-			this.isResolved = false;this.isRejected = true;
-			this["@defer.status"]='defer.rejected';
-			this["@defer.result"] = args;
-			this["@defer.apply"] = apply;
+		this.reject = function(reason){
+			this.notify = this.resolve = this.reject = function(){throw new Error("Already fullfilled or rejected.");}
 			
-			if(its=this["@defer.fail"]){
-				var reuse =[];
-				for(var i=0,j=its.length;i<j;i++) {
-					var it = its.shift();
-					var rs = apply?it.apply(this,args):it.call(this,args);
-					if(rs==='%reenter') reuse.push(it);else if(rs==='%interrupt')break;
-					else if(rs==='%reenter&interrupt'){
-						reuse.push(it);break;
-					}
-				}
-				this["@defer.fail"]=(reuse.length)?resue:[]; 
+			this.isFullfilled = true;this.isRejected = false;
+			this["@promise.status"]='fullfilled';
+			this["@promise.value"] = value;
+			if(this["@promise.onChanged"]){
+				async(function(dfd){
+					var its,status = dfd["@promise.status"];
+					if(its=dfd["@promise.onChanged"]){
+						for(var i=0,j=its.length;i<j;i++) {
+							var it = its.shift();
+							var rs = it.call(dfd,'rejected',status,dfd,value,dfd);
+							if(rs!=='%discard' && rs!=='%discard&interrupt') its.push(it);
+							if(rs==='%interrupt' || rs == "%discard&interrupt" || rs == false)break;
+						}
+					}					
+				},this);
 			}
-			
-			if(its=this["@defer.change"]){
+			if(this["@promise.onRejected"]){
+				async(function(dfd){
+					var its = dfd["@promise.onRejected"],value =dfd["@promise.value"];
+					if(its){
+						for(var i=0,j=its.length;i<j;i++) its.shift().call(dfd,value,dfd);
+					}			
+				},this);
+			}			
+			return this;
+		};
+		this.notify = function(stat,value){
+			var its,status = this["@promise,status"];
+			this["@promise.status"]=stat;
+			this["@promise.value"] = value;
+			if(its=this["@promise.onChanged"]){
 				for(var i=0,j=its.length;i<j;i++) {
 					var it = its.shift();
-					var rs = it.call(this,'defer.fail',state);
-					if(rs!=='%discard') its.push(it);if(rs==='%interrupt') break;
+					var rs = it.call(this,stat,status,value,this);
+					if(rs!=='%discard'&&rs!=='%discard&interrupt') its.push(it);
+					if(rs==='%interrupt' || rs==='%discard&interrupt' || rs===false) break;
 				}
 			}
 			return this;
-		};
-		this.notify = function(state,param){
-			var its,old = this["@defer.status"];
-			this["@defer.status"] = state;
-			if(its=this["@defer.change"]){
-				for(var i=0,j=its.length;i<j;i++) {
-					var it = its.shift();
-					var rs = it.call(this,state,old,param);
-					if(rs!=='%discard') its.push(it);if(rs==='%interrupt') break;
-				}
-			}
-			return this;
-		};
-		this.success = function(cb,remove){
-			if(!cb)return this;
+		}
+		
+		this.done = function(onFullfill,remove){
+			if(typeof onFullfill !=='function') throw new Error("Thenable.done expect a function as the first argument.");
 			if(remove){
-				var its = this["@defer.success"]
+				var its = this["@promise.onFullfilled"]
 				if(its)for(var i=0,j=its.length;i<j;i++){
-					if((it=its.shift())!==cb) its.push(it);
+					if((it=its.shift())!==onFullfill) its.push(it);
 				}
 				return this;
 			}
-			if(this.isResolved){ 
-				var rs = this["@defer.result"];
-				var ret = this["@defer.apply"]? cb.apply(this,rs):cb.call(this,rs);
-				if(ret!=='%reenter' && ret!=='%retenter%interrupt')return this;
+			if(this.isFullfilled){ 
+				var ret = onFullfill.call(this,this["@promise.value"],this);
+				return this;
 			} 
-			(this["@defer.success"] || (this["@defer.success"]=[])).push(cb);
+			(this["@promise.onFullfilled"] || (this["@promise.onFullfilled"]=[])).push(onFullfill);
 			return this;
 		};
-		this.fail = function(cb,remove){
-			if(!cb)return this;
+		this.fail = function(onReject,remove){
+			if(typeof onReject !=='function') throw new Error("Thenable.fail expect a function as the first argument.");
+			
 			if(remove){
-				var its = this["@defer.fail"]
+				var its = this["@promise.onRejected"]
 				if(its)for(var i=0,j=its.length;i<j;i++){
 					if((it=its.shift())!==cb) its.push(it);
 				}
 				return this;
 			}
 			if(this.isRejected){ 
-				var rs = this["@defer.result"];
-				var ret = this["@defer.apply"]? cb.apply(this,rs):cb.call(this,rs);
-				if(ret!=='%reenter' && ret!=='%retenter%interrupt')return this;
+				onReject.call(this,this["@promise.value"],this);return this;
 			} 
-			(this["@defer.fail"] || (this["@defer.fail"]=[])).push(cb);
+			(this["@promise.onRejected"] || (this["@promise.onRejected"]=[])).push(onReject);
 			return this;
 		};
-		this.change = function(cb,remove){
-			if(!cb)return this;
+		this.then = function(onFullfilled ,onRejected,onChanged){
+			if(onFullfilled)this.done(onFullfilled);
+			if(onRejected)this.fail(onRejected);
+			if(onChanged)this.change(onChanged);
+			return this;
+		}
+		this.change = function(onChange,remove){
+			if(typeof onChange !=='function') throw new Error("Thenable.done expect a function as the first argument.");
 			if(remove){
-				var its = this["@defer.change"]
-				for(var i=0,j=its.length;i<j;i++){
-					if((it=its.shift())!==cb) its.push(it);
+				var its = this["@promise.onChanged"]
+				if(its)for(var i=0,j=its.length;i<j;i++){
+					if((it=its.shift())!==onChange) its.push(it);
 				}
 				return this;
 			}
-			(this["@defer.change"] || (this["@defer.change"]=[])).push(cb);
+			(this["@promise.onChange"] || (this["@promise.onChanged"]=[])).push(onChange);
 			return this;
 		};
-		this.then = function(success,fail,change){
-			if(success) this.success(success);
-			if(fail)this.fail(fail);
-			if(change) this.change(change);
-			return this;
-		};
+		
 		this.always = function(cb,remove){
 			if(remove){
-				var its = this["@defer.success"]
+				var its = this["@promise.onFullfilled"]
 				if(its)for(var i=0,j=its.length;i<j;i++){
 					if((it=its.shift())!==cb) its.push(it);
 				}
-				its = this["@defer.fail"]
+				its = this["@promise.onRejected"]
 				if(its)for(var i=0,j=its.length;i<j;i++){
 					if((it=its.shift())!==cb) its.push(it);
 				}
 				return this;
 			}
-			var rs = this["@defer.result"];
-			var apply = this["@defer.apply"];
-			if(this.isRejected || this.isResolved){
-				var ret = apply? cb.apply(this,rs):cb.call(this,rs);
-				if(ret!=='%reenter' && ret!=='%retenter%interrupt')return this;
+			var rs = this["@promise.value"];
+			if(this.isRejected || this.isFullfilled){
+				cb.call(this,rs,this);
+				return this;
 			} 
-			(this["@defer.fail"] || (this["@defer.fail"]=[])).push(cb);
-			(this["@defer.success"] || (this["@defer.success"]=[])).push(cb);
+			(this["@promise.onRejected"] || (this["@promise.onRejected"]=[])).push(cb);
+			(this["@promise.onRullfilled"] || (this["@promise.onFullfilled"]=[])).push(cb);
 		};
 		this.promise = function(tgt){
 			if(!tgt){
-				if(this["@defer.promiseFrom"]) return this;
+				if(this["@promise.source"]) return this;
 				tgt = {};
 			}else if(tgt===this) throw "Can not promise self.";
-			tgt.always = function(cb,remove){tgt["@defer.promiseFrom"].always(cb,remove);return this;}
-			tgt.then = function(succcess,fail,change){tgt["@defer.promiseFrom"].then(success,fail,change);return this;}
-			tgt.success = function(cb,remove){tgt["@defer.promiseFrom"].success(cb,remove);return this;}
-			tgt.change = function(cb,remove){tgt["@defer.promiseFrom"].change(cb,remove);return this;}
-			tgt.fail = function(cb,remove){tgt["@defer.promiseFrom"].fail(cb,remove);return this;}
-			tgt.promise = function(targ){return (!targ || targ==this) ? this : tgt["@defer.promiseFrom"].promise(targ);}
-			tgt["@defer.promiseFrom"] = me;
+			tgt.always = function(cb,remove){tgt["@promise.source"].always(cb,remove);return this;}
+			tgt.then = function(succcess,fail,change){tgt["@promise.source"].then(success,fail,change);return this;}
+			tgt.done = function(cb,remove){tgt["@promise.source"].done(cb,remove);return this;}
+			tgt.change = function(cb,remove){tgt["@promise.source"].change(cb,remove);return this;}
+			tgt.fail = function(cb,remove){tgt["@promise.source"].fail(cb,remove);return this;}
+			tgt.promise = function(targ){return (!targ || targ==this) ? this : tgt["@promise.source"].promise(targ);}
+			tgt["@promise.source"] = this;
 			return tgt;
 		}
 	}
+	
+    var Whenable = yi.Whenable = function () { 
+		this["@promise.status"]="padding";
+		this["@promise.value"]=this["@promise.fullfilled"]=this["@promise.rejected"]=undefined;
+		this.isFullfilled=this.isRejected=false;
 
-    var Defer = yi.Defer = Global.$Defer = function (cb, delay,fields) { 
-		if(!cb) return this;
-		if(fields) for(var n in fields) this[n] = fields[n];
-		var t = typeof(cb);
-		if(t ==='function'){
-			if(delay===undefined) {cb.call(this,this);}
-			else setTimeout(function(){cb.call(this,this);},parseInt(delay)||0);
+		this.when = function(obj,args){
+			var me = this;
+			var t = typeof obj;
+			if(t==='function'){
+				async(function(){
+					try{
+						return obj.call(me,me,args);
+					}catch(ex){
+						me.reject(ex);
+					}
+				});
+				return this;
+			}
+			if(t==="object" &&typeof obj.then==='function'){
+				
+				obj.then(function(value){
+					me.resolve(value);
+				},function(reason){
+					me.reject(reason);
+				},function(status,old,value){
+					me.notify(status,value);
+				});
+				return this;
+			}
+			async(function(){me.resolve(obj);});
 			return this;
 		}
-		if(cb.success && cb.fail && db.change){
-			//如果第一个参数本身就是个Defer,生成一个代理Defer
-			var init = function(df){
-				cb.fail(function(){
-					df.reject.apply(df,arguments);
-				}).success(function(){
-					df.resolve.apply(df,arguments);
-				}).change(function(){
-					df.notify.apply(df,arguments);
+		this.thenWhen = function(done){
+			var dfd = new Promise();
+			this.done(function(value){
+				dfd.when(done.call(this,value,this));
+			});
+			return dfd;
+		}
+		//promise.thenWhen(p.a).follow
+	}
+    yi.Whenable.prototype = new yi.Thenable();//end Defer.prototype
+	var Promise =  yi.Promise = function(obj,args){
+		this["@promise.status"]="padding";
+		this["@promise.value"]=this["@promise.fullfilled"]=this["@promise.rejected"]=undefined;
+		this.isFullfilled=this.isRejected=false;
+
+		if(obj) return this.when(obj,args);
+	}
+	Promise.prototype = new Whenable();
+	yi.promise = Global.$promise = function(obj,args){return new Promise(obj,args);}
+
+    yi.when = Global.$when = function(obj,args){
+		if(typeof obj==='object' && typeof obj.then!=='function'){
+			var result ={};
+			var count =0,waiting_count=0;
+			var dfd = new Promise();
+			for(var n in obj){
+				count++;waiting_count++;
+				var sub = new Promise(obj[n],args);
+				sub.index = count;sub.name = n;
+				sub.done(function(value){
+					var rs = result[this.name] = {name:this.name,value:value,promise:this,status:"fullfilled"};
+					dfd.notify(waiting_count,rs);
+					if(--waiting_count==0) {dfd.resolve(result);}
+				}).fail(function(reason){
+					var rs = result[this.name] = {name:this.name,reason:value,promise:this,status:"rejected"};
+					dfd.notify(waiting_count,rs);
+					if(--waiting_count==0) {dfd.resolve(result);}
 				});
 			}
-			this.proxyTo = cb;
-			var me = this;
-			if(delay===undefined) init(this);
-			else setTimeout(function(){init(me);},parseInt(delay)||0);
-			return this;
+			result.length = count;
+			return dfd;
 		}
-		
-		var fn = function(defer){
-			var result = t.length && t.push && t.pop ?[]:{},hasError = false,c=0,total =0;
-			var dfs = cb;
-			for(var n in dfs){
-				total++;c++;
-				(function(index,df){
-					if(!df.success || !df.fail) df = new Defer(df);
-					df.success(function(rs){
-						result[index] = rs;
-						if(hasError)return;
-						if(--c==0) defer.resolve(result);
-						defer.change(c,total);
-						return;
-					}).fail(function(err){
-						if(hasError) return;
-						defer.fail({
-							index:index,
-							error:err
-						});
-						return;
-					});
-				})(n,dfs[n]);
-			}
-		}
-		if(delay===undefined) {cb.call(this,this);}
-		else setTimeout(function(){cb.call(this,this);},parseInt(delay)||0);
-		return this;
+		return new Promise(obj,args);		
 	}
-    yi.Defer.prototype = new yi.Deferable();//end Defer.prototype
-	        
-    yi.defer = Global.$defer = function(args,delay,param){
-		if(!args)return new Defer();
-		var t = typeof args;
-		if(t==='function')return new Defer(args,delay,param);
-		if(t!=='object')return new Defer(undefined,undefined,param);
-		
-		var fn = function(defer){
-			var result = t.length && t.push && t.pop ?[]:{},hasError = false,c=0,total =0;
-			var dfs = args;
-			for(var n in dfs){
-				total++;c++;
-				(function(index,df){
-					if(!df.success || !df.fail) df = new Defer(df);
-					df.success(function(rs){
-						result[index] = rs;
-						if(hasError) return "%discard";
-						if(--c==0) defer.resolve(result);
-						defer.change(c,total);
-						return "%discard";
-					}).fail(function(err){
-						if(hasError) return "%discard";
-						defer.fail({
-							index:index,
-							error:err
-						});
-						return "%discard";
-					});
-				})(n,dfs[n]);
-			}
-		}
-		var defer = new Defer(fn,delay,param);
-		return defer;
-	}
+	//yi.then = Global.$then = function()
 	yi.makeArray = function(its){
 		var ret =[];for(var i in its) ret.push(its[i]);return ret;
 	}	
@@ -412,7 +434,7 @@
 		requireManager.loaded = this;
 		//else loadedRequire.next = this;
 	}
-	Require.prototype = new Defer();
+	Require.prototype = new Thenable();
 	Require.prototype.loadDeps = function(dep_names){
 		
 		yi.log(this.id + " invoke loadDeps",dep_names);
