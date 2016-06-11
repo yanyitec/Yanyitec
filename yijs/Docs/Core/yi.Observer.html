@@ -7,8 +7,9 @@
   <meta name="Keywords" content="">
   <meta name="Description" content="">
   <title>Document</title>
+  <link href="../docs.css" type="text/css" rel="stylesheet"></link>
   <script type="text/javascript" src="../../Scripts/yi.core.js"></script>
-  <script type="text/javascript" src="../../Scripts/yi.assert.js"></script>
+  <script type="text/javascript" src="../../Scripts/yi.diagnosis.js"></script>
   <script type="text/javascript" src="../../Scripts/yi.assert.helper.js"></script>
   <style type="text/css">
 fieldset{
@@ -29,20 +30,20 @@ fieldset{
 	border:1px dashed #666666;
 	padding:5px;
 }
-table.details{
+table.descriptor{
 	border:1px solid #999999;
 	border-collapse:collapse;
 }
-table.details tbody,table.details thead,table.details tfoot{
+table.descriptor tbody,table.details thead,table.details tfoot{
 	border:1px solid #999999;
 	border-collapse:collapse;
 }
-table.details tr{
+table.descriptor tr{
 	border:1px solid #999999;
 	border-collapse:collapse;
 }
 
-table.details th,table.details td{
+table.descriptor th,table.details td{
 	border:1px solid #999999;
 	border-collapse:collapse;
 	padding:4px;
@@ -60,9 +61,12 @@ table.details th{
 	<legend>描述</legend>
 	引入了subscribe,unsubscribe,emit 3个操作原语。来实现 observer模式
  </fieldset>
- <fieldset>
+ <fieldset class='descriptor'>
 	<legend><h2>订阅 yi.Observable.subscribe</h2></legend>
-	<table class='details'>
+	<ul>
+	<li>
+	<h3>说明</h3>
+	<table class='descriptor'>
 		<thead>
 			<tr><th colspan="3">Description</th></tr>
 			<tr><td colspan ="3">添加一个监听函数。当事件发生时，监听函数会被调用</td></tr>
@@ -89,41 +93,78 @@ table.details th{
 			
 		</tfoot>
 	</table>
-	<script id="yi.Observable.subscribe">
-$assert.begin();
-var ob = new yi.Observable();
-//订阅click事件
-ob.subscribe("click",function(evt){
-	$log("click was emitted with:" + evt);
-	$assert.Equal("click arguments",evt);
-	$assert.set("fn1","click was emitted with:" + evt);
-});
-//再订阅一次click事件
-ob.subscribe("click",function(evt){
-	$log("click is catched by the second function");
-	$assert.Equal("click arguments",evt);
-	$assert.set("fn2","click is catched by the second function");
-});
-//发送click事件给订阅者
-ob.emit("click","click arguments");
-$assert.Equal("click was emitted with:click arguments",$assert.get("fn1"));
-$assert.Equal("click is catched by the second function",$assert.get("fn2"));
-$assert.end("yi.Observable.subscribe");
-	</script>	
+	</li>
+	<li>
+	<script subtype='test'>
+$assert.scope(function($assert,log){
+	var ob = new yi.Observable();
+	//订阅click事件
+	ob.subscribe("click",function(evt){
+		log("click was emitted with:" + evt);
+		$assert.Equal("click arguments",evt);
+		$assert.fn1="click was emitted with:" + evt;
+	});
+	//再订阅一次click事件
+	ob.subscribe("click",function(evt){
+		log("click is catched by the second function");
+		$assert.Equal("click arguments",evt);
+		$assert.fn2="click is catched by the second function";
+	});
+	//发送click事件给订阅者
+	ob.emit("click","click arguments");
+	$assert("click was emitted with:click arguments",$assert.fn1);
+	$assert("click is catched by the second function",$assert.fn2);
+});//$assert
+
+	</script>
+	</li>
+	</ul>
  </fieldset>
  <fieldset>
 	<legend><h2>退订 yi.Observable.unsubscribe</h2></legend>
-	<script id="yi.Observable.unsubscribe">
-$assert.begin();
+	<ul>
+		<li>
+			<h3>说明</h3>
+			<table class='descriptor'>
+				<thead>
+					<tr><th colspan="3">Description</th></tr>
+					<tr><td colspan ="3">添加一个监听函数。当事件发生时，监听函数会被调用</td></tr>
+					<tr><th colspan="3" class='parameters'>Parameters</th></tr>
+					<tr><th>Name</th><th>Type</th><th>Description</th></tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td class='parameter'>evtname</td>
+						<td class='type'>string</td>
+						<td>事件名</td>
+					</tr>
+					<tr>
+						<td class='parameter'>subscriber</td>
+						<td class='type'>function</td>
+						<td>订阅者/监听器，当事件被emit时，该函数会被调用</td>
+					</tr>
+					<tr><th class='returns'>RETURNS</th><td class='type'>object</td><td>this,Observable</td></tr>
+				</tbody>
+				<tfoot>
+					<tr>
+						<th colspan="3"></th>
+					</tr>
+					
+				</tfoot>
+			</table>
+		</li>
+		<li>
+	<script subtype='test'>
+$assert.scope(function($assert,log){
 var ob = new yi.Observable();
 //定义了2个监听者
 var listener1 = function(){
-	$log("listener1 recieved.");
-	$assert.set("fn1",true);
+	log("listener1 recieved.");
+	$assert.fn1=true;
 }
 var listener2 = function(){
-	$log("listener2 recieved.");
-	$assert.set("fn2",true);
+	log("listener2 recieved.");
+	$assert.fn2=true;
 }
 
 //注册监听者
@@ -132,59 +173,103 @@ ob.subscribe("dblclick",listener1);
 //listener2 监听dblclick
 ob.subscribe("dblclick",listener2);
 
-$log("解除listener1的监听");
+log("解除listener1的监听");
 ob.unsubscribe("dblclick",listener1);
-$log("发送dblclick事件");
+log("发送dblclick事件");
 ob.emit("dblclick");
-$assert.None($assert.get("fn1"));
-$assert.True($assert.get("fn2"));
+$assert.NotExists($assert.fn1);
+$assert.True($assert.fn2);
 
-$assert.clear();
+$assert.fn1=$assert.fn2=null;
 ob.unsubscribe("dblclick",listener2);
-$log();
-$log("解除listener2的监听后");
-$log("发送dblclick事件");
+log();
+log("解除listener2的监听后");
+log("发送dblclick事件");
 ob.emit("dblclick");
-$assert.None($assert.get("fn1"));
-$assert.None($assert.get("fn2"));
-$assert.end("yi.Observable.unsubscribe");
+$assert.NotExists($assert.fn1);
+$assert.NotExists($assert.fn2);
+});
 	</script>
+	</li>
+	</ul>
  </fieldset>
  <fieldset>
 	<legend><h2>发布 yi.Observable.emit</h2></legend>
-	<script id="yi.Observable.emit">
-$assert.begin();
+	<ul><li><h3>说明</h3>
+	<table class='descriptor'>
+		<thead>
+			<tr><th colspan="3">Description</th></tr>
+			<tr><td colspan ="3">发送一个事件，所有监听者都会被调用</td></tr>
+			<tr><th colspan="3" class='parameters'>Parameters</th></tr>
+			<tr><th>Name</th><th>Type</th><th>Description</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td class='parameter'>evtname</td>
+				<td class='type'>string</td>
+				<td>事件名</td>
+			</tr>
+			<tr>
+				<td class='parameter'>evtname</td>
+				<td class='type'>string</td>
+				<td>事件名</td>
+			</tr>
+			<tr>
+				<td class='parameter'>args</td>
+				<td class='type'>object</td>
+				<td>事件参数</td>
+			</tr>
+			<tr>
+				<td class='parameter'>isApply</td>
+				<td class='type'>bool</td>
+				<td>是否用apply方式调用监听者，这样就可以收到多个参数。默认是false</td>
+			</tr>
+			<tr><th class='returns'>RETURNS</th><td class='type'>object</td><td>this,Observable</td></tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<th colspan="3"></th>
+			</tr>
+			
+		</tfoot>
+	</table>
+	</li><li>
+	<script subtype='test'>
+$assert.scope(function($assert,log){
 var ob = new yi.Observable();
 //注册监听者
 //listener1 监听dblclick
 ob.subscribe("dblclick",function(a1,a2,a3){
-	$log("a1=" + a1);
-	$log("a2=" + a2);
-	$log("a3=" + a3);
-	$assert.set("time",($assert.get("time")||0)+1);
-	$assert.check($assert.get("time")==1,function(){
-		$assert.isArray(a1);
+	log("a1=" + a1);
+	log("a2=" + a2);
+	log("a3=" + a3);
+	$assert.time=($assert.time||0)+1;
+	if($assert.time==1){//$assert
+		$assert.Array(a1);
 		$assert.Undefined(a2);
 		$assert.Undefined(a3);
-	});//$assert.line
-	$assert.check($assert.get("time")==2,function(){
+	};//$assert
+	if($assert.time==2){//$assert
 		$assert.Equal("v2",a2);
 		$assert.Equal("v2",a2);
 		$assert.Equal("v3",a3);
-	});//$assert.line
+	};//$assert
 });
 
-$log("一般的emit发送，只会传送第一个参数");
+log("一般的emit发送，只会传送第一个参数");
 ob.emit("dblclick",['v1','v2','v3']);
-$log();
-$log("emit第二个参数设置为true,将会用apply的方式调用监听函数，可以传递多个参数");
+log();
+log("emit第二个参数设置为true,将会用apply的方式调用监听函数，可以传递多个参数");
 ob.emit("dblclick",['v1','v2','v3'],true);
-$assert.end('yi.Observable.emit');
+});
+
 	</script>	
+	</li></ul>
  </fieldset>
 
  <fieldset>
 	<legend><h2>订阅者/监听函数 Subscriber / Listener function</h2></legend>
+	<ul><li><h3>说明</h3>
 	<p>
 	监听函数有以下几点需要注意
 	<ol>
@@ -195,82 +280,82 @@ $assert.end('yi.Observable.emit');
 		<li>监听函数的返回值，如果是"%discard","%discard&interrupt"，将会把当前的监听移除监听队列</li>
 	</ol>
 	</p>
-	<script id="yi.Observable.subscriber">
-$assert.begin();
+	</li>
+	<li>
+	<script subtype="test">
+$assert.scope(function($assert,log){
 var ob = new yi.Observable();
 //return false.
 ob.subscribe("dblclick",function(){
-	$assert.set("fn1",true);
-	$log("fn1 return with false.");
+	$assert.fn1=true;
+	log("fn1 return with false.");
 	return false;
 });
 ob.subscribe("dblclick",function(){
-	$assert.set("fn2",true);
-	$log("fn2 invoked.");
+	$assert.fn2=true;
+	log("fn2 invoked.");
 });
 ob.emit("dblclick");
-$assert.True($assert.get("fn1"));
-$assert.None($assert.get("fn2"));
-$log("fn2 will not be invoked.");
+$assert.True($assert.fn1);
+$assert.NotExists($assert.fn2);
+log("fn2 will not be invoked.");
+$assert.fn1 = $assert.fn2 = null;
 
-$assert.clear();$log();
 var ob = new yi.Observable();
 //return '%interrupt'.
 ob.subscribe("dblclick",function(){
-	$assert.set("fn1",true);
-	$log("fn1 return with %interrupt.");
+	$assert.fn1=true;
+	log("fn1 return with %interrupt.");
 	return '%interrupt';
 });
 ob.subscribe("dblclick",function(){
-	$assert.set("fn2",true);
-	$log("fn2 invoked.");
+	$assert.fn2=true;
+	log("fn2 invoked.");
 });
 ob.emit("dblclick");
-$assert.True($assert.get("fn1"));
-$assert.None($assert.get("fn2"));
-$log("fn2 will not be invoked.");
+$assert.True($assert.fn1);
+$assert.NotExists($assert.fn2);
+log("fn2 will not be invoked.");
 
-$assert.clear();$log();
 var ob = new yi.Observable();
 //return '%discard&interrupt'.
 ob.subscribe("dblclick",function(){
-	$assert.set("fn1",true);
-	$log("fn1 return with %discard&interrupt.");
+	$assert.fn1=true;
+	log("fn1 return with %discard&interrupt.");
 	return '%discard&interrupt';
 });
 ob.subscribe("dblclick",function(){
-	$assert.set("fn2",true);
-	$log("fn2 invoked.");
+	$assert.fn2=true;
+	log("fn2 invoked.");
 });
 ob.emit("dblclick");
-$assert.True($assert.get("fn1"));
-$assert.None($assert.get("fn2"));
-$log("fn2 will not be invoked.");
+$assert.True($assert.fn1);
+$assert.NotExists($assert.fn2);
+log("fn2 will not be invoked.");
 
-$assert.clear();$log();
+$assert.fn1 = $assert.fn2 = null;
 var ob = new yi.Observable();
 //return '%discard&interrupt'.
 ob.subscribe("dblclick",function(){
-	$assert.set("fn1",($assert.get("fn1")|| 0)+1);
-	$log("fn1 return with %discard.");
+	$assert.fn1 = ($assert.fn1|| 0)+1;
+	log("fn1 return with %discard.");
 	return '%discard';
 });
 ob.subscribe("dblclick",function(){
-	$assert.set("fn2",($assert.get("fn2")|| 0)+1);
-	$log("fn2 invoked.");
+	$assert.fn2=($assert.fn2|| 0)+1;
+	log("fn2 invoked.");
 });
-$log("invoke once:");
+log("invoke once:");
 ob.emit("dblclick");
-$log();//$assert.line
-$log("invoke twice:");
+log("invoke twice:");
 ob.emit("dblclick");
-$assert.Equal(1,$assert.get("fn1"));
-$assert.Equal(2,$assert.get("fn2"));
-$log();//$assert.line
-$log("fn1 will be invoked only once while fn2 will be invoked twice");
+$assert.Equal(1,$assert.fn1);
+$assert.Equal(2,$assert.fn2);
+log("fn1 will be invoked only once while fn2 will be invoked twice");
 
-$assert.end("yi.Observable.subscriber");
+});
 	</script>	
+	</li></ul>
  </fieldset>
  </body>
 </html>

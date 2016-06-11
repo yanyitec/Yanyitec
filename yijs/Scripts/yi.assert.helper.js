@@ -16,9 +16,9 @@ $assert.scope = function(tester){
 	var li = script.parentNode;
 	var code = $assert.clearCode(rawCode);
 	li.innerHTML = "<h3>示例代码(Sample code)</h3><pre class='code'>" + code + "</pre>";
-	var logger = new yi.log.createLog("yi.log.HtmlLogger");
+	var logger = yi.log.Logger.create("yi.log.HtmlLogger");
 	logger.trace(true);
-	var assert = new yi.assert.Assert(logger);
+	var assert = yi.assert.Assert.create(logger);
 	var p = li.parentNode;
 	var li = document.createElement("li");
 	li.innerHTML = "<h3>运行结果(Execute result)</h3>";
@@ -26,64 +26,9 @@ $assert.scope = function(tester){
 	//logger.element.style.height="100px";
 	//logger.element.style.overflow = "auto";
 	p.appendChild(li);
-	tester.call(assert,assert,p);
+	tester.call(assert,assert,function(){assert.log.apply(assert,arguments);});
 	//return $assert.caches[codeid] = assert;
 }
 })(yi.assert);
 
 
-$assert.redirectOutput=function(v,enable){
-	if(enable!==false){
-		var id = (v || new Date().valueOf()) + "-console";
-		var consoleView =document.getElementById(id); 
-		if(!consoleView){
-			consoleView = $assert.consoleView = document.createElement("div");
-			consoleView.id = id;
-			consoleView.className = "vconsole";
-			consoleView.innerHTML = "<h3>运行结果(result):</h3>";
-		}else $assert.consoleView =consoleView;
-		var existed = window.$log;
-		var log = window.$log = function(){
-			var html = "";
-			for(var i=0,j=arguments.length;i<j;i++){
-				html += "<div>" + arguments[i] + "</div>";
-			}
-			if(arguments.length===0) html = "<br />";
-			consoleView.innerHTML += html;
-		}
-		log.prev = existed;
-		return this;
-	}else if(enable===false){
-		var log = window.$log;
-		if(log.prev) window.$log = log.prev;
-	}
-	//return $assert._log!=null;
-}
-$assert.begin = function(id){
-	var assert = new yi.Assert();
-	
-	$assert.clear();
-	$assert.redirectOutput(id,true);
-}
-$assert.showCode = function(codeid){
-	
-	var codeElem = document.getElementById(codeid);
-	var code = codeElem.innerHTML;
-	var codeView = document.createElement("pre");
-	codeView.className = "code";
-	
-	codeView.innerHTML = "<h3>//代码</h3>" + code;
-
-	var token = codeElem.nextSibling;
-	if(token) codeElem.parentNode.insertBefore(codeView,token);
-	else codeElem.parentNode.appendChild(codeView);
-	return codeView;
-}
-$assert.end = function(codeid){
-	var codeView = $assert.showCode(codeid);
-	var token = codeView.nextSibling;
-	if(token) codeView.parentNode.insertBefore($assert.consoleView,token);
-	else codeView.parentNode.appendChild($assert.consoleView);
-	$assert.redirectOutput(codeid,false);
-	return $assert.codeView;
-}

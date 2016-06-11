@@ -1,79 +1,14 @@
 (function (Global,document) {
-    var yi = Global.yi = Global.$y = function () { }
+    var yi = Global.yi = Global.$y = Global.yi || {};
 	var objProto = Object.prototype;
 	var arrProto = Array.prototype;
 	var aslice = arrProto.slice;
 	var otoStr = objProto.toString;
 	
-	var log = yi.log = Global.$log = function(){
-		if(arguments.length==0)return log;
-		var params = aslice.call(arguments);
-		var lv = params.shift();
-		var lvs = log["@levels"];
-		if(lvs[lv]){
-			log["@output"].call(log,lv,params);
-		}else{
-			params.unshift(lv);
-			log["@output"].call(log,log["@defaultLevel"],params);
-		}
-		return log;
-	}
-	(function(){
-		var reset = function(lvs,output){
-			var levels = this["@levels"]={};
-			for(var i in lvs){
-				var lv = lvs[i];
-				(function(logger,name,levels,output,aslice){
-					levels["#" + name] = logger[name] = function(){
-						var params = aslice.call(arguments);
-						output.call(logger,name,params);
-						return this;
-					}
-				})(this,lv,levels,output,aslice);
-			}
-		};
-		this.enable = function(){
-			for(var i =0,j=arguments.length;i<j;i++){
-				var n = arguments[i];if(!n)continue;
-				var fn = this[n];if(!fn)continue;
-				this[n] = this["@levels"][n];
-			}
-			return this;
-		}
-		this.disable = function(){
-			for(var i =0,j=arguments.length;i<j;i++){
-				var n = arguments[i];if(!n)continue;
-				var fn = this[n];if(!fn)continue;
-				this[n] = function(){return this;};
-			}
-			return this;
-		}
-		this.reset = function(opts){
-			if(opts.output) this["@output"] = opts.output;
-			if(opts.levels) this["@levels"] = opts.levels;
-			if(opts.defaultLevel) this["@defaultLevel"] = opts.defaultLevel;
-			reset.call(this,this["@output"],this["@levels"]);
-			if(opts.enables) this.enable.apply(this,opts.enables);
-			if(opts.disables) this.disables.apply(this,opts.disables);
-			return this;
-		}
-	}).call(log);
-	yi.log.reset({
-		output:function(lv,params){
-			try{
-				console.log(lv,new Date(),":");
-				console.log.apply(console,params);
-			}catch(ignore){}
-		},
-		levels : ["dbg","inf","ntc","war","err"],
-		defaultLevel:"dbg"	
-	});
-	
-	
+	if(!yi.log) {yi.log =Global.$log = function(){console.log.apply(console,arguments);}}
+
     yi.Observable = function(){
-        var $_META = {
-            description:"可观察对象。观察者模式的实现"
-        };//META_$
+        
         this.subscribe = function (evtname, subscriber) {
             var ob = this["@observable.observers"] || (this["@observable.observers"]={});
             var subscribers = ob[evtname] || (ob[evtname]=[]);
@@ -118,8 +53,8 @@
 	yi.bind = function(func,me,args){return function(){return func.apply(me || this,args||arguments);}}
 	var Async = function(){
 		var me = this;
-		this.waitings = [];
-		this.delays = [];
+		var waitings = this.waitings = [];
+		var delays = this.delays = [];
 		
 		var timeout = function(){
 			var ws = this.waitings ,ds = this.delays;
@@ -159,8 +94,8 @@
 				}
 				return hasIt;
 			}
-			delays.push({"@func":func,"@param":param});
-			if(delays.length===1){
+			this.delays.push({"@func":func,"@param":param});
+			if(this.delays.length===1){
 				setTimeout(this._timeout,0);
 				this.isRunning = true;
 			}
@@ -174,8 +109,8 @@
 	};
 	Async.call(async);
 	async.isRunning = false;async.tick = 0;
-	var delays= async.delays = [];
-	var waitings = async.waitings = [];
+	async.Async = Async;
+	
 	
 	var Thenable = yi.Thenable = function(){
 		this["@promise.status"]="padding";
@@ -189,50 +124,50 @@
 			this["@promise.status"]='fullfilled';
 			this["@promise.value"] = value;
 			var dfd = this;
-			if(this["@promise.onChanged"]){
+			//if(this["@promise.onChanged"]){
 				async(function(dfd){
 					var its=dfd["@promise.onChanged"],status = dfd["@promise.status"];
-					for(var i=0,j=its.length;i<j;i++) {
+					if(its)for(var i=0,j=its.length;i<j;i++) {
 						var it = its.shift();
 						var rs = it.call(dfd,'fullfilled',status,dfd,value,dfd);
 						if(rs!=='%discard' && rs!=='%discard&interrupt') its.push(it);
 						if(rs==='%interrupt' || rs == "%discard&interrupt" || rs == false)break;
 					}				
 				},this);
-			}
-			if(this["@promise.onFullfilled"]){
+			//}
+			//if(this["@promise.onFullfilled"]){
 				async(function(dfd){
 					var its = dfd["@promise.onFullfilled"],value =dfd["@promise.value"];
-					for(var i=0,j=its.length;i<j;i++) its.shift().call(dfd,value,dfd);			
+					if(its)for(var i=0,j=its.length;i<j;i++) its.shift().call(dfd,value,dfd);			
 				},this);
-			}
+			//}
 			
 			return this;
 		};
 		this.reject = function(reason){
 			this.notify = this.resolve = this.reject = function(){throw new Error("Already fullfilled or rejected.");}
 			
-			this.isFullfilled = true;this.isRejected = false;
-			this["@promise.status"]='fullfilled';
-			this["@promise.value"] = value;
+			this.isFullfilled = false;this.isRejected = true;
+			this["@promise.status"]='rejected';
+			this["@promise.value"] = reason;
 			var dfd = this;
-			if(this["@promise.onChanged"]){
+			//if(this["@promise.onChanged"]){
 				async(function(dfd){
-					var its,status = dfd["@promise.status"];
-					for(var i=0,j=its.length;i<j;i++) {
+					var its=dfd["@promise.onChanged"],status = dfd["@promise.status"];
+					if(its)for(var i=0,j=its.length;i<j;i++) {
 						var it = its.shift();
 						var rs = it.call(dfd,'rejected',status,dfd,value,dfd);
 						if(rs!=='%discard' && rs!=='%discard&interrupt') its.push(it);
 						if(rs==='%interrupt' || rs == "%discard&interrupt" || rs == false)break;
 					}					
 				},this);
-			}
-			if(this["@promise.onRejected"]){
+			//}
+			//if(this["@promise.onRejected"]){
 				async(function(dfd){
 					var its = dfd["@promise.onRejected"],value =dfd["@promise.value"];
-					for(var i=0,j=its.length;i<j;i++) its.shift().call(dfd,value,dfd);			
+					if(its)for(var i=0,j=its.length;i<j;i++) its.shift().call(dfd,value,dfd);			
 				},this);
-			}			
+			//}			
 			return this;
 		};
 		this.notify = function(stat,value){

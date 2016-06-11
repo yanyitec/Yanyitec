@@ -1,10 +1,10 @@
-﻿(function (Global, document, undefined) {
+﻿"strict";
+(function (Global, document, undefined) {
     var yi = Global.yi || (Global.yi = {});
     var objProto = Object.prototype;
     var arrProto = Array.prototype;
     var aslice = arrProto.slice;
     var otoStr = objProto.toString;
-	
     var Logger = function (_opts) {
 		this.toString = function(){return "[object,yi.log.Logger]";}
         var opts = {
@@ -100,7 +100,7 @@
             if (typeof exist.addArggregation === 'function') {
                 if(!exist.existAggregation(output))exist.addArggregation(output);
             } else if (exist!=output) {
-                var aggr = log.outputAggregation();
+                var aggr = Logger.outputAggregation();
 				aggr.addAgregation(exist);
                 aggr.addAggregation(output);
                 this["@output"] = aggr;
@@ -123,9 +123,10 @@
         }
         this.config(opts);
     };
-	var createLog = function(loggerTypename,params){
-		var log = function(){
-			var logger = log;
+	Logger.create = function(loggerTypename,params){
+		var mylogger;
+		var result = mylogger= function(){
+			var logger = mylogger;
 			if (arguments.length == 0 || logger.isLogDisabled) return this;
 			var lvfn,lv = arguments[0];
 			var lvs = logger["@levels"];
@@ -139,9 +140,9 @@
 			}
 			return this;
 		}
-		eval((loggerTypename || "yi.log.Logger") + ".call(log,params)");
-		log.toString = function(){return "[function," + loggerTypename + "]";}
-		return log;
+		eval((loggerTypename || "yi.log.Logger") + ".call(result,params)");
+		result.toString = function(){return "[function," + loggerTypename + "]";}
+		return result;
 	}
 	Logger.defaultOutput = function (lv, params,start) {
         try {
@@ -158,12 +159,7 @@
             console.log.apply(console, params);
         } catch (ignore) { }
     };
-
-	var log = yi.log = Global.$log = createLog("Logger");
-	log.createLog = createLog;
-	log.Logger = Logger;
-    
-    log.outputAggregation = function () {
+	Logger.outputAggregation = function () {
         var ret = function (type,contents,start) {
             for (var i = 0, j = fns.length; i < j; i++) fns[i].call(this,type,contents,start);
         }
@@ -188,10 +184,11 @@
         ret.count = function () { return fns.length;}
         return ret;
     }
+	yi.log = Global.$log = Logger.create("Logger");
+	yi.log.Logger = Logger;
+	yi.log.toString = function(){return "[function yi.log.Logger]";}
 
-	log.toString = function(){return "[function yi.log.Logger]";}
-
-    log.HtmlLogger = function (elem) {
+    yi.log.HtmlLogger = function (elem) {
 		Logger.call(this,{levels:[]});
 		this.toString = function(){return "[object,yi.log.HtmlLogger]";}
 		//不要让Logger的默认levels出现在原型中
@@ -432,7 +429,7 @@
 		var commandView = elem.firstChild;
 		//日志器
 
-		var logger = this.log = yi.log.createLog("yi.log.HtmlLogger");
+		var logger = this.log = yi.log.Logger.create("yi.log.HtmlLogger");
 		elem.insertBefore(logger.element,quickActionsView);
 		var loggerView  = this.loggerView = logger.element;
 		loggerView.style.position="absolute";
@@ -719,42 +716,70 @@
 	})(Console);
 	yi.console.Console = Console;
 
-	var assert =yi.assert = Global.$assert = function (expect, actual, text) {
-        if (arguments.length === 1) return isTrue.call($assert, expect);
-        return equal.call($assert, expect, actual, text);
-    }
 	
-    assert.Assert = function (logger) {
+	
+    var Assert = function (logger) {
 		this.toString = function(){return "[object,yi.log.Assert]";}
-        this.__data = {};
         this.logger = logger|| yi.log;
-        this.clear = function () { this.__data = {}; return this; }
         this.log = function(){
 			if(arguments.length==0)return this;
 			var params = aslice.call(arguments);
 			var lv = params[0];
 			if(typeof lv ==='string' && lv.indexOf("##")!==0) params.unshift("##assert");
-			this.logger.log.apply(this.logger,params);
+			this.logger.apply(this.logger,params);
 			return this;
+		}
+		this.wait = function(seconds){
+			var ret = {
+				start:(new Date()).getTime(),
+				"For" :function(ck){
+					if(ck()) {
+						this.result= true;
+						if(this.callback) this.callback();
+					}else{
+						this.checker = ck;
+						this.tick = setInterval(function(){
+							var t = (new Date()).getTime() - ret.start;
+							if(ret.checker && ret.checker()){
+								ret.result =true;
+								clearInterval(ret.tick);
+								if(ret.callback)ret.callback();
+							}
+							if(t/60>seconds) {
+								clearInterval(ret.tick);
+								me.logger("##fail","waiting timeout.");
+								throw new Error("Timeout");
+							}
+						},50);
+					}
+					return this;
+				},
+				"done":function(callback){
+					if(ret.result) callback();
+					else this.callback = callback;
+				}
+			};
+			var me = this;
+			return ret;
 		}
         this.Array = function (value, text) {
             var t = Object.prototype.toString.call(value);
             if (t !== '[object Array]') {
-                this.logger.output("##fail","Array::Expect array,but actual is ",value);
+                this.logger("##fail","Array::Expect array,but actual is ",value);
                 if(!this.notThrows)throw new Error(text || "Assert.isArray");
             }
             return this;
         }
         this.Equal = function (expect, actual, text) {
             if (expect !== actual) {
-                this.logger.output("##fail","Equal::Expect ", expect,", but actual is ",actual);
+                this.logger("##fail","Equal::Expect ", expect,", but actual is ",actual);
                 throw new Error(text || "Assert.Eual");
             }
             return this;
         }
         this.NotExists = function (value, text) {
             if (value) {
-                this.logger.output("##fail","Not Exists::Expect 0 or null or undefined or '', but actual is ",value);
+                this.logger("##fail","Not Exists::Expect 0 or null or undefined or '', but actual is ",value);
                 //alert(arguments.callee.callee);
                 //this.log("invoker:",arguments.callee.caller);
                 if(!this.notThrows)throw new Error(text || "Assert.NotExists");
@@ -763,21 +788,21 @@
         }
         this.Exists = function (value, text) {
             if (!value) {
-                this.logger.output("##fail","Exists::Expect value should not be 0 or null or undefined or '',but actual is ",value);
+                this.logger("##fail","Exists::Expect value should not be 0 or null or undefined or '',but actual is ",value);
                 if(!this.notThrows) throw new Error(text || "Assert.Exists");
             }
             return this;
         }
         this.Undefined = function (value, text) {
             if (value !== undefined) {
-                this.logger.output("##fail","Undefined::Expect undefined, but actual is ",value);
+                this.logger("##fail","Undefined::Expect undefined, but actual is ",value);
                 if(!this.notThrows) throw new Error(text || "Assert.Undefined");
             }
             return this;
         }
         this.Null = function (value, text) {
             if (value !== null) { 
-                this.logger.output("##fail","Null::Expect null, but actual is ", value);
+                this.logger("##fail","Null::Expect null, but actual is ", value);
 				if(!this.notThrows) throw new Error(text || "Assert.Null");
             }
             return this;
@@ -798,15 +823,25 @@
             return this;
         }
     }
-
-    assert.Assert.call(assert);
-	assert.toString = function(){return "[function,yi.assert.Assert]"}
-	assert.test = function(tester){
-		var ass = new assert.Assert();
+	Assert.create = function(logger){
+		var myassert;
+		var assert = myassert = function(expect, actual, text){
+			if (arguments.length === 1) return isTrue.call($assert, expect);
+			return equal.call(myassert, expect, actual, text);
+		}
+		Assert.call(assert,logger);
+		var equal = assert.Equal,isTrue = assert.True;
+		assert.toString = function(){return "[function,yi.assert.Assert]"}
+		return assert;
+	}
+	yi.assert = Global.$assert = Assert.create();
+	yi.assert.Assert = Assert;
+	yi.assert.test = function(tester){
+		var ass = Assert.create();
 		tester.call(this,ass);
 		return this;
 	}
-	assert.clearCode = function(code){
+	yi.assert.clearCode = function(code){
 		var codes = code.split("\n");
 		for(var i =0,j= codes.length;i<j;i++){
 			var line = codes.shift();
@@ -815,7 +850,6 @@
 		}
 		return codes.join("\n");
 	}
-    var equal = $assert.Equal;
-    var isTrue = $assert.True;
+    
    
 })(window, document);

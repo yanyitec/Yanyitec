@@ -9,7 +9,7 @@
   <title>Document</title>
   <link href="../docs.css" type="text/css" rel="stylesheet"></link>
   <script type="text/javascript" src="../../Scripts/yi.core.js"></script>
-  <script type="text/javascript" src="../../Scripts/yi.assert.js"></script>
+  <script type="text/javascript" src="../../Scripts/yi.diagnosis.js"></script>
   <script type="text/javascript" src="../../Scripts/yi.assert.helper.js"></script>
  </head>
  <body>
@@ -20,6 +20,7 @@
  </fieldset>
  <fieldset class='member function'>
 	<legend><h2>yi.then</h2></legend>
+	<ul><li><h3>Instructions</h3>
 	<table class='descriptor'>
 		<thead>
 			<tr><th colspan="3" class='name'>Description</th></tr>
@@ -42,34 +43,29 @@
 				<th colspan="3"></th>
 			</tr>
 		</tfoot>
-	</table>
-	<script id="yi.Whenable.when">
-$assert.begin("yi.Whenable.when");
-var assert1 = new $assert.constructor();//$assert.line
+	</table></li>
+	<li><script subtype='test'>
+$assert.scope(function($assert,log){
 var fn = function(d,args){
-	$assert.redirectOutput("yi.Whenable.when");
-	assert1.Equal(dfd,this);//$assert.line
-	assert1.Equal(dfd,d);//$assert.line
-	assert1.Equal("s",args);//$assert.line
-	$log("execute fn:" + args);
+	$assert.Equal(dfd,this);//$assert.line
+	$assert.Equal(dfd,d);//$assert.line
+	$assert.Equal("s",args);//$assert.line
+	log("execute fn:" + args);
 	d.resolve("hello");
-	assert1.set("t",(assert1.get("t")||0)+1);//$assert.line
+	$assert.t=($assert.t||0)+1;//$assert.line
 };
 $log("when 一个函数");
 var dfd = new yi.Whenable();
 dfd.name = "dfd";
 dfd.when(fn,"s").then(function(value){
-	$assert.redirectOutput("yi.Whenable.when");
-	assert1.Equal("hello",value);//$assert.line
-	$log("dfd is resolved with:" + value);
-	assert1.set("t1",(assert1.get("t1")||0)+1);//$assert.line
-	$assert.redirectOutput("yi.Whenable.when",false);//$assert.line
+	$assert.Equal("hello",value);//$assert.line
+	log("dfd is resolved with:" + value);
+	$assert.t1=($assert.t1||0)+1;//$assert.line
 });
-setTimeout(function(){//$assert.line
-	$assert.redirectOutput("yi.Whenable.when");
-	assert1.Equal(1,assert1.get("t"));//$assert.line
-	assert1.Equal(1,assert1.get("t1"));//$assert.line
-},200);//$assert.line
+$assert.wait(5).For(function(){return $assert.t1&& $assert.t}).done(function(){
+	$assert.Equal(1,$assert.t);//$assert.line
+	$assert.Equal(1,$assert.t1);//$assert.line
+});
 
 $log("when Thenable");
  
@@ -78,20 +74,20 @@ inner.name = "inner";
 var dfd2 = new yi.Whenable();
 dfd2.name = "dfd2";
 dfd2.when(inner).then(function(value){
-	$log("dfd2 was done with value:" + value);
-	assert1.Equal(dfd2,this);//$assert.line
-	assert1.Equal("inn",value);//$assert.line
-	assert1.set("tx",(assert1.get("tx")||0)+1);//$assert.line
+	log("dfd2 was done with value:" + value);
+	$assert.Equal(dfd2,this);//$assert.line
+	$assert.Equal("inn",value);//$assert.line
+	$assert.tx=($assert.tx||0)+1;//$assert.line
 });
 
 inner.resolve("inn");
-setTimeout(function(){//$assert.line
-	$assert.redirectOutput("yi.Whenable.when");
-	assert1.Equal(1,assert1.get("tx"));
-},200);//$assert.line
+$assert.wait(5).For(function(){return $assert.t1&& $assert.t}).done(function(){
+	$assert.Equal(1,$assert.tx);//$assert.line
+});
 
-$assert.end("yi.Whenable.when");
-	</script>	
+});
+	</script></li>
+	</ul>
  </fieldset>
  </body>
 </html>
