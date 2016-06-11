@@ -154,6 +154,7 @@
     <Content Include="Docs\Core\yi.Observer.html" />
     <Content Include="Docs\Core\yi.Thenable.html" />
     <Content Include="Docs\Core\yi.Whenable.html" />
+    <Content Include="Docs\Diagnosis\yi.console.html" />
     <Content Include="Docs\Diagnosis\yi.log.html" />
     <Content Include="Docs\Test\性能测试.html" />
     <Content Include="favicon.ico" />

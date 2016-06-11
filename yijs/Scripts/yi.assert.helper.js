@@ -16,8 +16,8 @@ $assert.scope = function(tester){
 	var li = script.parentNode;
 	var code = $assert.clearCode(rawCode);
 	li.innerHTML = "<h3>示例代码(Sample code)</h3><pre class='code'>" + code + "</pre>";
-	var logger = new yi.log.HtmlLogger();
-	logger.traceStack(true);
+	var logger = new yi.log.createLog("yi.log.HtmlLogger");
+	logger.trace(true);
 	var assert = new yi.assert.Assert(logger);
 	var p = li.parentNode;
 	var li = document.createElement("li");
@@ -26,7 +26,7 @@ $assert.scope = function(tester){
 	//logger.element.style.height="100px";
 	//logger.element.style.overflow = "auto";
 	p.appendChild(li);
-	tester.call(assert,assert);
+	tester.call(assert,assert,p);
 	//return $assert.caches[codeid] = assert;
 }
 })(yi.assert);

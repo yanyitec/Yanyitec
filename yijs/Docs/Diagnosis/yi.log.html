@@ -208,7 +208,7 @@ logger.log("##fail","fail can be output");
 logger.config({
 	levels:["ok","error"],
 	//可以给新设置的levels指定显示颜色
-	colors:{"ok":"darkgreen",error:"darkred"}
+	css:{"ok":"color:darkgreen",error:"color:darkred"}
 });
 $assert.NotExists(logger.fail);
 $assert.Exists(logger.error);

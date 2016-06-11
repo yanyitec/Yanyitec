@@ -4,61 +4,11 @@
     var arrProto = Array.prototype;
     var aslice = arrProto.slice;
     var otoStr = objProto.toString;
-	var log = Global.$log = yi.log = function () {
-		var logger = log;
-        if (arguments.length == 0 || logger.isLogDisabled) return this;
-            var lvfn;
-            var lvs = logger["@levels"];
-            if ((lvfn = lvs[lv])) {
-                if (!lvfn.isLogDisabled) logger["@output"].call(logger, lv, arguments,1);
-            } else {
-                logger["@output"].call(logger, logger["@defaultLevel"], arguments);
-            }
-            return this;
-    }
-    log.outputAggregation = function (type,contents) {
-        var ret = function () {
-            for (var i = 0, j = fns.length; i < j; i++) fns[i].call(type,contents);
-        }
-        var fns = ret["@aggregations"]=[];
-        ret.addAggregation = function (fn) {
-            fns.push(fn); return this;
-        }
-        ret.removeAggregation = function (fn) {
-            for (var i = 0, j = fns.length; i < j; i++) {
-                var it = fns.shift();
-                if (it !== fn) exist.push(it);
-            }
-            return this;
-        }
-        ret.getAggregation = function (i) { return fns[i]; }
-        ret.existAggregation = function (it) {
-            for (var i = 0, j = fns.length; i < j; i++) {
-                if (fns[i] === it) return true;
-            }
-            return false;
-        }
-        ret.count = function () { return fns.length;}
-        return ret;
-    }
-    log.defaultOutput = function (lv, params,start) {
-        try {
-            params || (params = []);
-            var t = new Date();
-            var s = lv || "#debug";
-			if(start){
-				if(!params.shift)params = aslice.call(params);
-				for(var i=0;i<start;i++) params.shift();
-			}
-			if(!params.unshift)params = aslice.call(params);
-            params.unshift(s);
-            console.log.apply(console, params);
-        } catch (ignore) { }
-    };
-    log.Logger = function (_opts) {
+	
+    var Logger = function (_opts) {
 		this.toString = function(){return "[object,yi.log.Logger]";}
         var opts = {
-            output: log.defaultOutput,
+            output: Logger.defaultOutput,
             levels: ["debug","fail","warming","notice","info",'success',"assert"],
             defaultLevel: "debug"
         }
@@ -171,42 +121,109 @@
         }
         this.config(opts);
     };
-    log.Logger.call(log);
+	var createLog = function(loggerTypename,params){
+		var log = function(){
+			var logger = log;
+			if (arguments.length == 0 || logger.isLogDisabled) return this;
+			var lvfn,lv = arguments[0];
+			var lvs = logger["@levels"];
+			if ((lvfn = lvs[lv])) {
+				if (!lvfn.isLogDisabled) logger["@output"].call(logger, lv, arguments,1);
+			} else {
+				logger["@output"].call(logger, logger["@defaultLevel"], arguments);
+			}
+			return this;
+		}
+		eval((loggerTypename || "yi.log.Logger") + ".call(log,params)");
+		log.toString = function(){return "[function," + loggerTypename + "]";}
+		return log;
+	}
+	var log = yi.log = Global.$log = createLog("Logger");
+	log.createLog = createLog;
+	log.Logger = Logger;
+    
+    log.outputAggregation = function () {
+        var ret = function (type,contents,start) {
+            for (var i = 0, j = fns.length; i < j; i++) fns[i].call(type,contents,start);
+        }
+        var fns = ret["@aggregations"]=[];
+        ret.addAggregation = function (fn) {
+            fns.push(fn); return this;
+        }
+        ret.removeAggregation = function (fn) {
+            for (var i = 0, j = fns.length; i < j; i++) {
+                var it = fns.shift();
+                if (it !== fn) exist.push(it);
+            }
+            return this;
+        }
+        ret.getAggregation = function (i) { return fns[i]; }
+        ret.existAggregation = function (it) {
+            for (var i = 0, j = fns.length; i < j; i++) {
+                if (fns[i] === it) return true;
+            }
+            return false;
+        }
+        ret.count = function () { return fns.length;}
+        return ret;
+    }
+    Logger.defaultOutput = function (lv, params,start) {
+        try {
+            params || (params = []);
+            var t = new Date();
+            var s = lv || "#debug";
+			if(typeof params !=='object'){ console.log(s,params);return this;}
+			if(start){
+				if(!params.shift)params = aslice.call(params);
+				for(var i=0;i<start;i++) params.shift();
+			}
+			if(!params.unshift)params = aslice.call(params);
+            params.unshift(s);
+            console.log.apply(console, params);
+        } catch (ignore) { }
+    };
 	log.toString = function(){return "[function yi.log.Logger]";}
 
     log.HtmlLogger = function (elem) {
+		Logger.call(this,{levels:[]});
 		this.toString = function(){return "[object,yi.log.HtmlLogger]";}
-        elem = this.element = elem || document.createElement("div");
-		elem.className = "console";
+		//不要让Logger的默认levels出现在原型中
+        elem = this.element  = elem || document.createElement("div");
+		elem.className = "logger-output";
+		elem.style.cssText = "margin:0;padding:5px;overflow:auto;word-wrap:break-word;";
 		this["@levels"] =null;
-        this["@colors"] = {
-            "##assert": "yellow",
-            "##debug": "blue",
-            "##info": "gray",
-            "##notice": "white",
-            "##warming": "orange",
-            "##success": "green",
-            "##fail": "red"
+        this["@css"] = {
+            "##assert": "color:yellow;border-bottom:1px dashed #666666;",
+            "##debug": "color:blue;border-bottom:1px dashed #666666;",
+            "##info": "color:gray;border-bottom:1px dashed #666666;",
+            "##notice": "color:white;border-bottom:1px dashed #666666;",
+            "##warming": "color:orange;border-bottom:1px dashed #666666;",
+            "##success": "color:green;border-bottom:1px dashed #666666;",
+            "##fail": "color:red;border-bottom:1px dashed #666666;"
         };
-		this.traceStack = function(v){
+		this.trace = function(v){
 			if(v===undefined)return this["@traceStack"];
 			this["@traceStack"] = v;return this;
 		}
-        var output = (function (me, outputView, colors) {
+        var output = (function (me, outputView, css) {
             var output = function (type, contents,start) {
                 var ctn = document.createElement("div");
-                ctn.style.clear = "both";
-                ctn.style.color = colors[type] || colors["##debug"] || "blue";
-				ctn.style.borderBottom = "1px dashed #666666";
-                for (var i = (start||0), j = contents.length; i < j; i++) {
-                    var o = contents[i];
-                    var elem = toDom(o);
-                    var div = document.createElement("div");
-                    div.appendChild(elem);
-                    div.style.cssText = "float:left;";
-                    ctn.appendChild(div);
-
-                }
+                ctn.style.cssText = css[type] || css[me.defaultLevel] || "";
+				ctn.style.clear = "both";
+				ctn.className = type.substring(2);
+				if(typeof contents==="string"){
+					ctn.innerHTML = contents;
+				}else{
+					for (var i = (start||0), j = contents.length; i < j; i++) {
+						var o = contents[i];
+						var elem = toDom(o);
+						var div = document.createElement("div");
+						div.appendChild(elem);
+						div.style.cssText = "float:left;";
+						ctn.appendChild(div);
+					}
+				}
+                
 				var stack = document.createElement("div");
 				
                 if (me["@traceStack"]) {
@@ -253,10 +270,7 @@
                         if (evt.preventDefault) evt.preventDefault();
                         return false;
                     }
-                }else{
-					//stack.innerHTML = "&nbsp;&nbsp;&nbsp;";
-					
-				}
+                }
 				ctn.insertBefore(stack, ctn.firstChild);
 				var clear = document.createElement("div");
 				clear.style.cssText = "clear:both";
@@ -266,29 +280,29 @@
                 outputView.scollLeft = 0;
             }
             return output;
-        })(this, this.element, this["@colors"]);
+        })(this, this.element, this["@css"]);
 		var opts = {
             output: output,
             levels: ["debug","fail","warming","notice","info",'success',"assert"],
             defaultLevel: "debug"
         }
 		this.config(opts);
-
+		var basconfig = this.config;
         this.config = function (opts) {
             if (opts.output) throw new Error("HtmlLogger's output is fixed. You should NOT replace this output.");
-            if (opts.colors) {
-                var colors = this["@colors"];var ns = [];
-                for (var n in colors) ns.push(n);
-                for(var i in ns) delete colors[ns[i]];
-                for(var n in opts.colors) colors["##" + n] = opts.colors[n];
+            
+            basconfig.call(this,opts);
+			if (opts.css) {
+                var css = this["@css"], ns = [], lvs = this["@levels"];
+                for (var n in css) ns.push(n);
+                for(var i in ns) if(!lvs[ns[i]]) delete css[ns[i]];
+                for(var n in opts.css) css["##" + n] = opts.css[n];
             }
-            log.HtmlLogger.prototype.config.call(this,opts);
         }
        
         
     }
-	//不要让Logger的默认levels出现在原型中
-    log.HtmlLogger.prototype = new log.Logger({levels:[]});
+	
 
     var toDom = function (o, exists) {
         var t = typeof o;
@@ -338,6 +352,7 @@
             var bd = document.createElement("tbody");
             bd.style.display = "none";
             bd.className = "members";
+			if(o instanceof Error) o = {message:o.message,stack:o.stack};
             for (var n in o) {
                 var val = o[n];
                 var valElem = toDom(val, exists);
@@ -380,76 +395,280 @@
         return txt.replace(/&/g, "&amp").replace(/ /g, "&nbsp;").replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br />");
     }
 
-    var Console = function () {
+    var Console = function (elem) {
+		this.toString = function(){return "[object,yi.console.Console]";}
         var me = this;
-        var elem = this.element = document.createElement("div");
-        elem.style.cssText = "width:500px;height:400px;z-index:999999;position:fixed;right:2px;bottom:2px;font-size:12px;";
-        elem.innerHTML = "<textarea style='position:absolute;height:14px;background-color:#efefef;color:#333;border:1px solid black;padding:2px;' title='command window' palcehold='command window'></textarea>";
-        var cmdElem = elem.firstChild;
+		this["@fontSize"] = 16;
+        elem = this.element = elem || document.createElement("div");
+		elem.className = "console";
+		elem.style.position="absolute";
+		elem.style.fontSize = "16px;";
+		//elem.style.overflow = "hidden";
+		
+		//控制台由三部分构成
+		elem.innerHTML = "<textarea style='z-index:999999999;width:100%;height:20px;padding:2px;border:1px solid #333;position:absolute;left:0;top:0;clear:both;'></textarea><div class='quickActions' style='position:absolute;clear:both;'></div>";
+		
+		//快捷栏
+		var quickActionsView = elem.lastChild;
+		//命令行
+		var commandView = elem.firstChild;
+		//日志器
 
-        var outputView = this.outputView = document.createElement("div");
-        
-        elem.appendChild(outputView);
-        outputView.style.cssText = "margin-top:16px;border:1px double #000;background-color:#333;color:#ddd;padding:5px;height:380px;overflow:auto;";
-        outputView.ondblclick = function (evt) {
-            evt = evt || event; var c = false;
-            if (evt.altKey) { me.hide(); c = true; }
-            if (evt.ctrlKey) { me.clear(); c = true; }
-            if (c) {
-                evt.cancelBubble = true; evt.returnValue = true;
-                if (evt.preventDefault) evt.preventDefault();
-                return false;
-            }
-        }
-        this.isDisabled = true;
-        this.enable = function (invade) {
-            outputView.innerHTML = "<hr /><h3><em>Virtual console</em></h3>You can type '::help' ,then press CTRL + ENTER to get help info about this console<hr />";
-            if (window.addEventListener) window.addEventListener("keyup", onkey, false);
-            else if (window.attachEvent) window.attachEvent("keyup", onkey);
-            this.isDisabled = false;
-            return this.show();
-        }
-        this.disable = function () {
-            if (window.removeEventListener) window.removeEventListener("keyup", onkey, false);
-            else if (window.detechEvent) window.detechEvent("onkeyup", onkey);
-            return this.hide();
-        }
-        this.toggle = function () {
-            if (!elem.parentNode) this.show();
-            else this.hide();
-            return this;
-        }
-        this.show = function () {
-            elem.style.display = "block";
-
-            document.body.appendChild(elem);
-            cmdElem.style.width = elem.offsetWidth - 6 + "px";
-            return this;
-        }
-        this.hide = function () {
-            if (elem.parentNode) elem.parentNode.removeChild(elem);
-            return this;
-        }
-		this.clear = function () { outputView.innerHTML = ""; return this; }
-        var onkey = function (evt) {
+		var logger = this.log = yi.log.createLog("yi.log.HtmlLogger");
+		elem.insertBefore(logger.element,quickActionsView);
+		var loggerView  = this.loggerView = logger.element;
+		loggerView.style.position="absolute";
+		loggerView.style.padding = '5px';
+		logger.config({
+			levels : ["command","debug","fail","warming","notice","info",'success',"assert"],
+			css: {"command":"color:#efefef;"}
+		});
+		var refreshView = this.refreshView = function(){
+			if (commandView.offsetHeight < this["@fontSize"]+4) commandView.style.height = this["@fontSize"] + 4 + "px";
+			commandView.style.top = "0";
+			commandView.style.left = "0";
+			commandView.style.width = elem.offsetWidth-6 + "px";
+			loggerView.style.width = elem.offsetWidth-12 + "px";
+			loggerView.style.top = commandView.offsetHeight -1 + "px";
+			loggerView.style.height = elem.offsetHeight - quickActionsView.offsetHeight - this["@fontSize"]  -16 + "px";
+			var y = elem.offsetHeight - quickActionsView.offsetHeight + 2;
+			quickActionsView.style.top =  (y>0?y:0) + "px";
+			quickActionsView.width = elem.offsetWidth + "px";
+			setPosition.tick = 0;
+		}
+		var setPosition = function(){
+			if(setPosition.tick)return;
+			setPosition.tick = setTimeout(refreshView,100);
+		}
+		this.setQuickActions = function(commands,notMove){
+			for(var n in commands){
+				var value = commands[n];
+				var t = typeof value;
+				var elm ;
+				if(t==='function') {
+					elm = document.createElement("button");
+					elm.innerHTML  = n;elm.onclick = value;
+				}else if(t==='string'){
+					elm = document.createElement("div");
+					elm.innerHTML = value;
+				}else {
+					try{
+						elm = document.createElement("div");
+						elm.appendChild(value);
+					}catch(ignore){}
+				}
+				elm.style.cssText= "float:left;";
+				quickActionsView.appendChild(elm);
+			}
+			var clr = document.createElement("div");clr.style.cssText ="clear:both;";
+			quickActionsView.appendChild(clr);
+			if(!notMove)setPosition();
+		}
+		this.init = function(opts){
+			opts || (opts = {});
+			if(opts.quickActions){this.setQuickActions(opts.quickActions,true);}
+			setPosition();
+			if(window.attachEvent)window.attachEvent("onresize",setPosition);
+			else if(window.addEventListener) window.addEventListener("resize",setPosition,false);
+			this.init = function(){throw new Error("Aready inited.");}
+			this.init.valid = false;
+			return this;
+		}
+		this.dispose =function(){
+			if(window.detechEvent)window.detechEvent("onresize",setPosition);
+			else if(window.removeEventListener) window.removeEventListener("resize",setPosition,false);
+		}
+		commandView.onkeydown = function (evt) {
             evt = evt || event;
-            if (evt.keyCode == 67) {
-                var c = false;
-                if (evt.altKey) { c = true; me.toggle(); }
-                if (evt.ctrlKey) { c = true; me.clear(); }
-                if (c) {
-                    evt.cancelBubble = true; evt.returnValue = true;
-                    if (evt.preventDefault) evt.preventDefault();
-                    return false;
+            //yi.console.log(evt.keyCode);
+            if (evt.keyCode === 13) {
+                if ((commandView.value[0] == ":" && commandView.value[1] == ':') || evt.ctrlKey) {
+                    me.exec(commandView.value);
+                    return;
                 }
+                var h = commandView.scrollHeight + me["@fontSize"];
+                if (h > elem.offsetHeight - quickActionsView.clientHeight) h = elem.offsetHeight - quickActionsView.clientHeight;
+                commandView.style.height = h + "px";
             }
         }
+        this.exec = function (code) {
+			code = code.replace(/(^\s+)|(\s+$)/g,"");
+			if(!code){this.log.warming("No command to input");}
+			else{
+				var hasError = false;
+				var html = "<fieldset style='border:1px dashed #999;background-color:#696969;color:#dedede;'><legend style='background-color:#3d3d3d;color:#fff;font-weight:bold;padding:2px 5px;'>Execute:</legend><pre style='margin:5px;'>"+htmlEncode(code)+"</pre></fieldset>";
+				logger.output("##command",html);
 
-        this.log = function () { this.log.log(arguments); return this; }
-        log.HtmlLogger.call(this.log , outputView);
+				if (code.indexOf("::") == 0) {
+					code = code.substring(2);
+					if (code[code.length - 1] != ")") code += "()";
+					try {
+						var fnc = "return $$me$$." + code;
+						var fn = new Function("$$me$$", fnc);
+						fn(this);
+						logger.success("success");
+					} catch (ex) {
+						logger.fail(ex);hasError = true;
+					}
+				} else {
+					try {
+						eval(code);
+						logger.success("success");
+					} catch (ex) {
+						logger.fail(ex);hasError = true;
+					}
+				}
+			}
+            
+			commandView.style.height = this["@fontSize"] + 4 + "px";
+			commandView.scrollTop = commandView.scrollLeft= 0;
+			commandView.value = "";
+			this.refreshView();
+        }
+
+		this.fontSize = function (v) {
+            if (v === undefined) return this["@fontSize"];
+            v = this["@fontSize"] = parseInt(v) || 16;
+            elem.style.fontSize = v + "px";
+            setPosition();
+			return this;
+        }
+        this.clear = function () { loggerView.innerHTML = ""; return this; }
     }
+	yi.console = (function(Console){
+		var console = new Console();
+		var elem = console.element;
+		console["@width"]= console["@height"] = 500;
+		elem.style.cssText = "z-index:999999999;font-size:16px;position:fixed;right:0;bottom:0;height:500px;width:500px;";
+		var top="auto",left="auto",right="0",bottom="0";
+		console.dock = function(v){
+			if(v==="left"){right = elem.style.right="auto";left =  elem.style.left="0";}
+			if(v==="right"){right = elem.style.right="0";left = elem.style.left="auto";}
+			if(v==="top"){ top = elem.style.top="0"; bottom = elem.style.bottom="auto";}
+			if(v==="bottom"){top = elem.style.top="auto";bottom = elem.style.bottom="0";}
+			return this;
+		}
+		var tryFullscrn = function(){
+			if(tryFullscrn.tick)return ;
+			tryFullscrn.tick = setTimeout(fullscrn,100);
+		}
+		var fullscrn = function(){
+			var view = document.compatMode==="CSS1compat"? document.body:document.documentElement;
+			elem.style.width = view.clientWidth + "px";
+			elem.style.height = view.clientHeight  + "px";
+			elem.style.top = "0";elem.style.left = "0";
+			elem.style.right= "auto";elem.style.bottom = "auto";
+			console.refreshView();
+			tryFullscrn.tick = 0;
+		}
+		console.fullscreen = function(v){
+			if(v===false){
+				elem.style.width = this["@width"] + "px";
+				elem.style.height = this["@height"] + "px";
+				elem.style.top = top;elem.style.left= left; elem.style.right = right; elem.style.bottom = bottom;
+				console.refreshView();
+				if (window.removeEventListener) window.removeEventListener("resize", tryFullscrn, false);
+				else if (window.removeEvent) window.removeEvent("onresize", tryFullscrn);
+			}else{
+				fullscrn();
+				if (window.addEventListener) window.addEventListener("resize", tryFullscrn, false);
+				else if (window.attachEvent) window.attachEvent("onresize", tryFullscrn);
+			}
+			return this;
+		}
+		console.width = function(w){
+			w = parseInt(w);if(!w)return this;
+			elem.style.width = (this["@width"]=w) + "px";
+			console.refreshView();
+			return this;
+		}
+		console.height = function(h){
+			h = parseInt(h);if(!h)return this;
+			elem.style.height = (this["@height"]=h) + "px";
+			console.refreshView();
+			return this;
+		}
+		console.enable = function(){
+			this.show();
+			this.log.output("##text", "<hr /><h3><em>Virtual console</em></h3>You can type '::help' ,then press CTRL + ENTER to get help info about this console<hr />");
+			if (window.addEventListener)window.addEventListener("keyup", onkey, false);
+			else if (window.attachEvent) window.attachEvent("onkeyup", onkey);
+			this.isDisabled = false;
+			return  this;
+		}
+		console.disable = function(){
+			if (window.removeEventListener) {
+				window.removeEventListener("keyup", onkey, false);
+				window.removeEventListener("resize", tryFullscrn, false);
+			}
+			else if (window.detechEvent){
+				window.detechEvent("onkeyup", onkey);
+				window.detechEvent("onresize", tryFullscrn);
+			}
+			return this.hide();
+		}
+		var onkey = function (evt) {
+			evt = evt || event;
+			if (evt.keyCode == 67) {
+				var c = false;
+				if (evt.altKey) { c = true; console.toggle(); }
+				if (evt.ctrlKey) { c = true; console.clear(); }
+				if (c) {
+					evt.cancelBubble = true; evt.returnValue = true;
+					if (evt.preventDefault) evt.preventDefault();
+					return false;
+				}
+			}
+		}
+		console.toggle = function () {
+			if (!this.element.parentNode) this.show();
+			else this.hide();
+			return this;
+		}
+		console.show = function () {
+			if(!elem.parentNode){
+				this.element.style.display = "block";
+				document.body.appendChild(elem);
+				console.refreshView();
+				if (window.addEventListener)window.addEventListener("resize", this.refreshView, false);
+				else if (window.attachEvent) window.attachEvent("resize", this.refreshView);
+			}
+			return this;
+		}
+		console.hide = function () {
+			if (elem.parentNode){
+				elem.parentNode.removeChild(elem);
+				if (window.removeEventListener)window.removeEventListener("resize", this.refreshView, false);
+				else if (window.detechEvent) window.detechEvent("resize", this.refreshView);
+			}
+			return this;
+		}
+		console.element.ondblclick = function (evt) {
+			evt = evt || event; var c = false;
+			if (evt.altKey) { yi.console.hide(); c = true; }
+			if (evt.ctrlKey) { yi.console.clear(); c = true; }
+			if (c) {
+				evt.cancelBubble = true; evt.returnValue = true;
+				if (evt.preventDefault) evt.preventDefault();
+				return false;
+			}
+		}
+		console.help = function () {
+            var help = "<strong>You can enter any js code in command window, and press ctrl + ENTER to execute then.<br />:: means you should type this command in command window which shown at the top of the console.<br />double click the log line , you can see the stack about this log.</strong><ul><li><em>::help = get help</em></li><li><em>ALT + C = toggle show/hide</em></li><li><em>CTRL + C = clear</em></li><li><em>ALT + double click = hide</em></li><li><em>CTRL + double click = clear</em></li><li><em>::clear = clear console</em></li><li><em>::suspend = suspend log</em></li><li><em>::resume = resume log</em></li><li><em>::hide = hide console</em></li><li><em>::show = show console</em></li></ul>";
+            var elem = document.createElement("div");
+            elem.className = "help";
+            elem.innerHTML = help;
+            console.loggerView.appendChild(elem);
+            return this;
+        }
+		var dispose = console.dispose;
+		console.dispose = function(){this.disable();}
+		//console.init();
+		return console;
+	})(Console);
+	yi.console.Console = Console;
 
-	  var assert =yi.assert = Global.$assert = function (expect, actual, text) {
+	var assert =yi.assert = Global.$assert = function (expect, actual, text) {
         if (arguments.length === 1) return isTrue.call($assert, expect);
         return equal.call($assert, expect, actual, text);
     }
@@ -655,14 +874,7 @@
             this._suspended = false;
             return this;
         }
-        this.help = function () {
-            var help = "<strong>You can enter any js code in command window, and press ctrl + ENTER to execute then.<br />:: means you should type this command in command window which shown at the top of the console.<br />double click the log line , you can see the stack about this log.</strong><ul><li><em>::help = get help</em></li><li><em>ALT + C = toggle show/hide</em></li><li><em>CTRL + C = clear</em></li><li><em>ALT + double click = hide</em></li><li><em>CTRL + double click = clear</em></li><li><em>::clear = clear console</em></li><li><em>::suspend = suspend log</em></li><li><em>::resume = resume log</em></li><li><em>::hide = hide console</em></li><li><em>::show = show console</em></li></ul>";
-            var elem = document.createElement("div");
-            elem.className = "help";
-            elem.innerHTML = help;
-            outputView.appendChild(elem);
-            return this;
-        }
+        
         this["@output"] = (function (me, outputView, colors) {
             var output = function (type, contents) {
                 var ctn = document.createElement("div");

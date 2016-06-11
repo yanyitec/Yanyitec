@@ -5,7 +5,7 @@ fieldset{
 	border-top:2px solid black;
 	padding-bottom:10px;
  }
-.console{
+.logger-output{
 	background-color:#000000;
 	color:#eeeeee;
 	border:1px solid #cccccc;
