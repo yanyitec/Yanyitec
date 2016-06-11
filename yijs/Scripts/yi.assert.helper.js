@@ -1,13 +1,37 @@
-$assert.clearCode = function(code){
-	var codes = code.split("\n");
-	for(var i =0,j= codes.length;i<j;i++){
-		var line = codes.shift();
-		var lineCode = line.replace(/(^\s+)|(\s+$)/g,"");
-
-		if(lineCode.indexOf("$assert.")!==0 &&lineCode.indexOf("$assert(")!==0 && lineCode!="$log();" && lineCode.lastIndexOf("//$assert.line")!==(lineCode.length-"//$assert.line".length)) codes.push(line);
+(function($assert){
+var test = $assert.test;
+var findTestScript = function(elem){
+	if(!elem) elem = document.body;
+	for(var j=elem.childNodes.length-1;j>=0;j--){
+		var sub = elem.childNodes[j];
+		if(!sub.tagName) continue;
+		if(sub.tagName==='SCRIPT' && sub.getAttribute("subtype")==='test')return sub;
+		var testScript = findTestScript(sub);
+		if(testScript)return testScript;
 	}
-	return codes.join("\n");
 }
+$assert.scope = function(tester){
+	var script = findTestScript(document.body);
+	var rawCode = script.innerHTML;
+	var li = script.parentNode;
+	var code = $assert.clearCode(rawCode);
+	li.innerHTML = "<h3>示例代码(Sample code)</h3><pre class='code'>" + code + "</pre>";
+	var logger = new yi.log.HtmlLogger();
+	logger.traceStack(true);
+	var assert = new yi.assert.Assert(logger);
+	var p = li.parentNode;
+	var li = document.createElement("li");
+	li.innerHTML = "<h3>运行结果(Execute result)</h3>";
+	li.appendChild(logger.element);
+	//logger.element.style.height="100px";
+	//logger.element.style.overflow = "auto";
+	p.appendChild(li);
+	tester.call(assert,assert);
+	//return $assert.caches[codeid] = assert;
+}
+})(yi.assert);
+
+
 $assert.redirectOutput=function(v,enable){
 	if(enable!==false){
 		var id = (v || new Date().valueOf()) + "-console";
@@ -36,6 +60,8 @@ $assert.redirectOutput=function(v,enable){
 	//return $assert._log!=null;
 }
 $assert.begin = function(id){
+	var assert = new yi.Assert();
+	
 	$assert.clear();
 	$assert.redirectOutput(id,true);
 }
@@ -45,7 +71,7 @@ $assert.showCode = function(codeid){
 	var code = codeElem.innerHTML;
 	var codeView = document.createElement("pre");
 	codeView.className = "code";
-	var code = $assert.clearCode(code);
+	
 	codeView.innerHTML = "<h3>//代码</h3>" + code;
 
 	var token = codeElem.nextSibling;

@@ -1,6 +1,75 @@
 (function (Global,document) {
     var yi = Global.yi = Global.$y = function () { }
-
+	var objProto = Object.prototype;
+	var arrProto = Array.prototype;
+	var aslice = arrProto.slice;
+	var otoStr = objProto.toString;
+	
+	var log = yi.log = Global.$log = function(){
+		if(arguments.length==0)return log;
+		var params = aslice.call(arguments);
+		var lv = params.shift();
+		var lvs = log["@levels"];
+		if(lvs[lv]){
+			log["@output"].call(log,lv,params);
+		}else{
+			params.unshift(lv);
+			log["@output"].call(log,log["@defaultLevel"],params);
+		}
+		return log;
+	}
+	(function(){
+		var reset = function(lvs,output){
+			var levels = this["@levels"]={};
+			for(var i in lvs){
+				var lv = lvs[i];
+				(function(logger,name,levels,output,aslice){
+					levels["#" + name] = logger[name] = function(){
+						var params = aslice.call(arguments);
+						output.call(logger,name,params);
+						return this;
+					}
+				})(this,lv,levels,output,aslice);
+			}
+		};
+		this.enable = function(){
+			for(var i =0,j=arguments.length;i<j;i++){
+				var n = arguments[i];if(!n)continue;
+				var fn = this[n];if(!fn)continue;
+				this[n] = this["@levels"][n];
+			}
+			return this;
+		}
+		this.disable = function(){
+			for(var i =0,j=arguments.length;i<j;i++){
+				var n = arguments[i];if(!n)continue;
+				var fn = this[n];if(!fn)continue;
+				this[n] = function(){return this;};
+			}
+			return this;
+		}
+		this.reset = function(opts){
+			if(opts.output) this["@output"] = opts.output;
+			if(opts.levels) this["@levels"] = opts.levels;
+			if(opts.defaultLevel) this["@defaultLevel"] = opts.defaultLevel;
+			reset.call(this,this["@output"],this["@levels"]);
+			if(opts.enables) this.enable.apply(this,opts.enables);
+			if(opts.disables) this.disables.apply(this,opts.disables);
+			return this;
+		}
+	}).call(log);
+	yi.log.reset({
+		output:function(lv,params){
+			try{
+				console.log(lv,new Date(),":");
+				console.log.apply(console,params);
+			}catch(ignore){}
+		},
+		levels : ["dbg","inf","ntc","war","err"],
+		defaultLevel:"dbg"	
+	});
+	
+	
     yi.Observable = function(){
         var $_META = {
             description:"可观察对象。观察者模式的实现"
@@ -119,25 +188,22 @@
 			this.isFullfilled = true;this.isRejected = false;
 			this["@promise.status"]='fullfilled';
 			this["@promise.value"] = value;
+			var dfd = this;
 			if(this["@promise.onChanged"]){
 				async(function(dfd){
-					var its,status = dfd["@promise.status"];
-					if(its=dfd["@promise.onChanged"]){
-						for(var i=0,j=its.length;i<j;i++) {
-							var it = its.shift();
-							var rs = it.call(dfd,'fullfilled',status,dfd,value,dfd);
-							if(rs!=='%discard' && rs!=='%discard&interrupt') its.push(it);
-							if(rs==='%interrupt' || rs == "%discard&interrupt" || rs == false)break;
-						}
-					}					
+					var its=dfd["@promise.onChanged"],status = dfd["@promise.status"];
+					for(var i=0,j=its.length;i<j;i++) {
+						var it = its.shift();
+						var rs = it.call(dfd,'fullfilled',status,dfd,value,dfd);
+						if(rs!=='%discard' && rs!=='%discard&interrupt') its.push(it);
+						if(rs==='%interrupt' || rs == "%discard&interrupt" || rs == false)break;
+					}				
 				},this);
 			}
 			if(this["@promise.onFullfilled"]){
 				async(function(dfd){
 					var its = dfd["@promise.onFullfilled"],value =dfd["@promise.value"];
-					if(its){
-						for(var i=0,j=its.length;i<j;i++) its.shift().call(dfd,value,dfd);
-					}			
+					for(var i=0,j=its.length;i<j;i++) its.shift().call(dfd,value,dfd);			
 				},this);
 			}
 			
@@ -149,25 +215,22 @@
 			this.isFullfilled = true;this.isRejected = false;
 			this["@promise.status"]='fullfilled';
 			this["@promise.value"] = value;
+			var dfd = this;
 			if(this["@promise.onChanged"]){
 				async(function(dfd){
 					var its,status = dfd["@promise.status"];
-					if(its=dfd["@promise.onChanged"]){
-						for(var i=0,j=its.length;i<j;i++) {
-							var it = its.shift();
-							var rs = it.call(dfd,'rejected',status,dfd,value,dfd);
-							if(rs!=='%discard' && rs!=='%discard&interrupt') its.push(it);
-							if(rs==='%interrupt' || rs == "%discard&interrupt" || rs == false)break;
-						}
+					for(var i=0,j=its.length;i<j;i++) {
+						var it = its.shift();
+						var rs = it.call(dfd,'rejected',status,dfd,value,dfd);
+						if(rs!=='%discard' && rs!=='%discard&interrupt') its.push(it);
+						if(rs==='%interrupt' || rs == "%discard&interrupt" || rs == false)break;
 					}					
 				},this);
 			}
 			if(this["@promise.onRejected"]){
 				async(function(dfd){
 					var its = dfd["@promise.onRejected"],value =dfd["@promise.value"];
-					if(its){
-						for(var i=0,j=its.length;i<j;i++) its.shift().call(dfd,value,dfd);
-					}			
+					for(var i=0,j=its.length;i<j;i++) its.shift().call(dfd,value,dfd);			
 				},this);
 			}			
 			return this;
@@ -306,13 +369,6 @@
 			async(function(){me.resolve(obj);});
 			return this;
 		}
-		this.thenWhen = function(done){
-			var dfd = new Promise();
-			this.done(function(value){
-				dfd.when(done.call(this,value,this));
-			});
-			return dfd;
-		}
 		//promise.thenWhen(p.a).follow
 	}
     yi.Whenable.prototype = new yi.Thenable();//end Defer.prototype
@@ -325,28 +381,46 @@
 	}
 	Promise.prototype = new Whenable();
 	yi.promise = Global.$promise = function(obj,args){return new Promise(obj,args);}
+	var concurrentPromise = function(obj,args){
+		var result ={};
+		var count =0,waiting_count=0;
+		var dfd = new Promise();
+		for(var n in obj){
+			count++;waiting_count++;
+			var sub = new Promise(obj[n],args);
+			sub.index = count;sub.name = n;
+			sub.done(function(value){
+				var rs = result[this.name] = {name:this.name,value:value,promise:this,status:"fullfilled"};
+				dfd.notify(waiting_count,rs);
+				if(--waiting_count==0) {dfd.resolve(result);}
+			}).fail(function(reason){
+				var rs = result[this.name] = {name:this.name,reason:value,promise:this,status:"rejected"};
+				dfd.notify(waiting_count,rs);
+				if(--waiting_count==0) {dfd.resolve(result);}
+			});
+		}
+		result.length = count;
+		return dfd;
+	}
+	var sequencePromise = function(seq,args,dfd,prevValue){
+		dfd || (dfd = new Promise());
+		var obj;
+		while(!(obj = seq.shift()) || seq.length<=0);
+		if(!obj)return dfd.resolve(prevValue);
 
+		var pomise = new Promise(obj,args);
+		promise.done(function(value){
+			sequencePromise(seq,args,dfd,value);
+		});
+		return dfd;
+	}
     yi.when = Global.$when = function(obj,args){
-		if(typeof obj==='object' && typeof obj.then!=='function'){
-			var result ={};
-			var count =0,waiting_count=0;
-			var dfd = new Promise();
-			for(var n in obj){
-				count++;waiting_count++;
-				var sub = new Promise(obj[n],args);
-				sub.index = count;sub.name = n;
-				sub.done(function(value){
-					var rs = result[this.name] = {name:this.name,value:value,promise:this,status:"fullfilled"};
-					dfd.notify(waiting_count,rs);
-					if(--waiting_count==0) {dfd.resolve(result);}
-				}).fail(function(reason){
-					var rs = result[this.name] = {name:this.name,reason:value,promise:this,status:"rejected"};
-					dfd.notify(waiting_count,rs);
-					if(--waiting_count==0) {dfd.resolve(result);}
-				});
-			}
-			result.length = count;
-			return dfd;
+		var t = objProto.toString.call(obj);
+		if(t==='{object Array}'){
+			return sequencePromise(obj,args);
+		}
+		if(t=='{object Object}' && typeof obj.then!=='function'){
+			return concurrentPromise(obj,args);
 		}
 		return new Promise(obj,args);		
 	}
@@ -354,14 +428,12 @@
 	yi.makeArray = function(its){
 		var ret =[];for(var i in its) ret.push(its[i]);return ret;
 	}	
-	var slice = Array.prototype.slice;
-
-
+	var arrayProto = Array.prototype;
 
 	var hd = document.getElementsByTagName("HEAD");
 	hd = hd[0]|| document.body || document.documentElement;
 	var loadRes = yi.loadRes = function(url,type){
-		var df = new Defer(),elem;
+		var df = new Thenable(),elem;
 		if(type==='.js'){
 			elem = document.createElement("SCRIPT");
 			elem.src = url;
@@ -587,11 +659,7 @@
 		return false;
 	}
 
-	 Global.$log = yi.log = function(){
-		try{
-			console.log.apply(console,arguments);
-		}catch(e){}
-	}
+	 
 	var Observer = function(){}
 	var obproto = {
 		"observer.bubble":true,

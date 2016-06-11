@@ -154,6 +154,7 @@
     <Content Include="Docs\Core\yi.Observer.html" />
     <Content Include="Docs\Core\yi.Thenable.html" />
     <Content Include="Docs\Core\yi.Whenable.html" />
+    <Content Include="Docs\Diagnosis\yi.log.html" />
     <Content Include="Docs\Test\性能测试.html" />
     <Content Include="favicon.ico" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
@@ -178,6 +179,7 @@
     <Content Include="Scripts\yi.assert.js" />
     <Content Include="Scripts\yi.core-0.0.0.1.js" />
     <Content Include="Scripts\yi.core.js" />
+    <Content Include="Scripts\yi.diagnosis.js" />
     <Content Include="Scripts\yi.ui.js" />
     <Content Include="Scripts\_references.js" />
     <Content Include="Themes\default\yi.css" />
