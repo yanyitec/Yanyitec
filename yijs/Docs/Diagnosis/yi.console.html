@@ -20,12 +20,17 @@
  <div id='console' style='height:400px;width:400px;'></div>
  </div>
 		<script subtype='test'>
-var console = new yi.console.Console(document.getElementById("console"));
-//console.init({
-//	quickActions:{"clear":function(){console.clear();}}
-//});
+var vconsole = new yi.console.Console(document.getElementById("console"));
+vconsole.init({
+	quickActions:{"clear":function(){console.clear();}}
+});
 yi.console.enable();
-
+yi.console.quickActions({
+	"intrude":function(){
+		yi.log("before intrude");
+		yi.console.intrude(true);
+		$log("after intrude.");}
+});
 		</script>
 		</li>
 	</ul>

@@ -47,7 +47,7 @@
 $assert.scope(function($assert){
 var console = $assert;//因为要把输出重定向到Html的console,这里没有使用全局的yi.log，而是使用了$assert上的log
 var obj={"author":"yiy","date":"2016-6-11"};
-var logger = console.log("supper logger",obj,[1,2,3]);
+var logger = console.log("supper logger",obj,[1,2,obj,{"hello":obj}]);
 $assert.Equal(console,logger);
 });//$assert
 		</script>

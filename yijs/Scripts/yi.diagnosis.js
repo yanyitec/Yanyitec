@@ -73,11 +73,12 @@
                 var lv = lvs[i];
                 (function (logger, name, levels, output, aslice) {
                     var name1 = "##" + name;
-                    levels[name1] = logger[name] = function () {
+                    var log  = function () {
                         if(logger.isLogDisabled)return this;
                         output.call(logger, name1, arguments);
                         return this;
                     }
+					levels[name1] = logger[name]= log;
                 })(this, lv, levels, output, aslice);
             }
 			this.output = output;
@@ -98,8 +99,9 @@
             var exist = this["@output"];
             if (typeof exist.addArggregation === 'function') {
                 if(!exist.existAggregation(output))exist.addArggregation(output);
-            } else if (exist) {
+            } else if (exist!=output) {
                 var aggr = log.outputAggregation();
+				aggr.addAgregation(exist);
                 aggr.addAggregation(output);
                 this["@output"] = aggr;
             } else {
@@ -128,7 +130,10 @@
 			var lvfn,lv = arguments[0];
 			var lvs = logger["@levels"];
 			if ((lvfn = lvs[lv])) {
-				if (!lvfn.isLogDisabled) logger["@output"].call(logger, lv, arguments,1);
+				if (!lvfn.isLogDisabled){ 
+					var log = logger["@output"];
+					log.call(logger, lv, arguments,1);
+				}
 			} else {
 				logger["@output"].call(logger, logger["@defaultLevel"], arguments);
 			}
@@ -138,13 +143,29 @@
 		log.toString = function(){return "[function," + loggerTypename + "]";}
 		return log;
 	}
+	Logger.defaultOutput = function (lv, params,start) {
+        try {
+            params || (params = []);
+            var t = new Date();
+            var s = lv || "#debug";
+			if(typeof params !=='object'){ console.log(s,params);return this;}
+			if(start){
+				if(!params.shift)params = aslice.call(params);
+				for(var i=0;i<start;i++) params.shift();
+			}
+			if(!params.unshift)params = aslice.call(params);
+            params.unshift(s);
+            console.log.apply(console, params);
+        } catch (ignore) { }
+    };
+
 	var log = yi.log = Global.$log = createLog("Logger");
 	log.createLog = createLog;
 	log.Logger = Logger;
     
     log.outputAggregation = function () {
         var ret = function (type,contents,start) {
-            for (var i = 0, j = fns.length; i < j; i++) fns[i].call(type,contents,start);
+            for (var i = 0, j = fns.length; i < j; i++) fns[i].call(this,type,contents,start);
         }
         var fns = ret["@aggregations"]=[];
         ret.addAggregation = function (fn) {
@@ -167,21 +188,7 @@
         ret.count = function () { return fns.length;}
         return ret;
     }
-    Logger.defaultOutput = function (lv, params,start) {
-        try {
-            params || (params = []);
-            var t = new Date();
-            var s = lv || "#debug";
-			if(typeof params !=='object'){ console.log(s,params);return this;}
-			if(start){
-				if(!params.shift)params = aslice.call(params);
-				for(var i=0;i<start;i++) params.shift();
-			}
-			if(!params.unshift)params = aslice.call(params);
-            params.unshift(s);
-            console.log.apply(console, params);
-        } catch (ignore) { }
-    };
+
 	log.toString = function(){return "[function yi.log.Logger]";}
 
     log.HtmlLogger = function (elem) {
@@ -238,30 +245,39 @@
 						throw new Error();
 					}catch(ex){
 						var stacks = ex.stack.split("\n");
-						var hasOutput=false;
+						var hasOutput=false,lastLog,txt;
 						while(true){
-							var txt = stacks.shift();
+							txt = stacks.shift();
 							if(!txt)break;
-							if(txt==='Error')continue;
+							if(txt==='Error' )continue;
 							var at = txt.indexOf("(");
-							if(at<=0)break;
-							txt = txt.substring(0,at).replace(/( +$)/g,"");
-							var isOutput = txt.substring(txt.length-7);
-							if(isOutput===' output' || isOutput==='.output'){hasOutput=true; continue;}
-							if(hasOutput)break;
+							if(at<0){
+								at = txt.indexOf("@");
+								if(at<0)break;
+							}
+							var codeAt = txt.substring(0,at).replace(/( +$)/g,"");
+							var isOutput = codeAt.substring(codeAt.length-7);
+							if(isOutput===' output' || isOutput==='.output' || isOutput==='/output'){hasOutput=true; continue;}
+							var isLog = codeAt.substring(codeAt.length-4);
+							if(isLog===' log' || isLog==='.log' || isLog ==='/log'|| codeAt.indexOf("at Function.log")>=0){lastLog = txt;continue;}
+							if(hasOutput){
+								stacks.unshift(txt);
+								//if(lastLog) stacks.unshift(lastLog);
+								break;
+							}
 							//if(txt.substring(at-,at))
 						}
 						
 					}
                     
-                    d = this["@console.tracesElement"] = document.createElement("div");
+                    var d = ctn["@logger.tracesElement"] = document.createElement("div");
                     
                     d.style.cssText = "border:1x dashed #999;color:#888;clear:both;";
                     var b = "<ol style=''><li>" + stacks.join("</li><li>") + "</li></ol>";
                     d.innerHTML = b;
 
                     stack.onclick = function (evt) {
-                        var d = me["@console.tracesElement"];
+                        var d = ctn["@logger.tracesElement"];
                         if (!d.parentNode) {
                             ctn.appendChild(d);
                         } else d.parentNode.removeChild(d);
@@ -304,9 +320,10 @@
     }
 	
 
-    var toDom = function (o, exists) {
+    var toDom = function (o, exists,deep) {
         var t = typeof o;
         exists || (exists = []);
+		deep || (deep=1);
         if (t === "object" || t === 'function') {
             if (o === null) {
                 var elem = document.createElement("span");
@@ -324,6 +341,7 @@
             }
             exists.push(o);
             var elem = document.createElement("table");
+			elem.style.cssText ="text-align:left;";;
             if (Object.prototype.toString.call(o) === '[object Array]') elem.className = "object array";
             else if (t === 'function') elem.className = "function";
             else elem.className = "object";
@@ -355,7 +373,7 @@
 			if(o instanceof Error) o = {message:o.message,stack:o.stack};
             for (var n in o) {
                 var val = o[n];
-                var valElem = toDom(val, exists);
+                var valElem = deep==4?toDom(val?val.toString():val):toDom(val, exists,deep+1);
 
                 var tr = document.createElement("tr");
                 var preTd = document.createElement("td");
@@ -430,7 +448,7 @@
 			commandView.style.width = elem.offsetWidth-6 + "px";
 			loggerView.style.width = elem.offsetWidth-12 + "px";
 			loggerView.style.top = commandView.offsetHeight -1 + "px";
-			loggerView.style.height = elem.offsetHeight - quickActionsView.offsetHeight - this["@fontSize"]  -16 + "px";
+			loggerView.style.height = elem.offsetHeight - quickActionsView.offsetHeight - this["@fontSize"]  -22 + "px";
 			var y = elem.offsetHeight - quickActionsView.offsetHeight + 2;
 			quickActionsView.style.top =  (y>0?y:0) + "px";
 			quickActionsView.width = elem.offsetWidth + "px";
@@ -440,7 +458,7 @@
 			if(setPosition.tick)return;
 			setPosition.tick = setTimeout(refreshView,100);
 		}
-		this.setQuickActions = function(commands,notMove){
+		this.quickActions = function(commands,notMove){
 			for(var n in commands){
 				var value = commands[n];
 				var t = typeof value;
@@ -466,8 +484,8 @@
 		}
 		this.init = function(opts){
 			opts || (opts = {});
-			if(opts.quickActions){this.setQuickActions(opts.quickActions,true);}
-			setPosition();
+			if(opts.quickActions){this.quickActions(opts.quickActions,true);}
+			this.refreshView();
 			if(window.attachEvent)window.attachEvent("onresize",setPosition);
 			else if(window.addEventListener) window.addEventListener("resize",setPosition,false);
 			this.init = function(){throw new Error("Aready inited.");}
@@ -484,7 +502,9 @@
             if (evt.keyCode === 13) {
                 if ((commandView.value[0] == ":" && commandView.value[1] == ':') || evt.ctrlKey) {
                     me.exec(commandView.value);
-                    return;
+					evt.returnValue = false;evt.cancelBubble = true;
+					if(evt.preventDefault)evt.preventDefault();
+                    return false;
                 }
                 var h = commandView.scrollHeight + me["@fontSize"];
                 if (h > elem.offsetHeight - quickActionsView.clientHeight) h = elem.offsetHeight - quickActionsView.clientHeight;
@@ -536,12 +556,12 @@
         this.clear = function () { loggerView.innerHTML = ""; return this; }
     }
 	yi.console = (function(Console){
-		var console = new Console();
-		var elem = console.element;
-		console["@width"]= console["@height"] = 500;
+		var con = new Console();
+		var elem = con.element;
+		con["@width"]= con["@height"] = 500;
 		elem.style.cssText = "z-index:999999999;font-size:16px;position:fixed;right:0;bottom:0;height:500px;width:500px;";
 		var top="auto",left="auto",right="0",bottom="0";
-		console.dock = function(v){
+		con.dock = function(v){
 			if(v==="left"){right = elem.style.right="auto";left =  elem.style.left="0";}
 			if(v==="right"){right = elem.style.right="0";left = elem.style.left="auto";}
 			if(v==="top"){ top = elem.style.top="0"; bottom = elem.style.bottom="auto";}
@@ -558,15 +578,15 @@
 			elem.style.height = view.clientHeight  + "px";
 			elem.style.top = "0";elem.style.left = "0";
 			elem.style.right= "auto";elem.style.bottom = "auto";
-			console.refreshView();
+			con.refreshView();
 			tryFullscrn.tick = 0;
 		}
-		console.fullscreen = function(v){
+		con.fullscreen = function(v){
 			if(v===false){
 				elem.style.width = this["@width"] + "px";
 				elem.style.height = this["@height"] + "px";
 				elem.style.top = top;elem.style.left= left; elem.style.right = right; elem.style.bottom = bottom;
-				console.refreshView();
+				con.refreshView();
 				if (window.removeEventListener) window.removeEventListener("resize", tryFullscrn, false);
 				else if (window.removeEvent) window.removeEvent("onresize", tryFullscrn);
 			}else{
@@ -576,27 +596,27 @@
 			}
 			return this;
 		}
-		console.width = function(w){
+		con.width = function(w){
 			w = parseInt(w);if(!w)return this;
 			elem.style.width = (this["@width"]=w) + "px";
-			console.refreshView();
+			con.refreshView();
 			return this;
 		}
-		console.height = function(h){
+		con.height = function(h){
 			h = parseInt(h);if(!h)return this;
 			elem.style.height = (this["@height"]=h) + "px";
-			console.refreshView();
+			con.refreshView();
 			return this;
 		}
-		console.enable = function(){
+		con.enable = function(){
 			this.show();
-			this.log.output("##text", "<hr /><h3><em>Virtual console</em></h3>You can type '::help' ,then press CTRL + ENTER to get help info about this console<hr />");
+			this.log.output("##text", "<hr /><h3><em>Virtual con</em></h3>You can type '::help' ,then press CTRL + ENTER to get help info about this con<hr />");
 			if (window.addEventListener)window.addEventListener("keyup", onkey, false);
 			else if (window.attachEvent) window.attachEvent("onkeyup", onkey);
 			this.isDisabled = false;
 			return  this;
 		}
-		console.disable = function(){
+		con.disable = function(){
 			if (window.removeEventListener) {
 				window.removeEventListener("keyup", onkey, false);
 				window.removeEventListener("resize", tryFullscrn, false);
@@ -605,14 +625,15 @@
 				window.detechEvent("onkeyup", onkey);
 				window.detechEvent("onresize", tryFullscrn);
 			}
+			this.intrude(false);
 			return this.hide();
 		}
 		var onkey = function (evt) {
 			evt = evt || event;
 			if (evt.keyCode == 67) {
 				var c = false;
-				if (evt.altKey) { c = true; console.toggle(); }
-				if (evt.ctrlKey) { c = true; console.clear(); }
+				if (evt.altKey) { c = true; con.toggle(); }
+				if (evt.ctrlKey) { c = true; con.clear(); }
 				if (c) {
 					evt.cancelBubble = true; evt.returnValue = true;
 					if (evt.preventDefault) evt.preventDefault();
@@ -620,22 +641,22 @@
 				}
 			}
 		}
-		console.toggle = function () {
+		con.toggle = function () {
 			if (!this.element.parentNode) this.show();
 			else this.hide();
 			return this;
 		}
-		console.show = function () {
+		con.show = function () {
 			if(!elem.parentNode){
 				this.element.style.display = "block";
 				document.body.appendChild(elem);
-				console.refreshView();
+				con.refreshView();
 				if (window.addEventListener)window.addEventListener("resize", this.refreshView, false);
 				else if (window.attachEvent) window.attachEvent("resize", this.refreshView);
 			}
 			return this;
 		}
-		console.hide = function () {
+		con.hide = function () {
 			if (elem.parentNode){
 				elem.parentNode.removeChild(elem);
 				if (window.removeEventListener)window.removeEventListener("resize", this.refreshView, false);
@@ -643,28 +664,58 @@
 			}
 			return this;
 		}
-		console.element.ondblclick = function (evt) {
+		con.element.ondblclick = function (evt) {
 			evt = evt || event; var c = false;
-			if (evt.altKey) { yi.console.hide(); c = true; }
-			if (evt.ctrlKey) { yi.console.clear(); c = true; }
+			if (evt.altKey) { con.hide(); c = true; }
+			if (evt.ctrlKey) { con.clear(); c = true; }
 			if (c) {
 				evt.cancelBubble = true; evt.returnValue = true;
 				if (evt.preventDefault) evt.preventDefault();
 				return false;
 			}
 		}
-		console.help = function () {
-            var help = "<strong>You can enter any js code in command window, and press ctrl + ENTER to execute then.<br />:: means you should type this command in command window which shown at the top of the console.<br />double click the log line , you can see the stack about this log.</strong><ul><li><em>::help = get help</em></li><li><em>ALT + C = toggle show/hide</em></li><li><em>CTRL + C = clear</em></li><li><em>ALT + double click = hide</em></li><li><em>CTRL + double click = clear</em></li><li><em>::clear = clear console</em></li><li><em>::suspend = suspend log</em></li><li><em>::resume = resume log</em></li><li><em>::hide = hide console</em></li><li><em>::show = show console</em></li></ul>";
+		con.help = function () {
+            var help = "<strong>You can enter any js code in command window, and press ctrl + ENTER to execute then.<br />:: means you should type this command in command window which shown at the top of the con.<br />double click the log line , you can see the stack about this log.</strong><ul><li><em>::help = get help</em></li><li><em>ALT + C = toggle show/hide</em></li><li><em>CTRL + C = clear</em></li><li><em>ALT + double click = hide</em></li><li><em>CTRL + double click = clear</em></li><li><em>::clear = clear con</em></li><li><em>::suspend = suspend log</em></li><li><em>::resume = resume log</em></li><li><em>::hide = hide con</em></li><li><em>::show = show con</em></li></ul>";
             var elem = document.createElement("div");
             elem.className = "help";
             elem.innerHTML = help;
-            console.loggerView.appendChild(elem);
+            con.loggerView.appendChild(elem);
             return this;
         }
-		var dispose = console.dispose;
-		console.dispose = function(){this.disable();}
-		//console.init();
-		return console;
+		var dispose = con.dispose;
+		con.dispose = function(){this.disable();}
+		var sysLog,yiLog;
+		con.intrude = function(v){
+			if(v===false){
+				if(yiLog && yi.log["@output"]===con.log["@output"]){
+					yi.log["@output"] = yiLog;
+					yiLog = null;
+				}
+				if(sysLog && console.log === con.log) {
+					console.log = sysLog;
+					sysLog = null;
+				}
+			}else{
+				if(v==='yi.log'||v===true){
+					if(!yiLog && yi.log["@output"]!==con.log["@output"]){
+						yiLog = yi.log["@output"];
+						yi.log["@output"] = con.log["@output"];
+					}
+				}
+				if(v==='con.log' || v===true){
+					if(!sysLog){
+						try{
+							sysLog = console.log;
+							console.log = con.log;
+						}catch(ignore){}
+						
+					}
+				}
+			}
+			return this;
+		}
+		//con.init();
+		return con;
 	})(Console);
 	yi.console.Console = Console;
 
@@ -766,188 +817,5 @@
 	}
     var equal = $assert.Equal;
     var isTrue = $assert.True;
-
-    var sysLog;
-    /*
-    var Console = function () {
-        log.Logger.call(this);
-        var me = this;
-        var elem = this.element = document.createElement("div");
-        elem.style.cssText = "width:500px;height:400px;z-index:999999;position:fixed;right:2px;bottom:2px;font-size:12px;";
-
-        
-        cmdElem.onkeydown = function (evt) {
-            evt = evt || event;
-            //yi.console.log(evt.keyCode);
-            if (evt.keyCode === 13) {
-                if ((cmdElem.value[0] == ":" && cmdElem.value[1] == ':') || evt.ctrlKey) {
-                    me.exec(cmdElem.value);
-                    return;
-                }
-                var h = cmdElem.scrollHeight + 9;
-                if (h > elem.offsetHeight - 40) h = elem.offsetHeight - 40;
-                cmdElem.style.height = h + "px";
-            }
-        }
-        this.exec = function (code) {
-            var pre = document.createElement("pre");
-            pre.innerHTML = code;
-            pre.className = "code";
-
-            //outputView.appendChild(pre);
-
-            var rsc = document.createElement("fieldset");
-            rsc.style.cssText = "clear:both;border:1px dashed #999;background-color:#000;color:#eee;";
-            rsc.innerHTML = "<legend style='padding:2px 5px;background-color:#ccc;color:#333;font-weight:bold;'></legend>";
-            var hd = rsc.firstChild;
-            var rs;
-            rsc.appendChild(pre);
-            if (code.indexOf("::") == 0) {
-                code = code.substring(2);
-                if (code[code.length - 1] != ")") code += "()";
-                try {
-                    outputView.appendChild(rsc);
-                    var fnc = "return $$me$$." + code;
-                    var fn = new Function("$$me$$", fnc);
-                    fn(this);
-                    rsc.className = "result success";
-                    hd.innerHTML = "Exec(success):";
-                    hd.style.color = "green";
-                } catch (ex) {
-                    hd.innerHTML = "Exec(fail):";
-                    rs = toDom(ex);
-                    rsc.className = "result fail";
-                    hd.style.color = "red";
-                    rsc.appendChild(document.createElement("hr"));
-                    rsc.appendChild(toDom(ex));
-                }
-
-
-            } else {
-                try {
-
-                    eval(code);
-                    rsc.className = "result success";
-                    hd.style.color = "green";
-                    hd.innerHTML = "Exec(success):";
-                } catch (ex) {
-                    hd.innerHTML = "Exec(fail):";
-                    rsc.className = "result fail";
-                    hd.style.color = "red";
-                    rsc.appendChild(document.createElement("hr"));
-                    rsc.appendChild(toDom(ex));
-                }
-
-                outputView.appendChild(rsc);
-            }
-
-            cmdElem.style.height = "15px";
-            cmdElem.value = "";
-        }
-        
-        this.fontSize = function (v) {
-            if (v === undefined) return this.__fontSize || 14;
-            this.__fontSize = parseInt(v) || 14;
-            elem.style.fontSize = this.__fontSize + "px";
-            if (cmdElem.offsetHeight < this.__fontSize) cmdElem.style.height = this.__fontSize + 4 + "px";
-            return this;
-        }
-        this.height = function (h) {
-            var h = parseInt(h) || 400;
-            if (h < 100) h = 100;
-            elem.style.height = h + "px";
-            if (cmdElem.offsetHeight >= (h - 40)) cmdElem.style.height = h - 40 + "px";
-            var oH = h - cmdElem.offsetHeight;
-            if (oH < 0) oH = 0;
-            outputView.style.height = oH + "px";
-        }
-        this.css = function (name, value) {
-            if (typeof name === 'object') for (var n in name) this.css(n, name[n]);
-            else elem.style[name] = value;
-            return this;
-        }
-        this.suspend = function () {
-            this._suspended = true;
-            return this;
-        }
-        this.resume = function () {
-            this._suspended = false;
-            return this;
-        }
-        
-        this["@output"] = (function (me, outputView, colors) {
-            var output = function (type, contents) {
-                var ctn = document.createElement("div");
-                ctn.style.clear = "both";
-                ctn.style.color = colors[type] || colors["##debug"];
-                for (var i = 0, j = arguments.length; i < j; i++) {
-                    var o = arguments[i];
-                    var elem = toDom(o);
-                    var div = document.createElement("div");
-                    div.appendChild(elem);
-                    div.style.cssText = "float:left;";
-                    ctn.appendChild(div);
-
-                }
-                if (me["@traceStack"]) {
-                    var stack = document.createElement("div");
-                    stack.style.cssText = "text-decoration:underline;font-weight:bold;";
-                    stack.innerHTML = "&";
-                    ctn.insertBefore(stack, ctn.firstChild);
-                    var traces = [];
-                    var caller = arguments.callee.caller;
-                    while (caller) {
-                        traces.push(caller.toString());
-                        caller = caller.caller;
-
-                    }
-                    d = this["@console.tracesElement"] = document.createElement("div");
-                    d.style.cssFloat = "text-decoration:underline;";
-                    d.style.cssText = "border:1x dashed #999;clear:both;background-color:#eee;color:#666;";
-                    var b = "<ol><li><i>" + traces.join("</i></li><li><i>") + "</i></li></ol>";
-                    d.innerHTML = b;
-
-                    stack.onclick = function (evt) {
-                        var d = this["@console.tracesElement"];
-                        if (!d.parentNode) {
-                            stack.parentNode.insertBefore(d, stack);
-                        } else d.parentNode.removeChild(d);
-                        evt = evt || event;
-                        evt.cancelBubble = true; evt.returnValue = true;
-                        if (evt.preventDefault) evt.preventDefault();
-                        return false;
-                    }
-                }
-                outputView.appendChild(ctn);
-                outputView.scrollTop = outputView.scrollHeight;
-                outputView.scollLeft = 0;
-            }
-            return output;
-        })(this, outputView, this.colors);
-        this.reset({
-            output : this["@output"]
-        });
-        
-        var onkey = function (evt) {
-            evt = evt || event;
-            if (evt.keyCode == 67) {
-                var c = false;
-                if (evt.altKey) { c = true; me.toggle(); }
-                if (evt.ctrlKey) { c = true; me.clear(); }
-                if (c) {
-                    evt.cancelBubble = true; evt.returnValue = true;
-                    if (evt.preventDefault) evt.preventDefault();
-                    return false;
-                }
-            }
-        }
-        this.isDisabled = true;
-        
-        
-        
-    }
-    
-    yi.console = new Console();
-    yi.console.Console = console;
-    */
+   
 })(window, document);
