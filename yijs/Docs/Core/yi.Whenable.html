@@ -62,12 +62,12 @@ dfd.when(fn,"s").then(function(value){
 	log("dfd is resolved with:" + value);
 	$assert.t1=($assert.t1||0)+1;//$assert.line
 });
-$assert.wait(5).For(function(){return $assert.t1&& $assert.t}).done(function(){
+//$assert.wait(5).For(function(){return $assert.t1&& $assert.t}).done(function(){
 	$assert.Equal(1,$assert.t);//$assert.line
 	$assert.Equal(1,$assert.t1);//$assert.line
-});
+//});
 
-$log("when Thenable");
+log("when Thenable");
  
 var inner = new yi.Thenable();
 inner.name = "inner";
@@ -81,10 +81,17 @@ dfd2.when(inner).then(function(value){
 });
 
 inner.resolve("inn");
-$assert.wait(5).For(function(){return $assert.t1&& $assert.t}).done(function(){
+//$assert.wait(5).For(function(){return $assert.t1&& $assert.t}).done(function(){
 	$assert.Equal(1,$assert.tx);//$assert.line
-});
+//});
 
+log("when function throw err");
+var when = function(){throw "my error";}
+var dfd3 = new yi.Whenable(when).fail(function(reason){
+	log("dfd会被拒绝掉");
+	$assert.whenError =reason;
+});
+$assert("my error",$assert.whenError);
 });
 	</script></li>
 	</ul>
