@@ -197,8 +197,8 @@
 		elem.style.cssText = "margin:0;padding:5px;overflow:auto;word-wrap:break-word;";
 		this["@levels"] =null;
         this["@css"] = {
-            "##assert": "color:yellow;border-bottom:1px dashed #666666;",
-            "##debug": "color:blue;border-bottom:1px dashed #666666;",
+            "##assert": "color:#dfdfdf;border-bottom:1px dashed #666666;",
+            "##debug": "color:yellow;border-bottom:1px dashed #666666;",
             "##info": "color:gray;border-bottom:1px dashed #666666;",
             "##notice": "color:white;border-bottom:1px dashed #666666;",
             "##warming": "color:orange;border-bottom:1px dashed #666666;",
@@ -404,7 +404,16 @@
             } else if (t === 'string') {
                 elem.innerHTML = htmlEncode(o);
                 elem.className = "string";
-            }
+            }else if(t==='boolean'){
+				elem.innerHTML = t?"true":"false";
+				elem.className = "boolean";
+			}else if(t==='number'){
+				elem.innerHTML = t.toString();
+				elem.className = "number";
+			}else {
+				elem.innerHTML = t.toString();
+				elem.className = "unknown";
+			}
             return elem;
         }
     }
@@ -727,7 +736,7 @@
 			if(arguments.length==0)return this;
 			var params = aslice.call(arguments);
 			var lv = params[0];
-			if(typeof lv ==='string' && lv.indexOf("##")!==0) params.unshift("##assert");
+			if(lv  && lv.toString().indexOf("##")!==0) params.unshift("##assert");
 			this.logger.apply(this.logger,params);
 			return this;
 		}
