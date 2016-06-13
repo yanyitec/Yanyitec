@@ -8,6 +8,9 @@
 
     if (!yi.log) { yi.log = Global.$log = function () { console.log.apply(console, arguments); } }
 
+	///-----------------
+	/// Observable
+	///-----------------
     yi.Observable = function () {
 
         this.subscribe = function (evtname, subscriber) {
@@ -53,7 +56,67 @@
     //Observable自己就是全局监听器
     yi.Observable.call(yi.Observable);
     yi.bind = function (func, me, args) { return function () { return func.apply(me || this, args || arguments); } }
-    var Async = function () {
+
+	///-----------------
+	/// async
+	///-----------------
+	var Async = function(interval ,next,max){
+		this["@async.next"] = next;
+		this["@async.interval"] = interval;
+		this["@async.maxTimes"] = parseInt(max) || 5000;
+		this["@async.contexts"]=[];
+		this.add = function(fn,arg){
+			var contexts = this["@async.contexts"];
+			var me = this;
+			contexts.push(fn["@async.func"]?fn:{"@async.func":fn,"@async.param":arg,"@async.times":0});
+			this["@async.tick"]=setInterval(function(){
+				var now = new Date();var ctxs = contexts;
+				var max = me["@async.maxTimes"],self = me;
+				for(var i=0,j=ctxs.length;i<j;i++){
+					var ctx = ctxs.shift();
+					var result = ctx["@async.func"].call(ctx,ctx["@async.param"],ctx,self);
+					var keep = result==='%keep',reenter = result==='%reenter';
+					if(keep || reenter ){
+						if(reenter && (++ctx["@async.times"]> max)){
+							ctx["@async.times"]=0;
+							var next = me["@async.next"];
+							if(next)next.add(ctx);
+							else ctxs.push(ctx);
+						}else{
+							ctxs.push(ctx);
+						}
+					}
+				}
+				if(ctxs.length===0) clearInterval(me["@async.tick"]);
+			},this["@async.interval"]);
+			return this;
+		}
+		this.remove = function(fn){
+			var contexts = this["@async.contexts"];
+			for(var i =0,j=contexts.length;i<j;i++){
+				var ctx = contexts.shift();
+				if(ctx["@async.func"]!==fn) contexts.push(ctx);
+			}
+			return this;
+		}
+
+	}
+	Async[7] = new Async( 10000);//10秒
+	Async[6] = new Async(  5000,Async[7], 10);//5秒
+	Async[5] = new Async(  1000,Async[6], 20);//1秒
+	Async[4] = new Async(   500,Async[5], 30);//半秒
+	Async[3] = new Async(   200,Async[4], 50);//200毫秒
+	Async[2] = new Async(   100,Async[3], 50);//100毫秒
+	Async[1] = new Async(    40,Async[2], 80);//40毫秒
+	var async_stack =Async[0] = new Async(     0,Async[1],20);// 0毫秒
+	var async = yi.async = function(fn,arg){
+		if(fn===false){
+			for(var i=0;i<8;i++)Async[i].remove(arg);
+			return;
+		}
+		async_stack.add(fn,arg);
+	}
+    var Async1 = function () {
         var me = this;
         var waitings = this.waitings = [];
         var delays = this.delays = [];
@@ -107,13 +170,18 @@
         this._timeout = function () { timeout.call(me); }
         this._interval = function () { interval.call(me); }
     }
-    var async = yi.async = function (func, param) {
+
+	
+    var async1 = yi.async1 = function (func, param) {
         async.add(func, param);
     };
-    Async.call(async);
-    async.isRunning = false; async.tick = 0;
-    async.Async = Async;
+    Async1.call(async);
+    async1.isRunning = false; async.tick = 0;
+    async1.Async = Async;
 
+	///-----------------
+	/// Promise
+	///-----------------
     var Thenable = function (src) {
 		this.toString = function(){return "[object Thenable]";}
 		if(src){
@@ -415,14 +483,66 @@
         return dfd;
     }
     
+	///-----------------
+	/// Uri
+	///-----------------
+    var paths = {}, resolvedPaths = {}, cachedRequire = {};
+    var Uri = yi.Uri = function (url) {
+        this.url = url;
+        this.isAbsolute = false;
+        for (var i = 0, j = protocols.length; i < j; i++) {
+            var protocol = protocols[i];
+            if (url.substr(0, protocol.length) === protocol) {
+                this.isAbsolute = true;
+                this.protocol = protocol;
+                break;
+            }
+        }
+        var q = url.indexOf("?");
+        if (q < 0) {
+            this.path = url;
+        } else {
+            this.path = url.substr(0, at);
+            this.qs = url.substr(at);
+        }
+        var f = this.path.lastIndexOf("/");
+        if (f >= 0) this.file = this.path.substr(f);
+        else this.file = this.path;
+        var e = this.file.lastIndexOf(".");
+        if (e >= 0) this.ext = this.file.substr(e);
+        this.toString = function () { return this.url; }
+    }
+	var protocols = Uri.protocols = ["http://", "https://"];
+    Uri.basUrl = "";
+
+    var resolveUrl = Uri.resolve = function (name) {
+        var uri, replaced = false;
+        if (uri = resolvedPaths[name]) return uri;
+        var url = name;
+        for (var n in paths) {
+            if (name.indexOf(n) == 0 && name[n.length] === '/') {
+                var k = paths[n];
+                url = k + name.substring(n.length);
+                replaced = k;
+                break;
+            }
+        }
+        uri = new Uri(url);
+        if (!uri.isAbsolute) {
+            uri.url = (require.baseUrl || "") + uri.url;
+            this.isAbsolute = true;
+        }
+        if (uri.qs === undefined) { resolvedPaths[name] = uri; uri.cached = name; }
+        return uri;
+    }
+    var imgexts = Uri.imageExts = [".gif", ".png", ".jpg"];
+    var isImageExt = Uri.isImageExt = function (ext) {
+        for (var i = 0, j = imgexts.length; i < j; i++) if (imgexts[i] === ext) return true;
+        return false;
+    }
 
 	
-	
-    //yi.then = Global.$then = function()
-    yi.makeArray = function (its) {
-        var ret = []; for (var i in its) ret.push(its[i]); return ret;
-    }
-    var arrayProto = Array.prototype;
+
 
     var hd = document.getElementsByTagName("HEAD");
     hd = hd[0] || document.body || document.documentElement;
@@ -597,62 +717,7 @@
         return req;
     }
 
-    var protocols = require.protocols = ["http://", "https://"];
-    Require.basUrl = "";
-
-    var paths = {}, resolvedPaths = {}, cachedRequire = {};
-    var Uri = yi.Uri = function (url) {
-        this.url = url;
-        this.isAbsolute = false;
-        for (var i = 0, j = protocols.length; i < j; i++) {
-            var protocol = protocols[i];
-            if (url.substr(0, protocol.length) === protocol) {
-                this.isAbsolute = true;
-                this.protocol = protocol;
-                break;
-            }
-        }
-        var q = url.indexOf("?");
-        if (q < 0) {
-            this.path = url;
-        } else {
-            this.path = url.substr(0, at);
-            this.qs = url.substr(at);
-        }
-        var f = this.path.lastIndexOf("/");
-        if (f >= 0) this.file = this.path.substr(f);
-        else this.file = this.path;
-        var e = this.file.lastIndexOf(".");
-        if (e >= 0) this.ext = this.file.substr(e);
-        this.toString = function () { return this.url; }
-    }
-
-    var resolveUrl = require.resolveUrl = function (name) {
-        var uri, replaced = false;
-        if (uri = resolvedPaths[name]) return uri;
-        var url = name;
-        for (var n in paths) {
-            if (name.indexOf(n) == 0 && name[n.length] === '/') {
-                var k = paths[n];
-                url = k + name.substring(n.length);
-                replaced = k;
-                break;
-            }
-        }
-        uri = new Uri(url);
-        if (!uri.isAbsolute) {
-            uri.url = (require.baseUrl || "") + uri.url;
-            this.isAbsolute = true;
-        }
-        if (uri.qs === undefined) { resolvedPaths[name] = uri; uri.cached = name; }
-        return uri;
-    }
-    var imgexts = require.imageExts = [".gif", ".png", ".jpg"];
-    var isImageExt = require.isImageExt = function (ext) {
-        for (var i = 0, j = imgexts.length; i < j; i++) if (imgexts[i] === ext) return true;
-        return false;
-    }
-
+    
 
     var Observer = function () { }
     var obproto = {

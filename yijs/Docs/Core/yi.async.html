@@ -9,7 +9,7 @@
   <title>Document</title>
   <link href="../docs.css" type="text/css" rel="stylesheet"></link>
   <script type="text/javascript" src="../../Scripts/yi.core.js"></script>
-  <script type="text/javascript" src="../../Scripts/yi.assert.js"></script>
+  <script type="text/javascript" src="../../Scripts/yi.diagnosis.js"></script>
   <script type="text/javascript" src="../../Scripts/yi.assert.helper.js"></script>
  </head>
  <body>
@@ -20,6 +20,7 @@
  </fieldset>
  <fieldset class='member function'>
 	<legend><h2>yi.async</h2></legend>
+	<ul><li><h3>async 异步执行</h3>
 	<table class='descriptor'>
 		<thead>
 			<tr><th colspan="3" class='name'>Description</th></tr>
@@ -37,53 +38,50 @@
 				<th colspan="3"></th>
 			</tr>
 		</tfoot>
-	</table>
-	<script id="yi.async">
-$assert.begin("yi.async");
-var fn = function(){
-	$assert.redirectOutput("yi.async");
-	$log("execute fn.");
-	$assert.set("t",($assert.get("t")||0)+1);
-	yi.async(function(){
-		$assert.redirectOutput("yi.async");
-		$log("fn's inner func is invoked.");
-		$assert.set("tx",($assert.get("tx")||0)+1);
-	});
-	$assert.redirectOutput("yi.async",false);
-};
-$log("异步执行一个函数");
+	</table></li>
+	<li>
+	<script subtype='test'>
+$assert.scope(function($assert,log){
+	var fn = function(){
+		log("execute fn.");
+		$assert.t  = ($assert.t || ($assert.t=0))+1;
+		yi.async(function(){
+			log("fn's inner func is invoked.");
+			$assert.tx=($assert.tx||0)+1;
+		});
+	};
+log("异步执行一个函数");
 yi.async(fn);
-$log("该函数不会被立即执行");
+log("该函数不会被立即执行");
 setTimeout(function(){//$assert.line
-	$assert.redirectOutput("yi.async");
-	$assert(1,$assert.get("t"));
-	$assert(1,$assert.get("tx"));
+	$assert(1,$assert.t);
+	$assert(1,$assert.tx);
 },200);//$assert.line
 var times = 0,ex;
 var fn2 = function(c){
-	$assert.redirectOutput("yi.async");
 	c.c = (c.c || (c.c=0))+1;
 	this.k = (this.k || (this.k=0))+1;
 	ex = this.k;
-	$log("execute fn2.");
-	$assert.set("t1",($assert.get("t1")||0)+1);
-	$assert.redirectOutput("yi.async",false);
-	if(times++<3) return "%wait";
+	log("execute fn2.");
+	$assert.t1=($assert.t1||0)+1;
+	if(times++<3) return "%reenter";
 };
-$log("异步执行另外一个函数fn2");
+log("异步执行另外一个函数fn2");
 yi.async.interval= 20;
 var par = {};
 yi.async(fn2,par);
-$log("fn2函数不会被立即执行");
+log("fn2函数不会被立即执行");
 setTimeout(function(){//$assert.line
-	$assert.redirectOutput("yi.async");
-	$assert(times,$assert.get("t1"));
+	$assert(times,$assert.t1);
 	$assert(4,ex);
 	$assert(4,par.c);
 },1000);//$assert.line
-$log("fn2 会执行4次");
-$assert.end("yi.async");
+log("fn2 会执行4次");
+});//$assert
+
 	</script>	
+	</li>
+	</ul>
  </fieldset>
 
  </body>
