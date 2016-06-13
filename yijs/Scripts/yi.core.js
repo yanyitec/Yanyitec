@@ -4,6 +4,7 @@
     var arrProto = Array.prototype;
     var aslice = arrProto.slice;
     var otoStr = objProto.toString;
+	var invalidOperation = yi.invalidOperation = function(){throw new Error("Invalid operation.");}
 
     if (!yi.log) { yi.log = Global.$log = function () { console.log.apply(console, arguments); } }
 
@@ -36,6 +37,7 @@
             }
             return this;
         }
+		this.toString = function(){return "[object yi.Observable]";}
     }
     yi.Observable.make = function (name, code) {
         var subscribeCode = "(this[\"!" + name + "\"]||(this[\"!" + name + "\"]=[])).push(listener);return this;";
@@ -57,10 +59,11 @@
         var delays = this.delays = [];
 
         var timeout = function () {
+			var now = new Date();
             var ws = this.waitings, ds = this.delays;
             for (var i = 0, j = ds.length; i < j; i++) {
                 var it = ds.shift();
-                var ret = it["@func"].call(it, it["@param"], it);
+                var ret = it["@func"].call(it, it["@param"],now,it);
                 if (ret == "%wait") ws.push(it);
             }
             if (ds.length)
@@ -69,10 +72,10 @@
                 this.tick = setInterval(this._interval, this.interval || 150);
         }
         var interval = function () {
-            var ws = this.waitings;
+            var ws = this.waitings, now = new Date();
             for (var i = 0, j = ws.length; i < j; i++) {
                 var it = ws.shift();
-                var ret = it["@func"].call(it, it["@param"], it);
+                var ret = it["@func"].call(it, it["@param"], now,it);
                 if (ret == "%wait") ws.push(it);
             }
             if (ws.length === 0) {
@@ -111,79 +114,21 @@
     async.isRunning = false; async.tick = 0;
     async.Async = Async;
 
-
-    var Thenable = yi.Thenable = function () {
-        this["@promise.status"] = "padding";
-        this["@promise.value"] = this["@promise.onFullfilled"] = this["@promise.onRejected"] = undefined;
-        this.isFullfilled = this.isRejected = false;
-
-        this.resolve = function (value) {
-            this.notify = this.resolve = this.reject = function () { throw new Error("Already fullfilled or rejected."); }
-
-            this.isFullfilled = true; this.isRejected = false;
-            this["@promise.status"] = 'fullfilled';
-            this["@promise.value"] = value;
-            //var dfd = this;
-            //if(this["@promise.onChanged"]){
-            //async(function(dfd){
-            var its = this["@promise.onChanged"], status = this["@promise.status"];
-            if (its) for (var i = 0, j = its.length; i < j; i++) {
-                var it = its.shift();
-                var rs = it.call(this, 'fullfilled', status, this, value, this);
-                if (rs !== '%discard' && rs !== '%discard&interrupt') its.push(it);
-                if (rs === '%interrupt' || rs == "%discard&interrupt" || rs == false) break;
-            }
-            //},this);
-            //}
-            //if(this["@promise.onFullfilled"]){
-            //async(function(dfd){
-            var its = this["@promise.onFullfilled"], value = this["@promise.value"];
-            if (its) for (var i = 0, j = its.length; i < j; i++) its.shift().call(this, value, this);
-            //},this);
-            //}
-
-            return this;
-        };
-        this.reject = function (reason) {
-            this.notify = this.resolve = this.reject = function () { throw new Error("Already fullfilled or rejected."); }
-
-            this.isFullfilled = false; this.isRejected = true;
-            this["@promise.status"] = 'rejected';
-            this["@promise.value"] = reason;
-            //var dfd = this;
-            //if(this["@promise.onChanged"]){
-            //async(function(dfd){
-            var its = this["@promise.onChanged"], status = this["@promise.status"];
-            if (its) for (var i = 0, j = its.length; i < j; i++) {
-                var it = its.shift();
-                var rs = it.call(this, 'rejected', status, this, value, this);
-                if (rs !== '%discard' && rs !== '%discard&interrupt') its.push(it);
-                if (rs === '%interrupt' || rs == "%discard&interrupt" || rs == false) break;
-            }
-            //},this);
-            //}
-            //if(this["@promise.onRejected"]){
-            //async(function(dfd){
-            var its = this["@promise.onRejected"], value = this["@promise.value"];
-            if (its) for (var i = 0, j = its.length; i < j; i++) its.shift().call(this, value, this);
-            //},this);
-            //}			
-            return this;
-        };
-        this.notify = function (stat, value) {
-            var its, status = this["@promise,status"];
-            this["@promise.status"] = stat;
-            this["@promise.value"] = value;
-            if (its = this["@promise.onChanged"]) {
-                for (var i = 0, j = its.length; i < j; i++) {
-                    var it = its.shift();
-                    var rs = it.call(this, stat, status, value, this);
-                    if (rs !== '%discard' && rs !== '%discard&interrupt') its.push(it);
-                    if (rs === '%interrupt' || rs === '%discard&interrupt' || rs === false) break;
-                }
-            }
-            return this;
-        }
+    var Thenable = function (src) {
+		this.toString = function(){return "[object Thenable]";}
+		if(src){
+			this["@promise.onFullfilled"] = src["@promise.onFullfilled"]||(src["@promise.onFullfilled"]=[]);
+			this["@promise.onRejected"] = src["@promise.onRejected"]||(src["@promise.onRejected"]=[]) ;
+			this["@promise.onChanged"] = src["@promise.onChanged"]||(src["@promise.onChanged"]=[]);
+			this["@promise.source"] = src;
+			this.isFullfilled = function(){return this["@promise.source"]["@promise.isFullfilled"];}
+			this.isRejected = function(){return this["@promise.source"]["@promise.isRejected"];}
+			if(src.await) this.await = function(m){this["@promise.source"].await(m);return this;};
+		}else {
+			this.isFullfilled = function(){return this["@promise.isFullfilled"];}
+			this.isRejected = function(){return this["@promise.isRejected"];}
+		}
+        this["@promise.invalid"] = invalidOperation;
 
         this.done = function (onFullfill, remove) {
             if (typeof onFullfill !== 'function') throw new Error("Thenable.done expect a function as the first argument.");
@@ -194,7 +139,7 @@
                 }
                 return this;
             }
-            if (this.isFullfilled) {
+            if (this["@promise.isFullfilled"]) {
                 var ret = onFullfill.call(this, this["@promise.value"], this);
                 return this;
             }
@@ -211,7 +156,7 @@
                 }
                 return this;
             }
-            if (this.isRejected) {
+            if (this["@promise.isRejected"]) {
                 onReject.call(this, this["@promise.value"], this); return this;
             }
             (this["@promise.onRejected"] || (this["@promise.onRejected"] = [])).push(onReject);
@@ -256,28 +201,34 @@
             (this["@promise.onRejected"] || (this["@promise.onRejected"] = [])).push(cb);
             (this["@promise.onRullfilled"] || (this["@promise.onFullfilled"] = [])).push(cb);
         };
-        this.promise = function (tgt) {
-            if (!tgt) {
-                if (this["@promise.source"]) return this;
-                tgt = {};
-            } else if (tgt === this) throw "Can not promise self.";
-            tgt.always = function (cb, remove) { tgt["@promise.source"].always(cb, remove); return this; }
-            tgt.then = function (succcess, fail, change) { tgt["@promise.source"].then(success, fail, change); return this; }
-            tgt.done = function (cb, remove) { tgt["@promise.source"].done(cb, remove); return this; }
-            tgt.change = function (cb, remove) { tgt["@promise.source"].change(cb, remove); return this; }
-            tgt.fail = function (cb, remove) { tgt["@promise.source"].fail(cb, remove); return this; }
-            tgt.promise = function (targ) { return (!targ || targ == this) ? this : tgt["@promise.source"].promise(targ); }
-            tgt["@promise.source"] = this;
-            return tgt;
+        this.thenable = function (tgt) {
+			if(this["@promise.source"])return this;
+			var result = tgt;
+            if(!tgt || tgt===this)result =  new Then(this);
+			else Thenable.call(tgt,this);
+			
+			return result;
         }
     }
+	var Then = function(src){
+		this.toString = function(){return "[object yi.Thenable]";}
+		if(src){
+			this["@promise.onFullfilled"] = src["@promise.onFullfilled"]||(src["@promise.onFullfilled"]=[]);
+			this["@promise.onRejected"] = src["@promise.onRejected"]||(src["@promise.onRejected"]=[]) ;
+			this["@promise.onChanged"] = src["@promise.onChanged"]||(src["@promise.onChanged"]=[]);
+			this["@promise.source"] = src;
+			this.isFullfilled = function(){return this["@promise.source"]["@promise.isFullfilled"];}
+			this.isRejected = function(){return this["@promise.source"]["@promise.isRejected"];}
+			if(src.await) this.await = function(m){this["@promise.source"].await(m);return this;};
+		}
 
-    var Whenable = yi.Whenable = function (when,args) {
-        this["@promise.status"] = "padding";
-        this["@promise.value"] = this["@promise.fullfilled"] = this["@promise.rejected"] = undefined;
-        this.isFullfilled = this.isRejected = false;
+	}
+	Then.prototype = new Thenable();
 
-        this.when = function (obj, args) {
+	var Whenable  = function(){
+		this.toString = function(){return "[object yi.Promise]";}
+		this.when = function (obj, args,thenable) {
+			this.when = this.defer = invalidOperation;
             var me = this;
             var t = typeof obj;
             if (t === 'function') {
@@ -305,21 +256,131 @@
             //async(function () { 
 				me.resolve(obj); 
 			//});
+            return thenable?this.thenable():this;
+        }
+		this.defer = function(func,args){
+			this["@promise.when_obj"] = func;
+			this["@promise.when_arg"] = args;
+			this["@promise.when"] = this.when;
+			this.when = this.defer = invalidOperation;
+			async(function(promise){
+				promise["@promise.when"].call(promise,promise["@promise.when_obj"],promise["@promise.when_arg"],true);
+			},this);
+			return this.thenable();
+		}
+
+		this.timeout = function(milliseconds){
+			if(!promise["@promise.isFullfilled"] && !promise["@promise.isRejected"])return this;
+			milliseconds = parseInt(milliseconds);
+			promise["@promise.milliseconds"] = milliseconds<0 || Math.isNaN(milliseconds)?1000:milliseconds;
+			if(promise["@promise.startWaitingTime"]){
+				promise["@promise.startWaitingTime"]= new Date().time();
+				return this;
+			}
+			async(function(promise,now){
+				if(!promise["@promise.isFullfilled"] && !promise["@promise.isRejected"])return "%wait";
+				if(!promise["@promise.startWaitingTime"])promise["@promise.startWaitingTime"]=new Date().time();
+				else {
+					if(now.time() - promise["@promise.startWaitingTime"]>promise["@promise.milliseconds"]){
+						promise.reject("Timeout");
+					}
+				}
+			},promise);
+			return this;
+		}
+		
+		this.resolve = function (value) {
+            this.notify = this.resolve = this.reject = this["@promise.invalid"];
+
+            this["@promise.isFullfilled"] = true; this["@promise.isRejected"] = false;
+            this["@promise.status"] = 'fullfilled';
+            this["@promise.value"] = value;
+            //var dfd = this;
+            //if(this["@promise.onChanged"]){
+            //async(function(dfd){
+            var its = this["@promise.onChanged"], status = this["@promise.status"];
+            if (its) for (var i = 0, j = its.length; i < j; i++) {
+                var it = its.shift();
+                var rs = it.call(this, 'fullfilled',value, status, this);
+                if (rs !== '%discard' && rs !== '%discard&interrupt') its.push(it);
+                if (rs === '%interrupt' || rs == "%discard&interrupt" || rs == false) break;
+            }
+            //},this);
+            //}
+            //if(this["@promise.onFullfilled"]){
+            //async(function(dfd){
+            var its = this["@promise.onFullfilled"], value = this["@promise.value"];
+            if (its) for (var i = 0, j = its.length; i < j; i++) its.shift().call(this, value, this);
+            //},this);
+            //}
+
+            return this;
+        };
+		this.tryResolve = function(value){
+			if(this.resolve!==this["@promise.invalid"])return this.resolve(value);
+			return false;
+		}
+        this.reject = function (reason) {
+            this.notify = this.resolve = this.reject = this["@promise.invalid"];
+
+            this["@promise.isFullfilled"] = false; this["@promise.isRejected"]  = true;
+            this["@promise.status"] = 'rejected';
+            this["@promise.value"] = reason;
+            //var dfd = this;
+            //if(this["@promise.onChanged"]){
+            //async(function(dfd){
+            var its = this["@promise.onChanged"], status = this["@promise.status"];
+            if (its) for (var i = 0, j = its.length; i < j; i++) {
+                var it = its.shift();
+                var rs = it.call(this, 'rejected', value, status, this);
+                if (rs !== '%discard' && rs !== '%discard&interrupt') its.push(it);
+                if (rs === '%interrupt' || rs == "%discard&interrupt" || rs == false) break;
+            }
+            //},this);
+            //}
+            //if(this["@promise.onRejected"]){
+            //async(function(dfd){
+            var its = this["@promise.onRejected"], value = this["@promise.value"];
+            if (its) for (var i = 0, j = its.length; i < j; i++) its.shift().call(this, value, this);
+            //},this);
+            //}			
+            return this;
+        };
+		this.tryReject =function(reason){
+			if(this.reject!==this["@promise.invalid"])return this.reject(reason);
+			return false;
+		}
+        this.notify = function (stat, value) {
+            var its, status = this["@promise,status"];
+            this["@promise.status"] = stat;
+            this["@promise.value"] = value;
+            if (its = this["@promise.onChanged"]) {
+                for (var i = 0, j = its.length; i < j; i++) {
+                    var it = its.shift();
+                    var rs = it.call(this, stat, value,status, this);
+                    if (rs !== '%discard' && rs !== '%discard&interrupt') its.push(it);
+                    if (rs === '%interrupt' || rs === '%discard&interrupt' || rs === false) break;
+                }
+            }
             return this;
         }
-		if(when) this.when(when,args);
-        //promise.thenWhen(p.a).follow
+	}
+	Whenable.prototype = new Thenable();
+	
+    var Promise = yi.Promise = function (obj, args,arg1) {
+		this.toString = function(){return "[object yi.Promise]";}
+        if (obj) {
+			if(obj==='%promise.concurrent') return concurrentPromise(args,arg1);
+			if(obj==='%promise.sequence') return sequencePromise(args,arg1);
+			this.when(obj, args);
+		}
+		return this;
     }
-    yi.Whenable.prototype = new yi.Thenable();//end Defer.prototype
-    var Promise = yi.Promise = function (obj, args) {
-        this["@promise.status"] = "padding";
-        this["@promise.value"] = this["@promise.fullfilled"] = this["@promise.rejected"] = undefined;
-        this.isFullfilled = this.isRejected = false;
-
-        if (obj) return this.when(obj, args);
-    }
-    Promise.prototype = new Whenable();
-    yi.promise = Global.$promise = function (obj, args) { return new Promise(obj, args); }
+    Promise.prototype = new Thenable();
+	Whenable.call(Promise.prototype);
+	Promise.Whenable = Whenable;
+	Promise.Thenable = Thenable;
+    
     var concurrentPromise = function (obj, args) {
         var result = {};
         var count = 0, waiting_count = 0;
@@ -353,16 +414,10 @@
         });
         return dfd;
     }
-    yi.when = Global.$when = function (obj, args) {
-        var t = objProto.toString.call(obj);
-        if (t === '{object Array}') {
-            return sequencePromise(obj, args);
-        }
-        if (t == '{object Object}' && typeof obj.then !== 'function') {
-            return concurrentPromise(obj, args);
-        }
-        return new Promise(obj, args);
-    }
+    
+
+	
+	
     //yi.then = Global.$then = function()
     yi.makeArray = function (its) {
         var ret = []; for (var i in its) ret.push(its[i]); return ret;

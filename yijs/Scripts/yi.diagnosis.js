@@ -242,7 +242,7 @@
 						throw new Error();
 					}catch(ex){
 						var stacks = ex.stack.split("\n");
-						var hasOutput=false,lastLog,txt;
+						var hasOutput=false,txt;
 						while(true){
 							txt = stacks.shift();
 							if(!txt)break;
@@ -256,12 +256,14 @@
 							var isOutput = codeAt.substring(codeAt.length-7);
 							if(isOutput===' output' || isOutput==='.output' || isOutput==='/output'){hasOutput=true; continue;}
 							var isLog = codeAt.substring(codeAt.length-4);
-							if(isLog===' log' || isLog==='.log' || isLog ==='/log'|| codeAt.indexOf("at Function.log")>=0){lastLog = txt;continue;}
-							if(hasOutput){
+							if(isLog===' log' || isLog==='.log' || isLog ==='/log'|| codeAt.indexOf("at Function.Logger.")>=0){continue;}
+							var isLogger = codeAt.substring(codeAt.length-6);
+							if(isLogger==="logger" || isLogger==="Logger")continue;
+							//if(hasOutput){
 								stacks.unshift(txt);
 								//if(lastLog) stacks.unshift(lastLog);
 								break;
-							}
+							//}
 							//if(txt.substring(at-,at))
 						}
 						

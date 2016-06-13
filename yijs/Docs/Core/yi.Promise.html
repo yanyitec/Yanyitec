@@ -13,13 +13,13 @@
   <script type="text/javascript" src="../../Scripts/yi.assert.helper.js"></script>
  </head>
  <body>
- <h1>yi.Thenable</h1>
+ <h1>yi.Promise</h1>
  <fieldset class='summary class x-able'>
 	<legend>描述</legend>
 	Promise/A+的一个实现
  </fieldset>
  <fieldset class='member function'>
-	<legend><h2>Done</h2></legend>
+	<legend><h2>yi.promise.done</h2></legend>
 	<ul><li><h3>说明(instruction)</h3>
 	<table class='descriptor'>
 		<thead>
@@ -41,7 +41,7 @@
 	</table></li>
 	<li><script subtype='test'>
 $assert.scope(function($assert,log){
-var dfd = new yi.Thenable();
+var dfd = new yi.Promise();
 //订阅onFullfill事件
 var rs = //$assert.line
 dfd.done(function(value,d){
@@ -59,10 +59,10 @@ dfd.done(function(value){
 log("resolve the dfd:");
 var rs = //$assert.line
 dfd.resolve("promise");
-$assert.wait(5).For(function(){return $assert.times1 && $assert.times2;}).done(function(){
+//$assert.wait(5).For(function(){return $assert.times1 && $assert.times2;}).done(function(){
 	$assert(rs,dfd);
-	$assert.True(dfd.isFullfilled);
-	$assert.False(dfd.isRejected);
+	$assert.True(dfd.isFullfilled());
+	$assert.False(dfd.isRejected());
 	$assert.Equal(1,$assert.times1);
 	$assert.Equal(1,$assert.times2);
 	log("add onFillfilled");
@@ -76,14 +76,14 @@ $assert.wait(5).For(function(){return $assert.times1 && $assert.times2;}).done(f
 	$assert.Equal(1,$assert.times3);
 	$assert.Equal(1,$assert.times1);
 	$assert.Equal(1,$assert.times2);	
-});//$assert
+//});//$assert
 
 });//$assert
 	</script></li>
 	</ul>
  </fieldset>
 <fieldset class='member function'>
-	<legend><h2>Fail</h2></legend>
+	<legend><h2>yi.Promise.fail</h2></legend>
 	<ul><li><h3>说明 instructions</h3>
 	<table class='descriptor'>
 		<thead>
@@ -106,7 +106,7 @@ $assert.wait(5).For(function(){return $assert.times1 && $assert.times2;}).done(f
 	<li>
 	<script subtype='test'>
 $assert.scope(function($assert,log){
-var dfd = new yi.Thenable();
+var dfd = new yi.Promise();
 //订阅onReject事件
 var rs = //$assert.line
 dfd.fail(function(reason,d){
@@ -125,9 +125,9 @@ log("reject the dfd:");
 var rs = //$assert.line
 dfd.reject("reject reason");
 $assert(dfd,rs);
-$assert.wait(5).For(function(){return $assert.times1 && $assert.times2;}).done(function(){
-	$assert.True(dfd.isRejected);
-	$assert.False(dfd.isFullfilled);
+//$assert.wait(5).For(function(){return $assert.times1 && $assert.times2;}).done(function(){
+	$assert.True(dfd.isRejected());
+	$assert.False(dfd.isFullfilled());
 	$assert.Equal(1,$assert.times1);
 	$assert.Equal(1,$assert.times2);
 	log("add onReject");
@@ -141,14 +141,14 @@ $assert.wait(5).For(function(){return $assert.times1 && $assert.times2;}).done(f
 	$assert.Equal(1,$assert.times3);
 	$assert.Equal(1,$assert.times1);
 	$assert.Equal(1,$assert.times2);		
-});
+//});
 
 });
 	</script></li>	
  </fieldset>
 
  <fieldset class='member function'>
-	<legend><h2>resolve</h2></legend>
+	<legend><h2>yi.Promise.resolve</h2></legend>
 	<ul><li><h3>Instructions</h3>
 	<table class='descriptor'>
 		<thead>
@@ -172,7 +172,7 @@ $assert.wait(5).For(function(){return $assert.times1 && $assert.times2;}).done(f
 	<script subtype="test">
 $assert.scope(function($assert,log){
 log("参阅done的文档");
-var dfd = new yi.Thenable();
+var dfd = new yi.Promise();
 log("设置dfd的状态为fullfilled");
 dfd.resolve("resolved");
 try{
@@ -196,7 +196,7 @@ $assert.Exists($assert.ex2);
 	</ul>
  </fieldset>
  <fieldset class='member function'>
-	<legend><h2>reject</h2></legend>
+	<legend><h2>yi.Promise.reject</h2></legend>
 	<ul><li><h3>Instructions</h3>
 	<table class='descriptor'>
 		<thead>
@@ -219,7 +219,7 @@ $assert.Exists($assert.ex2);
 	<li><script subtype="test">
 $assert.scope(function($assert,log){
 log("参阅fail的文档");
-var dfd = new yi.Thenable();
+var dfd = new yi.Promise();
 log("设置dfd的状态为rejected");
 dfd.resolve("rejected");
 try{
@@ -230,7 +230,7 @@ try{
 	$assert.ex1=ex;
 }
 try{
-	$log("invoke resolve after resolve:");
+	log("invoke resolve after resolve:");
 	dfd.resolve("dd");
 }catch(ex){
 	log("exception raised:" + ex.message);
@@ -246,7 +246,7 @@ $assert.Exists($assert.ex2);
  </fieldset>
 
  <fieldset class='member function'>
-	<legend><h2>promise</h2></legend>
+	<legend><h2>yi.Promise.thenable</h2></legend>
 	<ul><li><h3>Instructions</h3>
 	<table class='descriptor'>
 		<thead>
@@ -268,8 +268,8 @@ $assert.Exists($assert.ex2);
 	</table></li>
 	<li><script subtype="test">
 $assert.scope(function($assert,log){
-var dfd = new yi.Thenable();
-var targ = dfd.promise();
+var dfd = new yi.Promise();
+var targ = dfd.thenable();
 log("promiseh后resolve的类型:" + typeof targ.resolve);
 $assert.Undefined(targ.resolve);
 log("promiseh后reject的类型:" + typeof targ.reject);
@@ -281,15 +281,137 @@ targ.done(function(v){
 });
 //原来的dfd还可以resolve
 dfd.resolve("s");
-$assert.wait(5).For(function(){return $assert.v1;}).done(function(){
+//$assert.wait(5).For(function(){return $assert.v1;}).done(function(){
 	$assert(1,$assert.v1);
-});
+//});
 
 
 });
 	</script></li>
 	</ul>
  </fieldset>
+<fieldset class='member function'>
+	<legend><h2>yi.Promise.when</h2></legend>
+	<ul><li><h3>Instructions</h3>
+	<table class='descriptor'>
+		<thead>
+			<tr><th colspan="3" class='name'>Description</th></tr>
+			<tr><td colspan ="3" class='description'>设定一个异步操作或等待对象(也是异步的resolve)</td></tr>
+			<tr><th colspan="3" class='name'>Parameters</th></tr>
+			<tr><th class='name'>Name</th><th class='type'>Type</th><th class='description'>Description</th></tr>
+			
+		</thead>
+		<tbody class='parameters'>
+			<tr><td class='name'>obj</td><td class='type'>function/Thenable/*</td><td  class='description'>
+			<ol>
+				<li>当该参数是一个函数时，会异步调用该函数.该函数的this与第一个参数，是本Whenable。第二个参数是when函数的第二个参数。如果该函数执行失败，本Whenable会被拒绝掉，reason是函数抛出的Error</li>
+				<li>当该参数是一个Thenable时，会生成该Thenable的包装。里面的Thenable resolve或reject或notify事件会传递给本Whenable</li>
+				<li>当该参数是其他类型的值时，会异步的resolve掉本Whenable.</li>
+			<ol></td></td>
+			
+		</tbody>
+		<tfoot>
+			<tr>
+				<th colspan="3"></th>
+			</tr>
+		</tfoot>
+	</table></li>
+	<li><script subtype='test'>
+$assert.scope(function($assert,log){
+var fn = function(d,args){
+	$assert.Equal(dfd,this);//$assert.line
+	$assert.Equal(dfd,d);//$assert.line
+	$assert.Equal("s",args);//$assert.line
+	log("execute fn:" + args);
+	d.resolve("hello");
+	$assert.t=($assert.t||0)+1;//$assert.line
+};
+log("when 一个函数");
+var dfd = new yi.Promise();
+dfd.name = "dfd";
+dfd.when(fn,"s").then(function(value){
+	$assert.Equal("hello",value);//$assert.line
+	log("dfd is resolved with:" + value);
+	$assert.t1=($assert.t1||0)+1;//$assert.line
+});
+//$assert.wait(5).For(function(){return $assert.t1&& $assert.t}).done(function(){
+	$assert.Equal(1,$assert.t);//$assert.line
+	$assert.Equal(1,$assert.t1);//$assert.line
+//});
 
+log("when Thenable");
+ 
+var inner = new yi.Promise();
+inner.name = "inner";
+var dfd2 = new yi.Promise();
+dfd2.name = "dfd2";
+dfd2.when(inner).then(function(value){
+	log("dfd2 was done with value:" + value);
+	$assert.Equal(dfd2,this);//$assert.line
+	$assert.Equal("inn",value);//$assert.line
+	$assert.tx=($assert.tx||0)+1;//$assert.line
+});
+
+inner.resolve("inn");
+//$assert.wait(5).For(function(){return $assert.t1&& $assert.t}).done(function(){
+	$assert.Equal(1,$assert.tx);//$assert.line
+//});
+
+log("when function throw err");
+var when = function(){throw "my error";}
+var dfd3 = new yi.Promise(when).fail(function(reason){
+	log("dfd会被拒绝掉");
+	$assert.whenError =reason;
+});
+$assert("my error",$assert.whenError);
+});
+	</script></li>
+	</ul>
+ </fieldset>
+
+ <fieldset class='member function'>
+	<legend><h2>yi.Promise.defer</h2></legend>
+	<ul><li><h3>Instructions</h3>
+	<table class='descriptor'>
+		<thead>
+			<tr><th colspan="3" class='name'>Description</th></tr>
+			<tr><td colspan ="3" class='description'>延迟检查一个对象或when函数</td></tr>
+			<tr><th colspan="3" class='name'>Parameters</th></tr>
+			<tr><th class='name'>Name</th><th class='type'>Type</th><th class='description'>Description</th></tr>
+			
+		</thead>
+		<tbody class='parameters'>
+			<tr><td class='name'>obj</td><td class='type'>function/Whenable/*</td><td  class='description'>
+			含义同when.但这些检查会被延迟执行</td></td>
+			
+		</tbody>
+		<tfoot>
+			<tr>
+				<th colspan="3"></th>
+			</tr>
+		</tfoot>
+	</table></li>
+	<li><script subtype='test'>
+$assert.scope(function($assert,log){
+var promise = new yi.Promise();
+var val;
+log("defer when");
+promise.defer(function(p,value){
+	val = value;
+	log("deferred when function is invoked.");
+	p.resolve(value);
+},"delay").done(function(val){
+	log("done");
+	$assert("delay",val);
+});
+log("the defer when function is not invoked yet.");
+$assert.Undefined(val);
+yi.async(function(){
+	$assert("delay",val);
+});
+});//$assert
+	</script></li>
+	</ul>
+ </fieldset>
  </body>
 </html>

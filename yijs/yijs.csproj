@@ -152,6 +152,7 @@
     <Content Include="Docs\Core\yi.Deferable.html" />
     <Content Include="Docs\Core\yi.Observable.html" />
     <Content Include="Docs\Core\yi.Observer.html" />
+    <Content Include="Docs\Core\yi.Promise.html" />
     <Content Include="Docs\Core\yi.Thenable.html" />
     <Content Include="Docs\Core\yi.Whenable.html" />
     <Content Include="Docs\Diagnosis\yi.console.html" />
