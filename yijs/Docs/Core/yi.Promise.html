@@ -132,7 +132,7 @@ $assert(dfd,rs);
 	$assert.Equal(1,$assert.times2);
 	log("add onReject");
 	var s = dfd.fail(function(reason,d){
-		$log("recieve reason in fail 3:" + reason);
+		log("recieve reason in fail 3:" + reason);
 		$assert.Equal("reject reason",reason);
 		$assert.Equal(dfd,this);
 		$assert.Equal(dfd,d);
@@ -291,7 +291,7 @@ dfd.resolve("s");
 	</ul>
  </fieldset>
 <fieldset class='member function'>
-	<legend><h2>yi.Promise.when</h2></legend>
+	<legend><h2>yi.Whenable.when</h2></legend>
 	<ul><li><h3>Instructions</h3>
 	<table class='descriptor'>
 		<thead>
@@ -327,7 +327,7 @@ var fn = function(d,args){
 	$assert.t=($assert.t||0)+1;//$assert.line
 };
 log("when 一个函数");
-var dfd = new yi.Promise();
+var dfd = new yi.When();
 dfd.name = "dfd";
 dfd.when(fn,"s").then(function(value){
 	$assert.Equal("hello",value);//$assert.line
@@ -343,7 +343,7 @@ log("when Thenable");
  
 var inner = new yi.Promise();
 inner.name = "inner";
-var dfd2 = new yi.Promise();
+var dfd2 = new yi.When();
 dfd2.name = "dfd2";
 dfd2.when(inner).then(function(value){
 	log("dfd2 was done with value:" + value);
@@ -393,7 +393,7 @@ $assert("my error",$assert.whenError);
 	</table></li>
 	<li><script subtype='test'>
 $assert.scope(function($assert,log){
-var promise = new yi.Promise();
+var promise = new yi.When();
 var val;
 log("defer when");
 promise.defer(function(p,value){

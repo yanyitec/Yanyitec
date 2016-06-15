@@ -32,7 +32,7 @@
 					
 				</tr>
 				
-				<tr><td class='returns'>RETURNS</td><td class='type'>[object yi.log.Logger]</td><td>this</td></tr>
+				<tr><td class='returns'>RETURNS</td><td class='type'>undefined</td><td>undefined</td></tr>
 			</tbody>
 			<tfoot>
 				<tr>
@@ -70,7 +70,7 @@ $assert.Equal(console,logger);
 					
 				</tr>
 				
-				<tr><td class='returns'>RETURNS</td><td class='type'>[object yi.log.Logger]</td><td>this,logger</td></tr>
+				<tr><td class='returns'>RETURNS</td><td class='type'>undefined</td><td>undefined</td></tr>
 			</tbody>
 			<tfoot>
 				<tr>
@@ -125,7 +125,7 @@ logger.fail("Fail again");
 					
 				</tr>
 				
-				<tr><td class='returns'>RETURNS</td><td class='type'>[object yi.log.Logger]</td><td>this,logger</td></tr>
+				<tr><td class='returns'>RETURNS</td><td class='type'>undefined</td><td>undefined</td></tr>
 			</tbody>
 			<tfoot>
 				<tr>
@@ -140,21 +140,21 @@ logger.fail("Fail again");
 $assert.scope(function($assert){
 var logger = $assert.logger;//因为要把输出重定向到Html的console,这里没有使用全局的yi.log，而是使用了$assert
 //关闭掉info 跟notice
-logger.off("info","notice");
+logger.disable("info","notice");
 //以下内容都不会输出到控制台
 logger.info("try to info something.");
 logger.log("##notice","try to notice.");
 //但是其他类型还可以输出
 logger.warming("some type of log is turned off.");
 //关闭所有日志功能
-logger.off();
+logger.disable();
 //以下内容都不会输出到控制台
 logger.log("success","off?");
 logger.fail("failed!!!");
 //打开日志功能
-logger.on();
+logger.enable();
 //把刚才禁用掉的notice类型重启turn on
-logger.on("notice");
+logger.enable("notice");
 logger.log("success","yes,turned on");
 logger.notice("can tell some notice");
 

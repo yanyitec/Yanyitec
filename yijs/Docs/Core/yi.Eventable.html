@@ -56,13 +56,13 @@ table.details th{
   </style>
  </head>
  <body>
- <h1>yi.Observable</h1>
+ <h1>yi.Eventable</h1>
  <fieldset>
 	<legend>描述</legend>
 	引入了subscribe,unsubscribe,emit 3个操作原语。来实现 observer模式
  </fieldset>
  <fieldset class='descriptor'>
-	<legend><h2>订阅 yi.Observable.subscribe</h2></legend>
+	<legend><h2>订阅 yi.Eventable.subscribe</h2></legend>
 	<ul>
 	<li>
 	<h3>说明</h3>
@@ -84,7 +84,7 @@ table.details th{
 				<td class='type'>function</td>
 				<td>订阅者/监听器，当事件被emit时，该函数会被调用</td>
 			</tr>
-			<tr><th class='returns'>RETURNS</th><td class='type'>object</td><td>this,Observable</td></tr>
+			<tr><th class='returns'>RETURNS</th><td class='type'>object</td><td>this,Eventable</td></tr>
 		</tbody>
 		<tfoot>
 			<tr>
@@ -97,7 +97,7 @@ table.details th{
 	<li>
 	<script subtype='test'>
 $assert.scope(function($assert,log){
-	var ob = new yi.Observable();
+	var ob = new yi.Eventable();
 	//订阅click事件
 	ob.subscribe("click",function(evt){
 		log("click was emitted with:" + evt);
@@ -121,7 +121,7 @@ $assert.scope(function($assert,log){
 	</ul>
  </fieldset>
  <fieldset>
-	<legend><h2>退订 yi.Observable.unsubscribe</h2></legend>
+	<legend><h2>退订 yi.Eventable.unsubscribe</h2></legend>
 	<ul>
 		<li>
 			<h3>说明</h3>
@@ -156,7 +156,7 @@ $assert.scope(function($assert,log){
 		<li>
 	<script subtype='test'>
 $assert.scope(function($assert,log){
-var ob = new yi.Observable();
+var ob = new yi.Eventable();
 //定义了2个监听者
 var listener1 = function(){
 	log("listener1 recieved.");
@@ -236,7 +236,7 @@ $assert.NotExists($assert.fn2);
 	</li><li>
 	<script subtype='test'>
 $assert.scope(function($assert,log){
-var ob = new yi.Observable();
+var ob = new yi.Eventable();
 //注册监听者
 //listener1 监听dblclick
 ob.subscribe("dblclick",function(a1,a2,a3){
@@ -284,7 +284,7 @@ ob.emit("dblclick",['v1','v2','v3'],true);
 	<li>
 	<script subtype="test">
 $assert.scope(function($assert,log){
-var ob = new yi.Observable();
+var ob = new yi.Eventable();
 //return false.
 ob.subscribe("dblclick",function(){
 	$assert.fn1=true;
@@ -301,7 +301,7 @@ $assert.NotExists($assert.fn2);
 log("fn2 will not be invoked.");
 $assert.fn1 = $assert.fn2 = null;
 
-var ob = new yi.Observable();
+var ob = new yi.Eventable();
 //return '%interrupt'.
 ob.subscribe("dblclick",function(){
 	$assert.fn1=true;
@@ -317,7 +317,7 @@ $assert.True($assert.fn1);
 $assert.NotExists($assert.fn2);
 log("fn2 will not be invoked.");
 
-var ob = new yi.Observable();
+var ob = new yi.Eventable();
 //return '%discard&interrupt'.
 ob.subscribe("dblclick",function(){
 	$assert.fn1=true;
@@ -334,7 +334,7 @@ $assert.NotExists($assert.fn2);
 log("fn2 will not be invoked.");
 
 $assert.fn1 = $assert.fn2 = null;
-var ob = new yi.Observable();
+var ob = new yi.Eventable();
 //return '%discard&interrupt'.
 ob.subscribe("dblclick",function(){
 	$assert.fn1 = ($assert.fn1|| 0)+1;

@@ -5,121 +5,137 @@
     var arrProto = Array.prototype;
     var aslice = arrProto.slice;
     var otoStr = objProto.toString;
+	var noop  =function(){};
+
     var Logger = function (_opts) {
 		this.toString = function(){return "[object,yi.log.Logger]";}
+		var empty = function(){},me = this;
+		empty["@log.disable"] = empty;
+		this["@log.enable"]= empty["@log.enable"] = this;
         var opts = {
             output: Logger.defaultOutput,
             levels: ["debug","fail","warming","notice","info",'success',"assert"],
             defaultLevel: "debug"
         }
         if (_opts) for (var n in _opts) opts[n] = _opts;
-        this.opts = opts;
+        empty.opts = this.opts = opts;
         this.log = function (lv) {
             if (arguments.length == 0 || this.isLogDisabled) return this;
             var lvfn;
-            var lvs = this["@levels"];
+            var lvs = this["@log.levels"];
             if ((lvfn = lvs[lv])) {
-                if (!lvfn.isLogDisabled) this["@output"].call(this, lv, arguments,1);
+                if (!lvfn.isLogDisabled) this["@log.output"].call(this, lv, arguments,1);
             } else {
-                this["@output"].call(this, this["@defaultLevel"], arguments);
+                this["@log.output"].call(this, this["@log.defaultLevel"], arguments);
             }
-            return this;
+            
         }
+		empty.log = noop;
         
-        this.on = function () {
+        this.enable = empty.enable = function () {
+			var args=[],lvs = me["@log.levels"];
 			if(arguments.length==0){
 				this.isLogDisabled = false;
-				return this;
+				for(var n in lvs) args.push(lvs);
+			}else{
+				args=arguments;
 			}
             
-            var lvs = this["@levels"];
-            for (var i = 0, j = arguments.length; i < j; i++) {
-                var n = arguments[i]; if (!n) continue;
+            
+            for (var i = 0, j = args.length; i < j; i++) {
+                var n = args[i]; if (!n) continue;
                 var stored = lvs["##" + n];
                 if (stored) {
-                    this[n] = stored;
+                    me[n] = stored;
                     stored.isLogDisabled = false;
                 }
             }
             return this;
         }
-        this.off = function () {
+        this.disable= empty.disable = function () {
+			var args=[],lvs = me["@log.levels"];
             if (arguments.length == 0) {
-                this.isLogDisabled = true; return this;
+                this.isLogDisabled = true; 
+				for(var n in lvs) args.push(lvs);
             }
-            var lvs = this["@levels"];
-            for (var i = 0, j = arguments.length; i < j; i++) {
-                var n = arguments[i]; if (!n) continue;
+            for (var i = 0, j = args.length; i < j; i++) {
+                var n = args[i]; if (!n) continue;
                 var stored = lvs["##" + n];
                 if (!stored) continue;
                 stored.isLogDisabled = true;
-                this[n] = function () { return this; };
+                this[n] = noop;
             }
             return this;
         }
         var config = function (output, lvs) {
-            var levels = this["@levels"];
+            var levels = me["@log.levels"];
             var elvs = [];
             for (var n in levels) {
                 var name = n.substring(2);
                 elvs.push(name);
-                delete this[name];
+                delete me[name];
+				delete empty[name];
             }
-            if (lvs) this["@levels"] = levels = {};
+            if (lvs) me["@log.levels"] = levels = {};
             else lvs = elvs;
-            if (!output) output = this["@output"];
-            else this["@output"] = output;
+            if (!output) output = me["@log.output"];
+            else this["@log.output"] = output;
             for (var i in lvs) {
                 var lv = lvs[i];
                 (function (logger, name, levels, output, aslice) {
                     var name1 = "##" + name;
                     var log  = function () {
-                        if(logger.isLogDisabled)return this;
+                        if(logger.isLogDisabled)return;
                         output.call(logger, name1, arguments);
-                        return this;
                     }
 					levels[name1] = logger[name]= log;
-                })(this, lv, levels, output, aslice);
+                })(me, lv, levels, output, aslice);
+				empty[lv]=noop;
             }
-			this.output = output;
+			me.output = output;
+			empty.output = noop;
         };
-        this.config = function (opts) {
-            if (opts.output) this["@output"] = opts.output;
-            config.call(this, opts.output, opts.levels);
-            if (opts.defaultLevel) this["@defaultLevel"] = "##" + opts.defaultLevel;
+        this.config = empty.config = function (opts) {
+            if (opts.output) me["@log.output"] = opts.output;
+            config.call(me, opts.output, opts.levels);
+            if (opts.defaultLevel){ me["@log.defaultLevel"] =empty["@log.defaultLevel"]= "##" + opts.defaultLevel; }
             if (opts.enables) this.enable.apply(this, opts.enables);
             if (opts.disables) this.disables.apply(this, opts.disables);
-			var dft = this["@levels"][this["@defaultLevel"]];
+			var dft = me["@log.levels"][me["@log.defaultLevel"]];
 			if(!dft){
-				for(var n in this["@levels"]) {this["@defaultLevel"]=n;break;}
+				for(var n in me["@log.levels"]) {
+					empty["@log.levels"]=me["@log.defaultLevel"]=n;
+					
+					break;
+				}
 			}
             return this;
         }
-        this.addOutput = function (output) {
-            var exist = this["@output"];
+        this.addOutput =empty.addOutput= function (output) {
+            var exist = me["@log.output"];
             if (typeof exist.addArggregation === 'function') {
                 if(!exist.existAggregation(output))exist.addArggregation(output);
             } else if (exist!=output) {
                 var aggr = Logger.outputAggregation();
 				aggr.addAgregation(exist);
                 aggr.addAggregation(output);
-                this["@output"] = aggr;
+                me["@log.output"] = aggr;
             } else {
-                this["@output"] = output;
+                me["@log.output"] = output;
             }
-            config(this["@output"], this["@levels"]);
+            config(this["@log.output"], this["@log.levels"]);
         }
         this.removeOutput = function (output) {
-            var exist = this["@output"];
+            var exist = me["@log.output"];
             if (typeof exist.removeArggregaation === 'function') {
                 exist.removeArggregaation(output);
                 if (exist.count() == 1) {
-                    this["@output"] = exist.getAggregatioin(0);
+                    me["@log.output"] = exist.getAggregatioin(0);
                 }
             } if (exist) {
-                if (exist === output) this["@output"] = log.defaultOutput;
+                if (exist === output) me["@log.output"] = log.defaultOutput;
             }
-            config(this["@output"], this["@levels"]);
+            config(me["@log.output"], me["@log.levels"]);
         }
         this.config(opts);
     };
@@ -129,16 +145,15 @@
 			var logger = mylogger;
 			if (arguments.length == 0 || logger.isLogDisabled) return this;
 			var lvfn,lv = arguments[0];
-			var lvs = logger["@levels"];
+			var lvs = logger["@log.levels"];
 			if ((lvfn = lvs[lv])) {
 				if (!lvfn.isLogDisabled){ 
-					var log = logger["@output"];
+					var log = logger["@log.output"];
 					log.call(logger, lv, arguments,1);
 				}
 			} else {
-				logger["@output"].call(logger, logger["@defaultLevel"], arguments);
+				logger["@log.output"].call(logger, logger["@log.defaultLevel"], arguments);
 			}
-			return this;
 		}
 		eval((loggerTypename || "yi.log.Logger") + ".call(result,params)");
 		result.toString = function(){return "[function," + loggerTypename + "]";}
@@ -163,7 +178,7 @@
         var ret = function (type,contents,start) {
             for (var i = 0, j = fns.length; i < j; i++) fns[i].call(this,type,contents,start);
         }
-        var fns = ret["@aggregations"]=[];
+        var fns = ret["@log.aggregations"]=[];
         ret.addAggregation = function (fn) {
             fns.push(fn); return this;
         }
@@ -184,19 +199,28 @@
         ret.count = function () { return fns.length;}
         return ret;
     }
-	yi.log = Global.$log = Logger.create("Logger");
-	yi.log.Logger = Logger;
-	yi.log.toString = function(){return "[function yi.log.Logger]";}
+	var log = yi.log = Global.$log = Logger.create("Logger");
+	log.enable = function(){
+		log = Global.$log = log["@log.enable"];
+		return log.enable.apply(log,arguments);
+	}
+	log.disable = function(){
+		log = Global.$log = log["@log.disable"];
+		return log.disable.apply(log,arguments);
+	}
+	log.Logger = Logger;
+	log.toString = function(){return "[function yi.log.Logger]";}
 
     yi.log.HtmlLogger = function (elem) {
 		Logger.call(this,{levels:[]});
+		var me = this;
 		this.toString = function(){return "[object,yi.log.HtmlLogger]";}
 		//不要让Logger的默认levels出现在原型中
         elem = this.element  = elem || document.createElement("div");
 		elem.className = "logger-output";
 		elem.style.cssText = "margin:0;padding:5px;overflow:auto;word-wrap:break-word;";
-		this["@levels"] =null;
-        this["@css"] = {
+		this["@log.levels"] =null;
+        this["@log.css"] = {
             "##assert": "color:#dfdfdf;border-bottom:1px dashed #666666;",
             "##debug": "color:yellow;border-bottom:1px dashed #666666;",
             "##info": "color:gray;border-bottom:1px dashed #666666;",
@@ -206,8 +230,8 @@
             "##fail": "color:red;border-bottom:1px dashed #666666;"
         };
 		this.trace = function(v){
-			if(v===undefined)return this["@traceStack"];
-			this["@traceStack"] = v;return this;
+			if(v===undefined)return this["@log.trace"];
+			this["@log.trace"] = v;return this;
 		}
         var output = (function (me, outputView, css) {
             var output = function (type, contents,start) {
@@ -230,7 +254,7 @@
                 
 				var stack = document.createElement("div");
 				
-                if (me["@traceStack"]) {
+                if (me["@log.trace"]) {
 					var t = new Date();
 					var ts = t.getMonth() + "/" + t.getDate() + "/" + t.getFullYear() + "T" + t.getHours() + ":" + t.getMinutes() + ":" + t.getSeconds() + "." + t.getMilliseconds();
 					var tz = t.getTimezoneOffset()/60;
@@ -269,14 +293,14 @@
 						
 					}
                     
-                    var d = ctn["@logger.tracesElement"] = document.createElement("div");
+                    var d = ctn["@log.tracesElement"] = document.createElement("div");
                     
                     d.style.cssText = "border:1x dashed #999;color:#888;clear:both;";
                     var b = "<ol style=''><li>" + stacks.join("</li><li>") + "</li></ol>";
                     d.innerHTML = b;
 
                     stack.onclick = function (evt) {
-                        var d = ctn["@logger.tracesElement"];
+                        var d = ctn["@log.tracesElement"];
                         if (!d.parentNode) {
                             ctn.appendChild(d);
                         } else d.parentNode.removeChild(d);
@@ -295,7 +319,7 @@
                 outputView.scollLeft = 0;
             }
             return output;
-        })(this, this.element, this["@css"]);
+        })(this, this.element, this["@log.css"]);
 		var opts = {
             output: output,
             levels: ["debug","fail","warming","notice","info",'success',"assert"],
@@ -303,12 +327,12 @@
         }
 		this.config(opts);
 		var basconfig = this.config;
-        this.config = function (opts) {
+        this.config = this["@log.disable"] = function (opts) {
             if (opts.output) throw new Error("HtmlLogger's output is fixed. You should NOT replace this output.");
             
-            basconfig.call(this,opts);
+            basconfig.call(me,opts);
 			if (opts.css) {
-                var css = this["@css"], ns = [], lvs = this["@levels"];
+                var css = me["@log.css"], ns = [], lvs = me["@log.levels"];
                 for (var n in css) ns.push(n);
                 for(var i in ns) if(!lvs[ns[i]]) delete css[ns[i]];
                 for(var n in opts.css) css["##" + n] = opts.css[n];
@@ -424,7 +448,7 @@
     var Console = function (elem) {
 		this.toString = function(){return "[object,yi.console.Console]";}
         var me = this;
-		this["@fontSize"] = 16;
+		this["@console.fontSize"] = 16;
         elem = this.element = elem || document.createElement("div");
 		elem.className = "console";
 		elem.style.position="absolute";
@@ -450,13 +474,13 @@
 			css: {"command":"color:#efefef;"}
 		});
 		var refreshView = this.refreshView = function(){
-			if (commandView.offsetHeight < this["@fontSize"]+4) commandView.style.height = this["@fontSize"] + 4 + "px";
+			if (commandView.offsetHeight < this["@console.fontSize"]+4) commandView.style.height = this["@console.fontSize"] + 4 + "px";
 			commandView.style.top = "0";
 			commandView.style.left = "0";
 			commandView.style.width = elem.offsetWidth-6 + "px";
 			loggerView.style.width = elem.offsetWidth-12 + "px";
 			loggerView.style.top = commandView.offsetHeight -1 + "px";
-			loggerView.style.height = elem.offsetHeight - quickActionsView.offsetHeight - this["@fontSize"]  -22 + "px";
+			loggerView.style.height = elem.offsetHeight - quickActionsView.offsetHeight - this["@console.fontSize"]  -22 + "px";
 			var y = elem.offsetHeight - quickActionsView.offsetHeight + 2;
 			quickActionsView.style.top =  (y>0?y:0) + "px";
 			quickActionsView.width = elem.offsetWidth + "px";
@@ -514,7 +538,7 @@
 					if(evt.preventDefault)evt.preventDefault();
                     return false;
                 }
-                var h = commandView.scrollHeight + me["@fontSize"];
+                var h = commandView.scrollHeight + me["@console.fontSize"];
                 if (h > elem.offsetHeight - quickActionsView.clientHeight) h = elem.offsetHeight - quickActionsView.clientHeight;
                 commandView.style.height = h + "px";
             }
@@ -548,15 +572,15 @@
 				}
 			}
             
-			commandView.style.height = this["@fontSize"] + 4 + "px";
+			commandView.style.height = this["@console.fontSize"] + 4 + "px";
 			commandView.scrollTop = commandView.scrollLeft= 0;
 			commandView.value = "";
 			this.refreshView();
         }
 
 		this.fontSize = function (v) {
-            if (v === undefined) return this["@fontSize"];
-            v = this["@fontSize"] = parseInt(v) || 16;
+            if (v === undefined) return this["@console.fontSize"];
+            v = this["@console.fontSize"] = parseInt(v) || 16;
             elem.style.fontSize = v + "px";
             setPosition();
 			return this;
@@ -566,7 +590,7 @@
 	yi.console = (function(Console){
 		var con = new Console();
 		var elem = con.element;
-		con["@width"]= con["@height"] = 500;
+		con["@console.width"]= con["@console.height"] = 500;
 		elem.style.cssText = "z-index:999999999;font-size:16px;position:fixed;right:0;bottom:0;height:500px;width:500px;";
 		var top="auto",left="auto",right="0",bottom="0";
 		con.dock = function(v){
@@ -591,8 +615,8 @@
 		}
 		con.fullscreen = function(v){
 			if(v===false){
-				elem.style.width = this["@width"] + "px";
-				elem.style.height = this["@height"] + "px";
+				elem.style.width = this["@console.width"] + "px";
+				elem.style.height = this["@console.height"] + "px";
 				elem.style.top = top;elem.style.left= left; elem.style.right = right; elem.style.bottom = bottom;
 				con.refreshView();
 				if (window.removeEventListener) window.removeEventListener("resize", tryFullscrn, false);
@@ -606,13 +630,13 @@
 		}
 		con.width = function(w){
 			w = parseInt(w);if(!w)return this;
-			elem.style.width = (this["@width"]=w) + "px";
+			elem.style.width = (this["@console.width"]=w) + "px";
 			con.refreshView();
 			return this;
 		}
 		con.height = function(h){
 			h = parseInt(h);if(!h)return this;
-			elem.style.height = (this["@height"]=h) + "px";
+			elem.style.height = (this["@console.height"]=h) + "px";
 			con.refreshView();
 			return this;
 		}
@@ -695,8 +719,8 @@
 		var sysLog,yiLog;
 		con.intrude = function(v){
 			if(v===false){
-				if(yiLog && yi.log["@output"]===con.log["@output"]){
-					yi.log["@output"] = yiLog;
+				if(yiLog && yi.log["@log.output"]===con.log["@log.output"]){
+					yi.log["@log.output"] = yiLog;
 					yiLog = null;
 				}
 				if(sysLog && console.log === con.log) {
@@ -705,12 +729,12 @@
 				}
 			}else{
 				if(v==='yi.log'||v===true){
-					if(!yiLog && yi.log["@output"]!==con.log["@output"]){
-						yiLog = yi.log["@output"];
-						yi.log["@output"] = con.log["@output"];
+					if(!yiLog && yi.log["@log.output"]!==con.log["@log.output"]){
+						yiLog = yi.log["@log.output"];
+						yi.log["@log.output"] = con.log["@log.output"];
 					}
 				}
-				if(v==='con.log' || v===true){
+				if(v==='console.log' || v===true){
 					if(!sysLog){
 						try{
 							sysLog = console.log;
@@ -722,6 +746,8 @@
 			}
 			return this;
 		}
+		
+		
 		//con.init();
 		return con;
 	})(Console);

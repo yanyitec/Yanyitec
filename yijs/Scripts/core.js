@@ -1,40 +1,40 @@
 "strict";
 (function (Global, document) {
-
+	
     var yi = Global.yi = Global.$y = Global.yi || {};
     var objProto = Object.prototype;
     var arrProto = Array.prototype;
     var aslice = arrProto.slice;
     var otoStr = objProto.toString;
     var invalid = yi.invalid = function () { throw new Error("Invalid operation."); }
-    var each = yi.each = function (obj, cb, arg) { for (var n in obj) if (cb.call(obj, obj[n], n, arg) === false) break; }
+    var each = yi.each = function(obj,cb,arg){for(var n in obj) if(cb.call(obj,obj[n],n,arg)===false)break;}
 
-    if (!yi.log) {
+    if (!yi.log) { 
         var log = yi.log = Global.$log = function () { console.log.apply(console, arguments); }
-        var emptyLog = function () { };
-        yi.log.enable = emptyLog.enable = function () {
+        var emptyLog = function(){};
+        yi.log.enable = emptyLog.enable = function(){
             yi.log = Global.$log = log;
         }
-        yi.log.disable = emptyLog.disable = function () {
+        yi.log.disable = emptyLog.disable = function(){
             yi.log = Global.$log = emptyLog;
         }
     }
 
 
     ///-----------------
-    /// Eventable
+    /// Observable
     ///-----------------
-    yi.Eventable = function () {
+    yi.Observable = function () {
 
         this.subscribe = function (evtname, subscriber) {
-            var ob = this["@eventable.observers"] || (this["@eventable.observers"] = {});
+            var ob = this["@observable.observers"] || (this["@observable.observers"] = {});
             var subscribers = ob[evtname] || (ob[evtname] = []);
             subscribers.push(subscriber);
             return this;
         }
         this.unsubscribe = function (evtname, subscriber) {
 
-            var ob = this["@eventable.observers"]; if (!ob) return this;
+            var ob = this["@observable.observers"]; if (!ob) return this;
             var subscribers = ob[evtname]; if (!subscribers) return this;
             for (var i = 0, j = subscribers.length; i < j; i++) {
                 var existed;
@@ -43,7 +43,7 @@
             return this;
         }
         this.emit = function (evtname, evtArgs, isApply) {
-            var ob = this["@eventable.observers"]; if (!ob) return this;
+            var ob = this["@observable.observers"]; if (!ob) return this;
             var subscribers = ob[evtname]; if (!subscribers) return this;
             for (var i = 0, j = subscribers.length; i < j; i++) {
                 var subscriber = subscribers.shift();
@@ -53,10 +53,9 @@
             }
             return this;
         }
-
+        this.toString = function () { return "[object yi.Observable]"; }
     }
-    yi.Eventable.prototype = { toString: function () { return "yi.Eventable"; } }
-    yi.Eventable.make = function (name, code) {
+    yi.Observable.make = function (name, code) {
         var subscribeCode = "(this[\"!" + name + "\"]||(this[\"!" + name + "\"]=[])).push(listener);return this;";
         var unsubscribeCode = "var sb,fn;if(!(sb=this[\"!" + name + "\"]))return this;for(var i=0,j=sb.length;i<j;i++)if((fn=sb.shift())!==listener) sb.push(fn);return this;";
         var publishCode = "var sb,fn;if(!(sb=this[\"!" + name + "\"]))return this;for(var i=0,j=sb.length;i<j;i++){var fn = sb.shift();var rs = apply?fn.apply(this,params):fn.call(this,params);if(rs!==\"%discard\" && rs!=='%discard&interrupt')sb.push(fn);if(rs==='%interrupt' || rs==='%discard&interrupt' || rs===false)return this;}return this;";
@@ -68,7 +67,7 @@
         return result;
     }
     //Observable自己就是全局监听器
-    yi.Eventable.call(yi.Observable);
+    yi.Observable.call(yi.Observable);
     yi.bind = function (func, me, args) { return function () { return func.apply(me || this, args || arguments); } }
 
     ///-----------------
@@ -80,45 +79,30 @@
             this["@async.interval"] = interval;
             this["@async.maxTimes"] = parseInt(max) || 5000;
             this["@async.contexts"] = [];
-            var me = this;
-            this["@async.handler"] = function () {
-                var self = me, ctxs = self["@async.contexts"], interval = self["@async.interval"], max = self["@async.maxTimes"];
-                var now = new Date();
-                for (var i = 0, j = ctxs.length; i < j; i++) {
-                    var ctx = ctxs.shift();
-                    var result = ctx["@async.func"].call(ctx, ctx["@async.param"], ctx, self);
-                    var keep = result === '%keep', reenter = result === '%reenter';
-                    if (keep || reenter) {
-                        if ((reenter && (++ctx["@async.times"] > max) || interval)) {
-                            ctx["@async.times"] = 0;
-                            var next = me["@async.next"];
-                            if (next) next.add(ctx);
-                            else ctxs.push(ctx);
-                        } else {
-                            ctxs.push(ctx);
-                        }
-                    }
-                }
-                if (ctxs.length === 0) {
-                    var tick = self["@async.tick"];
-                    self["@async.tick"] = 0;
-                    if (interval) clearInterval(tick); 
-                }else{
-					if(interval===0) setTimeout(self["@async.handler"]);
-				}
-            }
-
             this.add = function (fn, arg) {
                 var contexts = this["@async.contexts"];
                 var me = this;
                 contexts.push(fn["@async.func"] ? fn : { "@async.func": fn, "@async.param": arg, "@async.times": 0 });
-
-                var interval = this["@async.interval"];
-                if (!this["@async.tick"]) {
-                    if (interval) this["@async.tick"] = setInterval(this["@async.handler"], interval);
-                    else this["@async.tick"] = setTimeout(this["@async.handler"]);
-                }
-
+                this["@async.tick"] = setInterval(function () {
+                    var now = new Date(); var ctxs = contexts;
+                    var max = me["@async.maxTimes"], self = me;
+                    for (var i = 0, j = ctxs.length; i < j; i++) {
+                        var ctx = ctxs.shift();
+                        var result = ctx["@async.func"].call(ctx, ctx["@async.param"], ctx, self);
+                        var keep = result === '%keep', reenter = result === '%reenter';
+                        if (keep || reenter) {
+                            if (reenter && (++ctx["@async.times"] > max)) {
+                                ctx["@async.times"] = 0;
+                                var next = me["@async.next"];
+                                if (next) next.add(ctx);
+                                else ctxs.push(ctx);
+                            } else {
+                                ctxs.push(ctx);
+                            }
+                        }
+                    }
+                    if (ctxs.length === 0) clearInterval(me["@async.tick"]);
+                }, this["@async.interval"]);
                 return this;
             }
             this.remove = function (fn) {
@@ -137,8 +121,8 @@
         Async[4] = new Async(500, Async[5], 30);//半秒
         Async[3] = new Async(200, Async[4], 50);//200毫秒
         Async[2] = new Async(100, Async[3], 50);//100毫秒
-        Async[1] = new Async(40, Async[2], 65);//40毫秒
-        var async_stack = Async[0] = new Async(0, Async[1], 0);// 0毫秒
+        Async[1] = new Async(40, Async[2], 80);//40毫秒
+        var async_stack = Async[0] = new Async(0, Async[1], 20);// 0毫秒
         return yi.async = function (fn, arg) {
             if (fn === false) {
                 for (var i = 0; i < 8; i++) Async[i].remove(arg);
@@ -151,10 +135,10 @@
     ///-----------------
     /// Promise
     ///-----------------
-
-    var Promise = (function (yi, async, each) {
-        var Thenable = function (src, clearTgt) {
-            this["@promise.invalid"] = invalid;
+	
+    var Promise = (function (yi, async,each) {
+        var Thenable = function (src,clearTgt) {
+            this["@promise.invalid"] = invalid;     
 
             this.done = function (onFullfill, remove) {
                 if (typeof onFullfill !== 'function') throw new Error("Thenable.done expect a function as the first argument.");
@@ -227,61 +211,47 @@
                 (this["@promise.onRejected"] || (this["@promise.onRejected"] = [])).push(cb);
                 (this["@promise.onRullfilled"] || (this["@promise.onFullfilled"] = [])).push(cb);
             };
-            this.thenable = function (tgt, clearTgt) {
+            this.thenable = function (tgt,clearTgt) {
                 if (this["@promise.source"]) return this;
                 var result = tgt;
                 if (!tgt || tgt === this) result = new Then(this);
-                else Thenable.call(tgt, this, clearTgt);
+                else Thenable.call(tgt, this,clearTgt);
 
                 return result;
             }
 
             if (src) {
-                Then.call(this, src, clearTgt);
+                Then.call(this,src,clearTgt);
             } else {
                 this.isFullfilled = function () { return this["@promise.isFullfilled"]; }
                 this.isRejected = function () { return this["@promise.isRejected"]; }
             }
         }
-        Thenable.prototype = { toString: function () { return "[object yi.Then.Thenable]"; } };
+        Thenable.prototype={toString : function () { return "[object yi.Promise.Thenable]"; }};
 
-        var Then = function (src, clearTgt) {
+        var Then = function (src,clearTgt) {
             if (src) {
                 this["@promise.source"] = src;
                 if (src.await) this.await = function (m) { this["@promise.source"].await(m); return this; }
-                comine("@promise.onFullfilled", this, src);
-                comine("@promise.onRejected", this, src);
-                comine("@promise.onChanged", this, src);
-                if (src["@promise.isFullfilled"]) {
-                    resolve.call(this, src["@promise.value"]);
-                } else if (src["@promise.isRejected"]) {
-                    reject.call(this, src["@promise.value"]);
-                } else {
+                this["@promise.onFullfilled"] = src["@promise.onFullfilled"] || (src["@promise.onFullfilled"] =clearDest?[]:(dest["@promise.onFullfilled"]|| []));
+                this["@promise.onRejected"] = src["@promise.onRejected"] || (src["@promise.onRejected"] = clearDest?[]:(dest["@promise.onRejected"] || []));
+                this["@promise.onChanged"] = src["@promise.onChanged"] || (src["@promise.onChanged"] =clearDest?[]:(dest["@promise.onChanged"]|| []));
+                if(src["@promise.onFullfilled"]){
+                    resolve.call(this,src["@promise.value"]);
+                }else if(src["@promise.onRejected"]){
+                    reject.call(this,src["@promise.value"]);
+                }else{
                     this.isFullfilled = function () { return this["@promise.source"]["@promise.isFullfilled"]; }
                     this.isRejected = function () { return this["@promise.source"]["@promise.isRejected"]; }
                 }
             }
         }
         Then.prototype = new Thenable();
-        Then.prototype.toString = function () { return "[object yi.Then]"; }
-        var comine = function (name, dest, src) {
-            var d = dest[name];
-            var s = src[name];
-            if (d) {
-                if (s) {
-                    for (var i = 0, j = d.length; i < j; i++) s.push(d[j]);
-                    dest[name] = s;
-                } else {
-                    src[name] = d;
-                }
-            } else {
-                dest[name] = src[name] = s || [];
-            }
-
-        }
-
-        var resolve = function (value) {
-            if (this.resolve) this.notify = this.resolve = this.reject = this["@promise.invalid"];
+        Then.prototype.toString = function () { return "[object yi.Promise.Then]"; }
+		
+        
+        var resolve = function(value){
+            if(this.resolve)this.notify = this.resolve = this.reject = this["@promise.invalid"];
 
             this["@promise.isFullfilled"] = true; this["@promise.isRejected"] = false;
             this["@promise.status"] = 'fullfilled';
@@ -308,7 +278,7 @@
             return this;
         }
         var reject = function (reason) {
-            if (this.reject) this.notify = this.resolve = this.reject = this["@promise.invalid"];
+            if(this.reject)this.notify = this.resolve = this.reject = this["@promise.invalid"];
 
             this["@promise.isFullfilled"] = false; this["@promise.isRejected"] = true;
             this["@promise.status"] = 'rejected';
@@ -333,7 +303,8 @@
             //}			
             return this;
         }
-        var Promisable = function () {
+        var Promisable = function(){
+            this.toString = function(){return "[object yi.Promise.Promisable]";}
             this.resolve = resolve;
             this.tryResolve = function (value) {
                 if (this.resolve !== this["@promise.invalid"]) return this.resolve(value);
@@ -359,27 +330,26 @@
                 return this;
             }
         }
-        Promisable.prototype = new Thenable();
-        Promisable.prototype.toString = function () { return "[object yi.Promise.Promisable]"; }
-        var Promise = function (whenFn, args) {
-            if (whenFn) when.call(this, whenFn, args);
+        var Promisable.prototype = new Whenable();
+        var Promise = function(whenFn,args){
+            this.toString = function(){return "[object yi.Promise]";}
+            if(whenFn) when.call(this,args,this);
             return this;
         }
         Promise.prototype = new Promisable();
-        Promise.prototype.toString = function () { return "[object yi.Promise]"; }
 
         var when = function (obj, args, nothenable) {
-            if (this.when) this.when = this.defer = invalid;
-
+            if(this.when)this.when = this.defer = invalid;
+                
             var t = typeof obj;
             if (t === 'function') {
                 try {
-                    obj.call(this, this, args);
+                    obj.call(this, args, this);
                     return this;
                 } catch (ex) {
                     this.reject(ex);
                 }
-                return nothenable ? this : this.thenable();
+                return nothenable ?this: this.thenable();
             }
             if (t === "object" && typeof obj.then === 'function') {
                 var me = this;
@@ -390,12 +360,13 @@
                 }, function (status, old, value) {
                     me.notify(status, value);
                 });
-                return nothenable ? this : this.thenable();
+                return nothenable ?this: this.thenable();
             }
             this.resolve(obj);
-            return nothenable ? this : this.thenable();
+            return nothenable ?this: this.thenable();
         }
         var Whenable = function () {
+            this.toString = function () { return "[object yi.Promise.Whenable]"; }
             this.when = when;
             this.defer = function (func, args) {
                 this["@promise.when_obj"] = func;
@@ -403,7 +374,7 @@
                 this["@promise.when"] = this.when;
                 this.when = this.defer = invalid;
                 async(function (promise) {
-                    promise["@promise.when"].call(promise, promise["@promise.when_obj"], promise["@promise.when_arg"], true);
+                    promise["@promise.when"].call(promise, promise["@promise.when_arg"], promise["@promise.when_obj"], true);
                 }, this);
                 return this.thenable();
             }
@@ -426,28 +397,25 @@
                     }
                 }, promise);
                 return this;
-            }
+            }  
         }
         Whenable.prototype = new Promisable();
-        Whenable.prototype.toString = function () { return "[object yi.When.Whenable]"; }
-        //***
-        //When
-        var When = function (whenFn, arg1, arg2) {
-            if (whenFn) {
-                if (whenFn === '%concurrent') {
-                    concurrentPromise(this, args, arg1);
+        var When=function(whenFn,arg1,arg2){
+            this.toString = function(){return "yi.Promise.When";}
+            if (obj) {
+                if (whenFn === '%concurrent'){ 
+                    concurrentPromise(this,args, arg1);
                     this.when = this.defer = invalid;
                 }
                 if (whenFn === '%sequence') {
-                    sequencePromise(this, args, arg1);
+                    sequencePromise(this,args, arg1);
                     this.when = this.defer = invalid;
                 }
                 this.when(obj, args);
             }
         }
         When.prototype = new Whenable();
-        When.prototype.toString = function () { return "yi.Promise.When"; }
-        var concurrentPromise = function (dfd, obj, args) {
+        var concurrentPromise = function (dfd,obj, args) {
             var result = {};
             var count = 0, waiting_count = 0;
             for (var n in obj) {
@@ -467,7 +435,7 @@
             result.length = count;
             return dfd;
         }
-        var sequencePromise = function (dfd, seq, args, dfd, prevValue) {
+        var sequencePromise = function (dfd,seq, args, dfd, prevValue) {
             var obj;
             while (!(obj = seq.shift()) || seq.length <= 0);
             if (!obj) return dfd.resolve(prevValue);
@@ -478,86 +446,85 @@
             });
             return dfd;
         }
-
-        each([Thenable, Then, Promise, Whenable, When], function (p) {
-            each(p.prototype, function (m) {
-                if (typeof m === 'function') m["@promise.primitive"] = true;
+        
+        Promise.Thenable = Thenable;
+        Promise.Then = Then;
+        Promise.Whenable = Whenable;
+        Promise.When = When;
+		        
+        each([Thenable,Then,Promise,Whenable,When],function(p){
+            each(p.prototype,function(m){
+                if(typeof m==='function') m["@promise.primitive"]=true;
             });
         });
         var proxies = {};
-        var createProxy = function (id, obj) {
+		
+        Promise.proxy = function(id,obj){
             var Proxy;
-            if (obj === undefined) { obj = id; id = null; }
-            if (id) {
+            if(obj===undefined){obj=id;id = null;}
+            if(id){
                 Proxy = proxies[id];
-                if (Proxy) return new Proxy(obj);
+                if(Proxy)return new Proxy(obj);
             }
             //msgProxy.load().enable().done(function(){});
-            Proxy = function (obj) { this["@promise.proxy"] = obj; }
-            var proto = new Whenable();
+            Proxy = function(obj){this["@promise.proxy"]=obj;}
+            var proto= new Whenable();
             proto["@promise.Proxy"] = Proxy;
-            proto.toString = function () { return "yi.Promise.Proxy"; }
-            each(obj, function (member, name) {
-                if (typeof member !== 'function' || member["@promise.primitive"]) return;
-                proto[name] = function () {
-                    var targetPromise = this["@promise.proxy.promise"];
+            each(obj,function(member,name){
+                if(typeof member !=='function' || member["@promise.primitive"])return;
+                proto[name] = function(){
+                    var targetPromise= this["@promise.proxy.promise"];
                     var newProxy = new this["@promise.Proxy"](obj);
-                    if (targetPromise || targetPromise === null) {
-                        if (targetPromise) {
-                            if (targetPromise["@promise.isRejected"]) {
-                                reject.call(newProxy, targetPromise["@promise.value"]);
+                    if(targetPromise||targetPromise===null){
+                        if(targetPromise){
+                            if(targetPromise["@promise.isRejected"]){
+                                reject.call(newProxy,targetPromise["@promise.value"]);
                                 return newProxy;
-                            } else if (targetPromise["@promise.isFullfilled"]) {
-                                resolve.call(newProxy, targetPromise["@promise.value"]);
+                            }else if(targetPromise["@promise.isFullfilled"]){
+                                resolve.call(newProxy,targetPromise["@promise.value"]);
                                 return new Proxy;
                             }
                         }
                         var args = aslice.call(arguments);
-                        newProxy["@promise.proxy.promise"] = null;
-                        this.done(function () {
-                            var newPromise = newProxy["@promise.proxy.promise"] = obj[name].apply(obj, args);
-                            Then.call(newProxy, newPromise);
-                            newPromise.done(function (value) {
-                                resolve.call(newProxy, value);
-                            }).fail(function (reason) {
-                                reject.call(newProxy, value);
+                        newProxy["@promise.proxy.promise"]=null;
+                        this.done(function(){
+                            var newPromise = newProxy["@promise.proxy.promise"] = obj[name].apply(obj,args);
+                            Then.call(newProxy,newPromise);
+                            newPromise.done(function(value){
+                                resolve.call(newProxy,value);
+                            }).fail(function(reason){
+                                reject.call(newProxy,value);
                             });
-                        }).fail(function (reason) {
-                            reject.call(newProxy, reason);
+                        }).fail(function(reason){
+                            reject.call(newProxy,reason);
                         });
                         return newProxy;
-                    } else {
-                        var promise = newProxy["@promise.proxy.promise"] = obj[name].apply(obj, args);
-                        promise.done(function (value) {
-                            resolve.call(newProxy, value);
-                        }).fail(function (reason) {
-                            reject.call(newProxy, reason);
+                    }else{
+                        var promise = newProxy["@promise.proxy.promise"] = obj[name].apply(obj,args);
+                        promise.done(function(value){
+                            resolve.call(newProxy,value);
+                        }).fail(function(reason){
+                            reject.call(newProxy,reason);
                         });
-
+						
                     }
-
+					
                     return newProxy;
                 }
             });
-            if (id) proxies[id] = Proxy;
+            if(id) proxies[id] = Proxy;
             return new Proxy(obj);
         }
-
-        Then.Thenable = Thenable;
-        yi.Then = Then;
-        Promise.Promisable = Promisable;
-        yi.Promise = Promise;
-        When.Whenable = Whenable;
-        yi.When = When;
-        Promise.proxy = createProxy;
+		
+		
         return Promise;
-    })(yi, async, each);
+    })(yi, async,each);
 
     ///-----------------
     /// Uri
     ///-----------------
     var Uri = (function (yi) {
-
+        
         var Uri = yi.Uri = function (url) {
             var path = this.url = url;
             this.isAbsolute = false;
@@ -573,17 +540,17 @@
                     this.protocol = protocol;
                     path = path.substr(protocol.length);
                     var d = path.indexOf("/");
-                    if (d >= 0) {
-                        this.domain = path.substring(0, d);
+                    if(d>=0){
+                        this.domain = path.substring(0,d);
                         path = path.substring(d);
                     }
                     break;
                 }
             }
-
-
+            
+			
             var f = path.lastIndexOf("/");
-            if (f >= 0 && f < path.length) this.file = path.substr(f + 1);
+            if (f >= 0 && f<path.length) this.file = path.substr(f+1);
             else this.file = path;
             var e = this.file.lastIndexOf(".");
             if (e >= 0) this.ext = this.file.substr(e);
@@ -598,27 +565,27 @@
         var resolveUrl = Uri.resolve = function (name) {
             var uri, replaced = false;
             if (uri = resolvedPaths[name]) return uri;
-            var url = name.replace(/\\/g, "/"), paths = Uri.maps;
+            var url = name.replace(/\\/g,"/"),paths = Uri.maps;
             for (var n in paths) {
-                n = n.replace(/[/\\]$/g, "");
-                if (name.length < n.length) break;
-
-                if (name.substr(0, n.length) === n && name[n.length] === '/') {
-                    var k = paths[n].replace(/[\\/]$/g, "");
-                    url = k + "/" + name.substring(n.length);
+                n = n.replace(/[/\\]$/g,"");
+                if(name.length<n.length)break;
+				
+                if (name.substr(0,n.length)===n && name[n.length] === '/') {
+                    var k = paths[n].replace(/[\\/]$/g,"");
+                    url = k  + "/"+ name.substring(n.length);
                     replaced = k;
                     break;
                 }
             }
-            var isAbs = false;
+            var isAbs=false;
             for (var i = 0, j = protocols.length; i < j; i++) {
                 var protocol = protocols[i];
                 if (url.substr(0, protocol.length) === protocol) {
-                    isAbs = true; break;
+                    isAbs = true;break;
                 }
             }
-            if (!isAbs) url = (Uri.bas || "").replace(/[\\/]$/g, "") + "/" + url;
-            uri = resolvedPaths[name] = new Uri(url);
+            if(!isAbs)url = (Uri.bas || "").replace(/[\\/]$/g,"") + "/" + url;
+            uri = resolvedPaths[name] = new Uri(url); 
             return uri;
         }
         var imgexts = Uri.imageExts = [".gif", ".png", ".jpg"];
@@ -641,7 +608,7 @@
                 hd = document.getElementsByTagName("HEAD");
                 if (hd[0]) {
                     hd = head = hd[0];
-                } else hd = document.body || document.documentElement;
+                }else hd = document.body || document.documentElement;
             }
             var df = new Whenable(), elem;
             if (type === '.js') {
@@ -721,7 +688,7 @@
             requireManager.loaded = this;
             //else loadedRequire.next = this;
         }
-        Require.prototype = new yi.When.Whenable();
+        Require.prototype = new Whenable();
         Require.prototype.loadDeps = function (dep_names) {
 
             yi.log(this.id + " invoke loadDeps", dep_names);
@@ -818,8 +785,8 @@
             return req;
         }
     })(yi, yi.Promise.Whenable, yi.Uri, async);
-
-
+    
+    
 
 
 
@@ -1234,7 +1201,7 @@
         }
     };
 
-    Observer.prototype = new Observer();
+    Observer.prototype = new yi.Observable();
     for (var n in obproto) Observer.prototype[n] = obproto[n];
 
     yi.observable = function (value, define) {
