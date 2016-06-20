@@ -348,7 +348,7 @@
         exists || (exists = []);
 		deep || (deep=1);
         if (t === "object" || t === 'function') {
-            if (o === null) {
+            if (o === null || (t==='function' && !o["@object-like"])) {
                 var elem = document.createElement("span");
                 elem.innerHTML = "null"; elem.className = "object null";
                 return elem;
@@ -442,7 +442,9 @@
         }
     }
     var htmlEncode = function (txt) {
-        return txt.replace(/&/g, "&amp").replace(/ /g, "&nbsp;").replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br />");
+        if(txt===null)return "null";
+        if (txt === undefined) return "undefined";
+        return txt.toString().replace(/&/g, "&amp").replace(/ /g, "&nbsp;").replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br />");
     }
 
     var Console = function (elem) {

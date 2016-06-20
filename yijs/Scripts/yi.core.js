@@ -54,6 +54,7 @@
             return this;
         }
 
+
     }
     yi.Eventable.prototype = { toString: function () { return "yi.Eventable"; } }
     yi.Eventable.make = function (name, code) {
@@ -74,7 +75,7 @@
     ///-----------------
     /// async
     ///-----------------
-    var async = (function (yi) {
+    yi.async = (function (yi) {
         var Async = function (interval, next, max) {
             this["@async.next"] = next;
             this["@async.interval"] = interval;
@@ -152,7 +153,7 @@
     /// Promise
     ///-----------------
 
-    var Promise = (function (yi, async, each) {
+    yi.Promise = (function (yi, async, each) {
         var Thenable = function (src, clearTgt) {
             this["@promise.invalid"] = invalid;
 
@@ -551,12 +552,12 @@
         yi.When = When;
         Promise.proxy = createProxy;
         return Promise;
-    })(yi, async, each);
+    })(yi, yi.async, each);
 
     ///-----------------
     /// Uri
     ///-----------------
-    var Uri = (function (yi) {
+    yi.Uri = (function (yi) {
 
         var Uri = yi.Uri = function (url) {
             var path = this.url = url;
@@ -633,7 +634,7 @@
     ///* require
     ///*****
 
-    (function (yi, Whenable, Uri, async) {
+    yi.Require = (function (yi, Whenable, Uri, async) {
         var head;
         var loadRes = yi.loadRes = function (url, type) {
             var hd = head;
@@ -817,431 +818,615 @@
             var req = requireManager.aquire(deps, initial);
             return req;
         }
-    })(yi, yi.Promise.Whenable, yi.Uri, async);
+        return Require;
+    })(yi, yi.Promise.Whenable, yi.Uri, yi.async);
 
-
-
-
-
-    var Observer = function () { }
-    var obproto = {
-        "observer.bubble": true,
-        name: function (value) {
-            var $_META = {
-                description: "get/set观察器名字",
-                params: {
-                    "value": "设定的名字。如果是undefined则返回观察器名字"
-                },
-                returns: "读取的名字。如果是set操作则返回监听器本身"
-            };//META_$
-            if (value === undefined) return this["@observer.name"];
-            this["@observer.name"] = value; return this;
-        },
-        target: function (target, source) {
-            var $_META = {
-                description: "get/set要观察的目标对象",
-                params: {
-                    "target": "要观察的对象"
-                },
-                returns: "对象。如果是set操作则返回监听器本身"
-            };//META_$
-            var old = this["@observer.target"];
-            if (target === undefined) return old;
-            this["@observer.target"] = target || (target = {});
-            //监听目标对象改变后，重新给本监听器赋值，以触发
-            if (old !== target) this.setValue(target["@observer.name"], "target.change", source);
-            return this;
-        },
-        subject: function (subject) {
-            var $_META = {
-                description: "get/set该观察器的主体对象(主体观察器)。当一个观察器有主体对象时，表示该观察器是主体对象的一个属性",
-                params: {
-                    "subject": "要设置的主体对象。必须是另一个Observable。如果该参数设置为‘%root’，返回根"
-                },
-                returns: "对象。如果是set操作则返回监听器本身。否则返回主体观察器"
-            };//META_$
-
-            if (subject === undefined) return this["@observer.subject"];
-            if (subject === "%root") {
-                var sub = this["@observer.subject"];
-                return sub ? sub.subject("root") : sub;
-            }
-            var old = this["@observer.subject"];
-            //原先的跟新的一样，就什么都不做
-            if (old === subject) return this;
-
-            this["@observer.subject"] = subject;
-            if (old) {
-                var name = this["@observer.name"];
-                //清除掉原来subject里面的东西
-                delete old["@observer.props"][name];
-                var accor = old.accessor();
-                delete accor[reservedPropertyNames[name] || name];
-            }
-            var new_targ = subject["@observer.target"] || (subject["@observer.target"] = {});
-            this.target(new_targ);
-            //数组的item不会当作prop
-            if (subject.isArray && typeof name !== 'number') {
-                (subject["@observer.props"] || (subject["@observer.props"] = {}))[name] = this;
-                var accor = subject.accessor();
-                accor[reservedPropertyNames[name] || name] = this.accessor();
-            }
-            return this;
-        },
-        value: function (new_v, reason, _source) {
-            /// <summary>get/set该监听器在目标对象上的值</summary>
-            /// <param name="new_v" type="Anything">要设定的新值。如果该参数为undefined，表示获取目标对象上的值</param>
-            /// <param name="reason" type="String | not_trigger">变化原因，传递给事件函数用，默认是valuechange。</param>
-            /// <param name="_source" type="Object">之名该变化是由哪个个源事件引起</param>
-            /// <returns type="Object">监听器本身</returns>
-
-            var targ = this["@observer.target"], name = this["@observer.name"];
-            if (new_v === undefined) return targ[name];
-            //获取旧值，如果跟新值一样就直接拿返回
-            var old_v = targ[name];
-            if (old_v === new_v) return this;
-            //set value to target
-            targ[name] = value;
-            //表示不需要触发事件，只是设置一下值
-            //跳过后面的事件处理
-            if (this["@observer.disabledTrigger"]) return this;
-            //构建事件参数
-            var evtArgs = { type: "set", sender: this, value: value, reason: (reason || "value.set"), source: _source };
-
-            //获取到该监听上的所有下级监听器
-            var props = this["@observer.props"];
-
-            if (props) for (var n in props) props[n].target(value, evtArgs);
-            var items = this["@observer.items"];
-            if (items) {
-                for (var i = 0, j = items.length; i < j; i++) {
-                    var it = items[i];
-                    var it_evt = { type: "remove", sender: item, value: it, reason: "array.reset", source: evtArgs, index: i };
-                    it.trigger(it_evt);
-                }
-                this._initArrayData(this["@observer.itemTemplate"], this.value);
-            }
-            this.trigger("valuechange", evtArgs, this["observer.bubble"]);
-            //this.childchange(evtArgs);
-            return this;
-        },
-        bubble: function (value) {
-            if (value === undefine) return this["@observer.bubble"];
-            this["@observer.bubble"] = value; return this;
-        },
-        trigger: function (evtname, args, bubble) {
-            /// <summary>触发某个事件/禁用事件/启用事件</summary>
-            /// <param name="evtname" type="String">事件名。如果该函数第2个参数没有，evtname='valuechange'.如果该值设置为enabled/disabled对象，表示启用/禁用事件</param>
-            /// <param name="evt" type="Object">事件对象</param>
-            /// <returns type="Object">监听器本身</returns>
-            if (evtname === "%disabled") {
-                this["@observer.triggerDisabled"] = true;
-                return this;
-            }
-            if (evtname === "%enabled") {
-                this["@observer.triggerDisabled"] = false;
-                return this;
-            }
-            if (this["@observer.triggerDisabled"]) return this;
-
-
-            var obs = this['@subscribers'], its, it;
-            if (its = obs[evtname]) for (var i = 0, j = its.length; i < j; i++) {
-                var it = its.shift();
-                var result = it.call(this, args);
-                if (result !== '%discard' && result !== '%discard&interrupt') its.push(it);
-                if (result === '%interrupt' || result === '%discard&interrupt' && result === false) break;
-            }
-            if (bubble === undefined) bubble = this["@observer.bubble"];
-            //如果没有禁用bubble,事件本身也没有取消冒泡
-            if (bubble !== false && !evt.cancelBubble) {
-                var sup = this.subject();
-                if (sup) {
-                    var evtArgs = { type: args.type, sender: this, value: args.value, reason: "bubble", source: (evt.source || evt) };
-                    sup.trigger(name, evtArgs, bubble);
-                }
-            }
-            return this;
-        },
-
-        prop: function (name, value) {
-            var props = this["@observer.props"] || (this["@observer.props"] = {});
-            var prop = props[name];
-            if (!prop) {
-                prop = props[name] = new Observable(name).subject(this);
-                if (isArray(value)) prop.asArray();
-            }
-            if (value === undefined) return prop;
-            prop.value(value);
-            return this;
-        },
-
-        validate: function (onlyme) {
-            var def = this["@observer.define"], rules;
-            if (!def) return true;
-            if (rules = def.rules) {
-                var val = this["@observer.target"][this["@observer.name"]];
-                if (rules["trim"]) {
-                    if (val === undefined || val === null) val = "";
-                    else val = val.toString().replace(/(^\s+)|(\s+$)/g, "");
-                }
-                var valids = yi.validations;
-                for (var n in rules) {
-                    var check = valids[n];
-                    if (!check) continue;
-                    if (!check(val)) {
-                        this.trigger("validate", { type: "validate", sender: this, value: val });
-                        return false;
-                    }
-                }
-            }
-            if (onlyme) return true;
-            var props = this["@observer.props"], result = true;
-            if (props) for (var n in props) {
-                var prop = props[n];
-                var result = result && prop.validate();
-            }
-            return result;
-        },
-        define: function (defination) {
-            if (!defination) return this["@observer.define"];
-            if (defination.$defination === true) {
-                this["@observer.define"] = defination;
-                defination = defination.value;
-            }
-            if (!defination) return this;
-            var props = this["@observer.props"] || (this["@observer.props"] = {});
-            for (var pname in defination) {
-                var member = defination[n];
-                var prop = props[name] = new Observable(pname, {}).subject(this);
-
-                if (typeof member === 'object') {
-                    if (member.length !== undefined) {
-                        var tmp;
-                        if (member.length > 0) tmp = new Observable(0, []).define(member[0]);
-                        prop.asArray(tmp);
-                    } else {
-                        prop.define(member);
-                    }
-                }
-            }
-            return this;
-        },
-
-        clone: function (name, target, evtInc) {
-            var clone = new Observer(name, target);
-            target = clone.target();
-            var props = this["@observer.props"];
-            if (props) {
-                var cloneProps = {};
-                for (var propname in props) {
-                    var prop = props[propname];
-                    var cloneProp = prop.clone(propname, target);
-                    clone.value[reservedPropertyNames[propname] || propname] = cloneProp.value;
-                    cloneProp["@observer.subject"] = clone;
-                }
-                clone["@observer.props"] = cloneProps;
-            }
-            if (evtInc) {
-                var subsers = this["@observer.subscribers"];
-                if (subsers && subsers.length) {
-                    var cloneSubsers = [];
-                    for (var i = 0, j = subsers.length; i < j; i++) cloneSubsers[i] = subsers[i];
-                }
-            }
-            if (this.isArray) clone.asArray(this["@observer.itemTemplate"]);
-            return clone;
-        },
-        asArray: function (itemTemplate) {
-            this.isArray = true;
-
-            var accor = this.accessor();
-            for (var n in ObserverArray) {
-                accor[n] = this[n] = ObserverArray[n];
-            }
-            var me = this, accor = this._initArrayData(itemTemplate);
-
-            accor.asArray = this.asArray = function (template) {
-                if (template === undefined) return this;
-                this["@observer.itemTemplate"] = template;
-                this._initArrayData(template);
-                return this;
-            }
-            return this;
-        },
-        accessor: function () {
+    yi.Observable = (function (yi) {
+        var seed = 1;
+        //兼容google 的代码，google的函数这些文字在function中是保留属性名
+        var reservedPropertyNames = {
+            "name": "name_",
+            "arguments": "arguments_",
+            "length": "length_",
+            "caller": "caller_",
+            "prototype": "prototype_",
+            "constructor": "constructor_"
+        };
+        var Observable = function (name, target) {
+            target || (target = {});
+            name || (name = '@observable.prop-' + (seed == 210000000 ? 1 : seed++));
+            this["@observable.object"] = target;
+            this["@observable.name"] = name;
             var me = this;
-            var accor = function (value) {
-                var me = this["@observer.observer"];
-                if (value === undefined) return me["@observer.target"][me["@observer.name"]];
-                me.value(value);
+            var accessor = function (value) {
+                var self = me;
+                if (value === undefined) return self["@observable.object"][self["@observable.name"]];
+                self.setValue(value);
+                return self["@observable.accessor"];
+            }
+            Accessor.call(accessor);
+            accessor.toString = function () { return me.getValue(); }
+            accessor["@object-like"] = true;
+            this.accessor = this["@observable.accessor"] = accessor["@observable.accessor"] = accessor;
+            this["@observable.observable"] = accessor["@observable.observable"] = this;
+        }
+        Observable.prototype = {
+            $type: "yi.Observable",
+            toString : function(){return "[object yi.Observable]";},
+            //设置或获取某个Observable的名字，该名字也就是属性名
+            name: function (value) {
+                if (value === undefined) return this["@observable.name"];
+                this["@observable.name"] = value; return this;
+            },
+            object : function (target, source) {
+                //get/set要观察的目标对象
+                // target 要观察的对象
+                //对象。如果是set操作则返回监听器本身
+                //get
+                var old = this["@observable.object"];
+                if (target === undefined) return old;
+                //set
+                this["@observable.object"] = target || (target = {});
+                //监听目标对象改变后，重新给本监听器赋值，以触发事件
+                var name = this["@observable.name"];
+                if (old !== target) this.setValue(target[name], "object.change", source,old[name],true);
+                return this;
+            },
+            subject: function (subject) {
+                ///get/set该观察器的主体对象(主体观察器)。当一个观察器有主体对象时，表示该观察器是主体对象的一个属性",
+                ///        "subject": "要设置的主体对象。必须是另一个Observable。如果该参数设置为‘%root’，返回根"
+                ///    returns: "对象。如果是set操作则返回监听器本身。否则返回主体观察器"
+                if (subject === undefined) return this["@observable.subject"];
+                if (subject === "%root") {
+                    var sub = this["@observable.subject"];
+                    return sub ? sub.subject("root") : sub;
+                }
+                var old = this["@observable.subject"];
+                //原先的跟新的一样，就什么都不做
+                if (old === subject) return this;
+
+                this["@observable.subject"] = subject;
+                if (old) {
+                    var name = this["@observable.name"];
+                    //清除掉原来subject里面的东西
+                    delete old["@observable.props"][name];
+                    var accor = old.accessor();
+                    delete accor[reservedPropertyNames[name] || name];
+                }
+                var new_targ = subject["@observable.target"] || (subject["@observable.target"] = {});
+                this.target(new_targ);
+                //数组的item不会当作prop
+                if (subject.isArray && typeof name !== 'number') {
+                    (subject["@observable.props"] || (subject["@observable.props"] = {}))[name] = this;
+                    var accor = subject.accessor();
+                    accor[reservedPropertyNames[name] || name] = this.accessor();
+                }
+                return this;
+            },
+            
+            getValue: function () {
+                return this["@observable.object"][this["@observable.name"]];
+            },
+            setValue: function (new_v, reason, _source,_old,_nocompare) {
+                /// <summary>get/set该监听器在目标对象上的值</summary>
+                /// <param name="new_v" type="Anything">要设定的新值。如果该参数为undefined，表示获取目标对象上的值</param>
+                /// <param name="reason" type="String | not_trigger">变化原因，传递给事件函数用，默认是valuechange。</param>
+                /// <param name="_source" type="Object">之名该变化是由哪个个源事件引起</param>
+                /// <returns type="Object">监听器本身</returns>
+                //get
+                var targ = this["@observable.object"], name = this["@observable.name"];
+                
+                //获取旧值，如果跟新值一样就直接拿返回
+                if (!_nocompare) {
+                    _old = targ[name];
+                    if (_old === new_v) return this;
+                    //set value to target
+                    targ[name] = new_v;
+                }
+                
+                //表示不需要触发事件，只是设置一下值
+                //跳过后面的事件处理
+                if (this["@observable.disabledTrigger"]) return this;
+                //构建事件参数
+                var evtArgs = { type: "valuechange", sender: this, value: new_v,old:_old, reason: (reason || "value.set"), source: _source };
+
+                //获取到该监听上的所有下级监听器
+                var props = this["@observable.props"];
+
+                if (props) for (var n in props) props[n].object(new_v, evtArgs);
+                var items = this["@observable.items"];
+                if (items) {
+                    for (var i in items) {
+                        var it = items[i];
+                        var it_evt = { type: "valuechange", sender: it, value: it.getValue(),index:i, reason: "array.reset", source: evtArgs, index: i };
+                        it.trigger(it_evt,false);
+                    }
+                    //this._initArrayData(this["@observable.itemTemplate"], this.value);
+                }
+                this.trigger("valuechange", evtArgs, this["observable.bubble"]);
+                //this.childchange(evtArgs);
+                return this;
+            },
+            
+            bubble: function (value) {
+                if (value === undefine) return this["@observable.bubble"];
+                this["@observable.bubble"] = value; return this;
+            },
+            subscribe: function (evtname, callback) {
+                if (callback === undefined) { callback = evtname; evtname = "valuechange";}
+                if(typeof callback!=='function') throw new Error("invalid argument");
+                var obs = this['@observable.subscribers'] || (this['@observable.subscribers'] =[]);
+                (obs[evtname]|| (obs[evtname]=[])).push(callback);
+                return this;
+            },
+            unsubscribe: function (evtname, callback) {
+                var obs = this['@observable.subscribers'], its,it;
+                if (!(its = obs[evtname])) return this;
+                for (var i = 0, j = its.length; i < j; i++) if ((it = its.shift()) !== callback) its.push(it);
+                return this;
+            },
+            enableTrigger: function () { 
+                //启用事件触发
+                this["@observable.triggerDisabled"] = false;
+                if (this["@observable.triggler"]) this.trigger = this["@observable.triggler"];
+                return this;
+            },
+            disableTrigger: function () {
+                //禁用事件触发
+                this["@observable.triggerDisabled"] = true;
+                this["@observable.triggler"] = this.trigger;
+                this.trigger = function () { return this; };
+                return this;
+            },
+            trigger: function (evtname, args, bubble) {
+                /// <summary>触发某个事件/禁用事件/启用事件</summary>
+                /// <param name="evtname" type="String">事件名。如果该函数第2个参数没有，evtname='valuechange'.如果该值设置为enabled/disabled对象，表示启用/禁用事件</param>
+                /// <param name="evt" type="Object">事件对象</param>
+                /// <returns type="Object">监听器本身</returns>
+                
+                if (this["@observable.triggerDisabled"]) return this;
+                var obs = this['@observable.subscribers'], its, it;
+                if (!obs) return this;
+                if (its = obs[evtname]) for (var i = 0, j = its.length; i < j; i++) {
+                    var it = its.shift();
+                    var result = it.call(this, args);
+                    if (result !== '%discard' && result !== '%discard&interrupt') its.push(it);
+                    if (result === '%interrupt' || result === '%discard&interrupt' && result === false) break;
+                }
+                if (bubble === undefined) bubble = this["@observable.bubble"];
+                //如果没有禁用bubble,事件本身也没有取消冒泡
+                if (bubble !== false && !args.cancelBubble) {
+                    var sup = this.subject();
+                    if (sup) {
+                        var evtArgs = { type: args.type, sender: this, value: args.value, reason: "bubble", source: (args.source || args) };
+                        sup.trigger(name, evtArgs, bubble);
+                    }
+                }
+                return this;
+            },
+
+            prop: function (names, value) {
+                var props = this["@observable.props"], target;
+                if (props) {
+                    target = this["@observable.object"][this["@observable.name"]];
+                } else {
+                    props = this["@observable.props"] = {};
+                    target = this["@observable.object"][this["@observable.name"]] = {};
+                }
+                var isArr = false;
+                if (otoStr.call(names) === '[object Array]') {
+                    isArr = true;
+                } else {
+                    names = [names];
+                }
+                var rs = {};
+                for (var i = 0, j = names.length; i < j; i++) {
+                    var name = names[i];
+                    var prop = props[name];
+                    if (!prop) {
+                        prop = props[name] = new Observable(name, target);
+                        var aname = reservedPropertyNames[name] || name;
+                        this["@observable.accessor"][aname] = prop["@observable.accessor"];
+                        prop["@observable.subject"] = this;
+                        if (otoStr.call(value) === '[object Array]') prop.asArray();
+                    }
+                    if (isArr) rs[name] = prop;
+                }
+                
+                if (!isArr && value !== undefined) prop.setValue(value);
+                return isArr?rs : prop;
+            },
+            asArray: function (define) {
+                var value = this.getValue();
+                if (otoStr.call(value) !== '[object Array]') this["@observable.object"] = [];
+                ObservableArray.call(this);
+                ObservableArray.call(this["@observable.accessor"]);
+                this.asArray = function (def) {
+                    if (def) this.template().define(def);
+                    return this;
+                }
+                if (define) this.template().define(define);
+                return this;
+            },
+
+            validate: function (onlyme) {
+                var def = this["@observable.define"], rules;
+                if (!def) return true;
+                if (rules = def.rules) {
+                    var val = this["@observable.object"][this["@observable.name"]];
+                    if (rules["trim"]) {
+                        if (val === undefined || val === null) val = "";
+                        else val = val.toString().replace(/(^\s+)|(\s+$)/g, "");
+                    }
+                    var valids = yi.validations;
+                    for (var n in rules) {
+                        var check = valids[n];
+                        if (!check) continue;
+                        if (!check(val)) {
+                            this.trigger("validate", { type: "validate", sender: this, value: val });
+                            return false;
+                        }
+                    }
+                }
+                if (onlyme) return true;
+                var props = this["@observable.props"], result = true;
+                if (props) for (var n in props) {
+                    var prop = props[n];
+                    var result = result && prop.validate();
+                }
+                return result;
+            },
+            define: function (defination) {
+                var df = {
+                    $type : "object",
+                    conditions: {
+                        $type: "object",
+                        name: {
+                            $type: "text",
+                            rules: {
+                                "require": true,
+                                "trim": true,
+                                "length": [5, 20]
+                            }
+                        },
+                        email: {
+                            $type: "email",
+                            rules: {
+                                "require": true,
+                                "trim": true,
+                                "email": true
+                            }
+                        },
+                        gender: {
+                            $type: "enums",
+                            enums: {
+                                0: "male",
+                                1: "female"
+                            }
+                        },
+                        marraged: {
+                            $type: "boolean"
+                        }
+                    },
+                    rows: {
+                        $type: "array",
+                        id: {
+                            $type: "number"
+                        },
+                        name: {
+                            $type:"text"
+                        }
+                    },
+                    recordCount: {
+                        $type: "number",
+                        readonly: true
+                    },
+                    pagecount: {
+                        $type: "number",
+                        readonly: true
+                    },
+                    pageno: {
+                        $type: "number",
+                        readonly: true
+                    }
+                };
+                if (!defination) return this["@observable.define"];
+                if (defination.$defination) {
+                    this["@observable.define"] = defination;
+                    defination = defination.value;
+                }
+                if (!defination) return this;
+                var props = this["@observable.props"] || (this["@observable.props"] = {});
+                for (var pname in defination) {
+                    var member = defination[n];
+                    var prop = props[name] = new Observable(pname, {}).subject(this);
+
+                    if (typeof member === 'object') {
+                        if (member.length !== undefined) {
+                            var tmp;
+                            if (member.length > 0) tmp = new Observable(0, []).define(member[0]);
+                            prop.asArray(tmp);
+                        } else {
+                            prop.define(member);
+                        }
+                    }
+                }
+                return this;
+            },
+
+            clone: function (object, evtInc) {
+                object || (object = this["@observable.object"]);
+                var name = this["@observable.name"];
+                var clone = new Observable(name, object);
+                var props = this["@observable.props"];
+                var target = clone.getValue();
+                
+                if (props) {
+                    var cloneProps = {};
+                    if (!target) target = object[name] = {};
+                    for (var propname in props) {
+                        var prop = props[propname];
+                        var cloneProp = cloneProps[propname] = prop.clone(target);
+                        clone.accessor[reservedPropertyNames[propname] || propname] = cloneProp["@observable.accessor"];
+                        cloneProp["@observable.subject"] = clone;
+                    }
+                    clone["@observable.props"] = cloneProps;
+                }
+                if (evtInc) {
+                    var subsers = this["@observable.subscribers"];
+                    if (subsers) {
+                        var newSubs = {};
+                        for (var n in subsers) {
+                            var lsns = subsers[n];
+                            var clonelsns = [];
+                            for (var i = 0, j = lsns.length; i < j; i++) clonelsns.push(lsns[i]);
+                            newSubs[n] = clonelsns;
+                        }
+                        clone["@observable.subscribers"] = newSubs;
+                    }
+                }
+                if (this.isArray) clone.asArray(this["@observable.template"]);
+                return clone;
+            }
+        };
+        var Accessor = function () {
+            //this["@observable.accessor"] = accor["@observable.accessor"] = accor;
+            this.subscribe = function (evtname, subscriber) {
+                this["@observable.observable"].subscribe(evtname, subscriber);
                 return accor;
             }
-            accor["@observer.observer"] = this;
-            accor.subscribe = function (evtname, subscriber) {
-                var me = this["@observer.observer"];
-                me.subscribe(evtname, subscriber);
+            this.unsubscribe = function (evtname, subscriber) {
+                this["@observable.observable"].unsubscribe(evtname, subscriber);
                 return accor;
             }
-            accor.unsubscribe = function (evtname, subscriber) {
-                var me = this["@observer.observer"];
-                me.unsubscribe(evtname, subscriber);
-                return accor;
-            }
-            accor.asArray = function (template) {
-                var me = this["@observer.observer"];
+            this.asArray = function (template) {
+                var me = this["@observable.observable"];
                 me.asArray(template);
                 return accor;
             }
-            accor.define = function (model) {
-                var me = this["@observer.observer"];
+            this.define = function (model) {
+                var me = this["@observable.observable"];
                 if (!model) return me["@observer.define"];
                 me.define(model);
                 return actor;
             }
-            accor.validate = function (onlyme) {
-                var me = this["@observer.observer"];
+            this.validate = function (onlyme) {
+                var me = this["@observable.observable"];
                 return me.validate(onlyme);
             }
-
-            this.accessor = function () { return accor; }
-            return this["@observer.accessor"] = accor;
+            return this;
         }
-    };
-    var ObserverArray = {
-        isArray: true,
-        _initArrayData: function (itemTemplate) {
-            var accor = this["@observer.accessor"], me = this, targ = me["@observer.target"], name = me["@observer.name"];
-            if (!targ) { me.value(targ = []); }
-            me["@observer.itemTemplate"] = itemTemplate;
-            me.isArray = true;
-            var items = me["@observer.items"] = itemTemplate ? [] : null, len = targ.length;
-            var max = accor.length > targ.length ? accor.length : targ.length;
-            for (var i = 0, j = max; i < j; i++) {
-                //清理数据
-                if (i >= len) { delete accor[i]; continue; }
-                if (items) {
-                    var oIt = itemTemplate.clone(i, targ, true);
-                    oIt["@observer.subject"] = me;
-                    items.push(oIt);
-                } else accor[i] = targ[i];
-            }
-            accor.length = targ.length;
-            return this;
-        },
-        push: function () {
-            var me = this["@observer.observer"] || this, accor = me["@observer.accessor"], arr = me["@observer.target"][me["@observer.name"]], items = me["@observer.items"], item;
-            arr.push(accor[accor.length++] = it);
-            if (items) {
-                item = me["@observer.itemTemplate"].clone(items.length, arr, true);
-                item["@observer.subject"] = this;
-                items.push(item);
-            }
-            var it_evt = { sender: item, value: it, reason: "array.push" };
-            var arr_evt = { type: "valuechange", sender: me, value: arr, reason: "array.push", source: it_evt };
-            me.emit("valuechange", arr_evt);
-            return this;
-        },
-        pop: function (retItem) {
-            var me = this["@observer.observer"] || this, accor = me["@observer.accessor"], arr = me["@observer.target"][me["@observer.name"]], items = me["@observer.items"], item;
-            var it = arr.pop();
-            delete accor[arr.length];
-            accor.length = arr.length;
-            if (items) item = items.pop();
-            var it_evt = { type: "remove", sender: item, value: it, reason: "array.pop" };
-            if (item) item.emit("remove", it_evt);
-            else {
-                var arr_evt = { type: "valuechange", sender: me, value: arr, reason: "array.pop", source: it_evt };
-                me.emit("valuechange", arr_evt);
-            }
-            return retItem ? item : it;
-        },
-        unshift: function (it) {
-            var me = this["@observer.observer"] || this, accor = me["@observer.accessor"], arr = me["@observer.target"][me["@observer.name"]];
-            arr.unshift(it);
-            for (var i = accor.length; i > 0; i--) accor[i] = accor[i - 1];
-            accor[0] = it;
-            if (items) {
-                var item = me["@observer.itemTemplate"].clone(0, arr, true);
-                item["@observer.subject"] = me;
-                items.unshift(item);
-            }
-            var it_evt = { type: "add", sender: item, value: it, reason: "array.unshift" };
-            var arr_evt = { type: "valuechange", sender: me, value: arr, reason: "array.unshift", source: it_evt };
-            me.emit("valuechange", arr_evt);
-            return this;
-        },
-        shift: function (it, retItem) {
-            var me = this["@observer.observer"] || this, accor = me["@observer.accessor"], arr = me["@observer.target"][me["@observer.name"]], items = me["@observer.items"], item;
-            var it = arr.shift();
-            for (var i = 0, j = accor.length; i < j; i++) accor[i] = accor[i + 1];
-            accor.length = arr.length;
-            if (items) item = items.shift();
-            var it_evt = { type: "remove", sender: item, value: it, reason: "array.shift" };
-            if (item) item.emit("remove", it_evt);
-            else {
-                var arr_evt = { type: "valuechange", sender: me, value: arr, reason: "array.shift", source: it_evt };
-                me.emit("valuechange", arr_evt);
-            }
-            return retItem ? item : it;
-        },
-        remove: function (at, retItem) {
-            var me = this["@observer.observer"] || this, accor = me["@observer.accessor"], arr = me["@observer.target"][me["@observer.name"]], items = me["@observer.items"], item;
-            if (typeof at !== "number") {
-                var cp = at; at = undefined;
-                for (var i = 0, j = arr.length; i < j; i++) if (arr[i] === cp) { at = i; break; }
-                if (at === undefined) return;
-            }
-            var ret_v = arr[at], ret_it = items ? items[at] : undefined;
-            for (var i = at, j = arr.length - 1; i < j; i++) {
-                accor[i] = arr[i] = arr[i + 1];
-                if (items) items[i] = items[i + 1];
-            }
-            arr.pop(); if (items) items.pop();
-            var it_evt = { type: "remove", sender: item, value: it, reason: "array.remove", index: at };
-            if (ret_it) ret_it.publish("remove", it_evt);
-            else {
-                var arr_evt = { type: "valuechange", sender: me, value: it, reason: "array.remove", index: at, source: it_evt };
-                this.publish("valuechange", arr_evt);
-            }
-            return retItem ? ret_v : ret_it;
-        },
-        item: function (index, value) {
-            var me = this["@observer.observer"] || this, accor = me["@observer.accessor"], items = me["@observer.items"];
-            if (!items) return value === undefined ? undefined : this;
-            var arr = me["@observer.target"][me["@observer.name"]];
-            if (value === undefined) return items[index];
-            accor[index] = arr[index] = value;
-            var item = items[index].value(value, "array.item");
-            var it_evt = { type: "valuechange", sender: item, value: value, reason: "array.item", index: index };
-            item.emit("valuechange", it_evt);
-            var arr_evt = { type: "valuechange", sender: me, value: items, reason: "array.item" };
-            me.emit("valuechange", arr_evt);
-            return item;
-        },
-        clear: function () {
-            var me = this["@observer.observer"] || this, accor = me["@observer.accessor"], arr = me["@observer.target"][me["@observer.name"]], items = me["@observer.items"];
-            if (items) {
-                for (var i = 0, j = items.length; i < j; i++) {
-                    var it_evt = { type: "remove", sender: item, value: value, reason: "array.clear", index: i };
-                    //不冒泡，处理完成后统一给array发送消息
-                    items[i].publish("remove", it_evt, false);
+        
+        var ObservableArray = function () {
+
+            this.template = function (v) {
+                var me = this["@observable.observable"];
+                if (v === undefined) {
+                    return me["@observable.template"] || (me["@observable.template"] = new Observable(0, []));
                 }
+                this["@observable.template"] = v;
+                return this;
             }
-            var arr_evt = { type: "valuechange", sender: me, value: it, reason: "array.clear" };
-            me.emit("valuechange", arr_evt);
-            return this;
+            this.count = function () {
+                var me = this["@observable.observable"];
+                return me["@observable.object"][me["@observable.name"]].length;
+            }
+            this.push = function (item) {
+                var me = this["@observable.observable"],
+                    arr = me["@observable.object"][me["@observable.name"]];//, items = me["@observable.items"], item;
+                arr.push(item);
+                //var it_evt = { sender: item, value: it, reason: "array.push" };
+                var arr_evt = { type: "valuechange", sender: me, value: arr, reason: "array.push" };
+                me.trigger("valuechange", arr_evt);
+                return this;
+            }
+            this.pop= function () {
+                var me = this["@observable.observable"],
+                    arr = me["@observable.object"][me["@observable.name"]],
+                    items = me["@observable.props"];
+                var it = arr.pop();
+                if (items) {
+                    var item = items[arr.length], it_evt;
+                    if (item) {
+                        delete items[arr.length];
+                        it_evt = { type: "remove", sender: item, value: it, reason: "array.pop" };
+                        item.trigger("remove", it_evt,false);
+                    }
+                }
+                var arr_evt = { type: "valuechange", sender: me, value: arr, reason: "array.pop", item: it };
+                me.trigger("valuechange", arr_evt);
+                return it;
+            }
+            this.unshift = function (it) {
+                var me = this["@observable.observable"],
+                    arr = me["@observable.object"][me["@observable.name"]],
+                    items = me["@observable.props"];
+                arr.unshift(it);
+                if (items) {
+                    for (var n in items) {
+                        var item = items[n];
+                        var it_evt = {
+                            type: "valuechange",
+                            sender: item,
+                            value: arr[n],
+                            index:n,
+                            reason: "array.unshift"
+                        };
+                        item.trigger("valuechange", it_evt,false);
+                    }
+                }
+                var arr_evt = { type: "valuechange", sender: me, value: arr, reason: "array.unshift",item:it };
+                me.trigger("valuechange", arr_evt);
+                return this;
+            }
+
+            this.shift = function (it) {
+                var me = this["@observable.observable"],
+                    arr = me["@observable.object"][me["@observable.name"]],
+                    items = me["@observable.props"];
+                var it = arr.shift(), cancled = false;
+                if (items) {
+                    var item = items[0], rmv_evt;
+                    if (item) {
+                        delete items[0];
+                        rmv_evt = { type: "remove", sender: item, value: it, reason: "array.shift", index: 0 };
+                        item.trigger("remove", rmv_evt, false);
+                        
+                    }
+                    for (var n in items) {
+                        if (n == 0) continue;
+                        var item = items[n];
+                        var it_evt = {
+                            type: "valuechange",
+                            sender: item,
+                            value: arr[n],
+                            index: n,
+                            reason: "array.shift",
+                            source: rmv_evt
+                        };
+                        item.trigger("valuechange", it_evt,false);
+                    }
+                    
+                }
+                var arr_evt = { type: "valuechange", sender: me, value: arr, reason: "array.shift" };
+                me.trigger("valuechange", arr_evt);
+
+                return it;
+            }
+            this.removeAt= function (at) {
+                var me = this["@observable.observable"],
+                    arr = me["@observable.object"][me["@observable.name"]],
+                    items = me["@observable.props"];
+                if (at<0 || arr.length <= at) return this;
+                var it;
+                for (var i = 0, j = arr.length; i < j; i++) {
+                    var itat = arr.shift();
+                    if (i === at) { it == itat; } else arr.push(itat);
+                }
+                
+                if (items) {
+                    var item = items[at], rm_evt;
+                    if (item) {
+                        delete items[at];
+                        it_evt = { type: "remove", sender: item, value: it, reason: "array.remove", index: at };
+                        item.trigger("remove", rm_evt, false);
+                    }
+
+                    for (var n in items) {
+                        if (n <at) continue;
+                        var item = items[n];
+                        var it_evt = {
+                            type: "valuechange",
+                            sender: item,
+                            value: arr[n],
+                            index: n,
+                            reason: "array.shift",
+                            source: rm_evt
+                        };
+                        item.trigger("valuechange", it_evt, false);
+                    }
+                    
+                }
+                var arr_evt = { type: "valuechange", sender: me, value: arr, reason: "array.remove",index:at,item:it };
+                me.emit("valuechange", arr_evt);
+            }
+
+            this.clear =function () {
+                var me = this["@observable.observable"],
+                    arr = me["@observable.object"][me["@observable.name"]],
+                    items = me["@observable.props"];
+                for (var i = 0, j = arr.length; i < j; i++) arr.pop();
+                if (items) {
+                    for (var i = 0, j = items.length; i < j; i++) {
+                        var it_evt = { type: "remove", sender: item, value: value, reason: "array.clear", index: i };
+                        //不冒泡，处理完成后统一给array发送消息
+                        items[i].publish("remove", it_evt, false);
+                    }
+                    me["@observable.props"] = null;
+                }
+                
+                var arr_evt = { type: "valuechange", sender: me, value: it, reason: "array.clear" };
+                me.trigger("valuechange", arr_evt);
+                return this;
+            }
+            
+            this.getItem = function (at, cache) {
+                var me = this["@observable.observable"],
+                    arr = me["@observable.object"][me["@observable.name"]],
+                    items = me["@observable.props"];
+                if (at<0 || at >= arr.length) throw new Error("InvalidArguments:Out of range");
+
+                if (!items) items = me["@observable.props"] = {};
+                var item = items[at];
+                if (item) return item;
+                item = me.itemTemplate().clone();
+                item["@observable.name"] = at;
+                item["@observable.subject"] = me;
+                item.disableTrigger();
+                item.object(arr);
+                item.enableTrigger();
+                if(cache)items[at] = item;
+                return item;
+            }
+            this.setItem = function (at, value,cache) {
+                var me = this["@observable.observable"],
+                    arr = me["@observable.object"][me["@observable.name"]],
+                    items = me["@observable.props"], item;
+                if (at < 0 || at >= arr.length) throw new Error("InvalidArguments:Out of range");
+                if (!items) items = me["@observable.props"] = {};
+                if (item = items[at]) {
+                    item.setValue(value,"array.item");
+                    return this;
+                } else {
+
+                    arr[at] = value;
+                    var arr_evt = { type: "valuechange", sender: me, value: arr, reason: "array.item" };
+                    me.trigger("valuechange", arr_evt);
+                    if (cache) {
+                        item = me.itemTemplate().clone();
+                        item["@observable.name"] = at;
+                        item["@observable.subject"] = me;
+                        item.disableTrigger();
+                        item.object(arr,arr_evt);
+                        item.enableTrigger();
+                        items[at] = item;
+                    }
+                }
+                return this;
+            }
         }
-    };
+        yi.observable = function (value) {
+            var ret = new Observer("",{"":value});
+            return ret["@observable.accessor"];
+        }
+        return Observable;
+    })(yi);
 
-    Observer.prototype = new Observer();
-    for (var n in obproto) Observer.prototype[n] = obproto[n];
 
-    yi.observable = function (value, define) {
-        var ret = new Observer("", { "": value });
-        if (define) ret.define(define);
-        return ret;
-    }
+
+    
+
+    
     var urlreg = new RegExp('^((https|http|ftp|rtsp|mms)?://)'
 		+ '?(([0-9a-z_!~*\'().&=+$%-]+: )?[0-9a-z_!~*\'().&=+$%-]+@)?' //ftp的user@ 
 		+ '(([0-9]{1,3}.){3}[0-9]{1,3}' // IP形式的URL- 199.194.52.184 
