@@ -769,7 +769,7 @@ var  reservedPropertyNames = {
 		"constructor" : "constructor_"
 };
 
-var Observable =yi.Observable= function(name,target){
+var Model =yi.Model= function(name,target){
 	this["@name"] = name===undefined?"prop-" + (increment_id++):name;
 	this["@target"]=target || {};
 	this.name = function(value){
@@ -792,7 +792,7 @@ var Observable =yi.Observable= function(name,target){
 	}
 	this.subject = function(subject){
 		/// <summary>get/set该观察器的主体对象(主体观察器)。当一个观察器有主体对象时，表示该观察器是主体对象的一个属性</summary>
-		/// <param name="subject" type="Object">要设置的主体对象。必须是另一个Observable。如果该参数设置为"root"，返回根</param>
+		/// <param name="subject" type="Object">要设置的主体对象。必须是另一个Model。如果该参数设置为"root"，返回根</param>
 		/// <returns type="Object">对象。如果是set操作则返回监听器本身。否则返回主体观察器</returns>
 		if(subject===undefined)return this["@subject"];
 		if(subject==="root"){
@@ -912,7 +912,7 @@ var Observable =yi.Observable= function(name,target){
 			me.value(value);
 			return accor;
 		}
-		accor["@observable"] = this;
+		accor["@model"] = this;
 		accor.subscribe = function(evtname,subscriber){
 			me.subscribe(evtname,subscriber);
 			return accor;
@@ -935,7 +935,7 @@ var Observable =yi.Observable= function(name,target){
 		var props = this["@props"] || (this["@props"]={});
 		var prop = props[name];
 		if(!prop){
-			prop = props[name] = new Observable(name).subject(this);
+			prop = props[name] = new Model(name).subject(this);
 			if(isArray(value)) prop.asArray();
 		}
 		if(value===undefined)return prop;
@@ -947,11 +947,11 @@ var Observable =yi.Observable= function(name,target){
 		var props = this["@props"] || (this["@props"]={}),target = this["@target"];
 		for(var pname in model){
 			var member = model[n];
-			var prop = props[name] = new Observable(pname,target).subject(this);
+			var prop = props[name] = new Model(pname,target).subject(this);
 			if(typeof member ==='object'){
 				if(isArray(member)){
 					var tmp;
-					if(members.length>0) tmp = new Observable(0,member).define(member[0]);
+					if(members.length>0) tmp = new Model(0,member).define(member[0]);
 					prop.asArray(tmp);
 				}else{
 					prop.define(member);
@@ -961,7 +961,7 @@ var Observable =yi.Observable= function(name,target){
 		return this;
 	}
 	this.clone = function(name,target,evtInc){
-		var clone = new Observable(name,target);
+		var clone = new Model(name,target);
 		target = clone.target();
 		var props = this["@props"];
 		if(props){
@@ -1122,9 +1122,9 @@ var Observable =yi.Observable= function(name,target){
 		return this;
 	}
 	
-}//end function Observable
-yi.observable = function(value,model){
-	var ret = new Observable("",{"":value});
+}//end function Model
+yi.model = function(value,model){
+	var ret = new Model("",{"":value});
 	if(model) ret.define(model);
 	return ret;
 }

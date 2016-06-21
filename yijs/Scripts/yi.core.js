@@ -29,19 +29,19 @@
 
 
     ///-----------------
-    /// Eventable
+    /// Observable
     ///-----------------
-    yi.Eventable = function () {
+    yi.Observable = function () {
 
         this.subscribe = function (evtname, subscriber) {
-            var ob = this["@eventable.observers"] || (this["@eventable.observers"] = {});
+            var ob = this["@observable.observers"] || (this["@observable.observers"] = {});
             var subscribers = ob[evtname] || (ob[evtname] = []);
             subscribers.push(subscriber);
             return this;
         }
         this.unsubscribe = function (evtname, subscriber) {
 
-            var ob = this["@eventable.observers"]; if (!ob) return this;
+            var ob = this["@observable.observers"]; if (!ob) return this;
             var subscribers = ob[evtname]; if (!subscribers) return this;
             for (var i = 0, j = subscribers.length; i < j; i++) {
                 var existed;
@@ -50,7 +50,7 @@
             return this;
         }
         this.emit = function (evtname, evtArgs, isApply) {
-            var ob = this["@eventable.observers"]; if (!ob) return this;
+            var ob = this["@observable.observers"]; if (!ob) return this;
             var subscribers = ob[evtname]; if (!subscribers) return this;
             for (var i = 0, j = subscribers.length; i < j; i++) {
                 var subscriber = subscribers.shift();
@@ -63,8 +63,8 @@
 
 
     }
-    yi.Eventable.prototype = { toString: function () { return "yi.Eventable"; } }
-    yi.Eventable.make = function (name, code) {
+    yi.Observable.prototype = { toString: function () { return "yi.Observable"; } }
+    yi.Observable.make = function (name, code) {
         var subscribeCode = "(this[\"!" + name + "\"]||(this[\"!" + name + "\"]=[])).push(listener);return this;";
         var unsubscribeCode = "var sb,fn;if(!(sb=this[\"!" + name + "\"]))return this;for(var i=0,j=sb.length;i<j;i++)if((fn=sb.shift())!==listener) sb.push(fn);return this;";
         var publishCode = "var sb,fn;if(!(sb=this[\"!" + name + "\"]))return this;for(var i=0,j=sb.length;i<j;i++){var fn = sb.shift();var rs = apply?fn.apply(this,params):fn.call(this,params);if(rs!==\"%discard\" && rs!=='%discard&interrupt')sb.push(fn);if(rs==='%interrupt' || rs==='%discard&interrupt' || rs===false)return this;}return this;";
@@ -75,8 +75,8 @@
         result.emitCode = new Function("params", "apply", publishCode);
         return result;
     }
-    //Observable自己就是全局监听器
-    yi.Eventable.call(yi.Observable);
+    //Model自己就是全局监听器
+    yi.Observable.call(yi.Model);
     yi.bind = function (func, me, args) { return function () { return func.apply(me || this, args || arguments); } }
 
     ///-----------------
@@ -828,7 +828,7 @@
         return Require;
     })(yi, yi.Promise.Whenable, yi.Uri, yi.async);
 
-    yi.Observable = (function (yi, otoStr, override) {
+    yi.Model = (function (yi, otoStr, override) {
         var seed = 1;
         //兼容google 的代码，google的函数这些文字在function中是保留属性名
         var reservedPropertyNames = {
@@ -839,27 +839,27 @@
             "prototype": "prototype_",
             "constructor": "constructor_"
         };
-        var Observable = function (name, target) {
+        var Model = function (name, target) {
             target || (target = {});
-            name || (name = '@observable.prop-' + (seed == 210000000 ? 1 : seed++));
-            this["@observable.object"] = target;
-            this["@observable.name"] = name;
+            name || (name = '@model.prop-' + (seed == 210000000 ? 1 : seed++));
+            this["@model.object"] = target;
+            this["@model.name"] = name;
             var me = this;
             var accessor = function (value) {
                 var self = me;
-                if (value === undefined) return self["@observable.object"][self["@observable.name"]];
+                if (value === undefined) return self["@model.object"][self["@model.name"]];
                 self.setValue(value);
-                return self["@observable.accessor"];
+                return self["@model.accessor"];
             }
             Accessor.call(accessor);
             accessor.toString = function () { var v = me.getValue(); if (v === null || v === undefined) return ""; return v.toString();}
             accessor["@object-like"] = true;
-            this.accessor = this["@observable.accessor"] = accessor["@observable.accessor"] = accessor;
-            this["@observable.observable"] = accessor["@observable.observable"] = this;
+            this.accessor = this["@model.accessor"] = accessor["@model.accessor"] = accessor;
+            this["@model.model"] = accessor["@model.model"] = this;
         }
-        Observable.define = function (defination) {
-            if (defination === null) return this["@observable.define"];
-            var def = this["@observable.define"] = override(this["@observable.define"], defination);
+        Model.define = function (defination) {
+            if (defination === null) return this["@model.define"];
+            var def = this["@model.define"] = override(this["@model.define"], defination);
             var type = def.$ob_type;
             if (type === 'object') {
                 for (var n in def) {
@@ -875,59 +875,59 @@
             var rules = defination.rules;
             if (rules) {
                 if (type) rules[type] = true;
-                this["@observable.rules"] = rules;
+                this["@model.rules"] = rules;
             }
             return this;
         }
 
-        Observable.prototype = {
-            $type: "yi.Observable",
-            toString : function(){return "[object yi.Observable]";},
-            //设置或获取某个Observable的名字，该名字也就是属性名
+        Model.prototype = {
+            $type: "yi.Model",
+            toString : function(){return "[object yi.Model]";},
+            //设置或获取某个Model的名字，该名字也就是属性名
             name: function (value) {
-                if (value === undefined) return this["@observable.name"];
-                this["@observable.name"] = value; return this;
+                if (value === undefined) return this["@model.name"];
+                this["@model.name"] = value; return this;
             },
             object : function (target, source) {
                 //get/set要观察的目标对象
                 // target 要观察的对象
                 //对象。如果是set操作则返回监听器本身
                 //get
-                var old = this["@observable.object"];
+                var old = this["@model.object"];
                 if (target === undefined) return old;
                 //set
-                this["@observable.object"] = target || (target = {});
+                this["@model.object"] = target || (target = {});
                 //监听目标对象改变后，重新给本监听器赋值，以触发事件
-                var name = this["@observable.name"];
+                var name = this["@model.name"];
                 if (old !== target) this.setValue(target[name], "object.change", source,old[name],true);
                 return this;
             },
             subject: function (subject) {
                 ///get/set该观察器的主体对象(主体观察器)。当一个观察器有主体对象时，表示该观察器是主体对象的一个属性",
-                ///        "subject": "要设置的主体对象。必须是另一个Observable。如果该参数设置为‘%root’，返回根"
+                ///        "subject": "要设置的主体对象。必须是另一个Model。如果该参数设置为‘%root’，返回根"
                 ///    returns: "对象。如果是set操作则返回监听器本身。否则返回主体观察器"
-                if (subject === undefined) return this["@observable.subject"];
+                if (subject === undefined) return this["@model.subject"];
                 if (subject === "%root") {
-                    var sub = this["@observable.subject"];
+                    var sub = this["@model.subject"];
                     return sub ? sub.subject("root") : sub;
                 }
-                var old = this["@observable.subject"];
+                var old = this["@model.subject"];
                 //原先的跟新的一样，就什么都不做
                 if (old === subject) return this;
 
-                this["@observable.subject"] = subject;
+                this["@model.subject"] = subject;
                 if (old) {
-                    var name = this["@observable.name"];
+                    var name = this["@model.name"];
                     //清除掉原来subject里面的东西
-                    delete old["@observable.props"][name];
+                    delete old["@model.props"][name];
                     var accor = old.accessor();
                     delete accor[reservedPropertyNames[name] || name];
                 }
-                var new_targ = subject["@observable.target"] || (subject["@observable.target"] = {});
+                var new_targ = subject["@model.target"] || (subject["@model.target"] = {});
                 this.target(new_targ);
                 //数组的item不会当作prop
                 if (subject.isArray && typeof name !== 'number') {
-                    (subject["@observable.props"] || (subject["@observable.props"] = {}))[name] = this;
+                    (subject["@model.props"] || (subject["@model.props"] = {}))[name] = this;
                     var accor = subject.accessor();
                     accor[reservedPropertyNames[name] || name] = this.accessor();
                 }
@@ -935,7 +935,7 @@
             },
             
             getValue: function () {
-                return this["@observable.object"][this["@observable.name"]];
+                return this["@model.object"][this["@model.name"]];
             },
             setValue: function (new_v, reason, _source,_old,_nocompare) {
                 /// <summary>get/set该监听器在目标对象上的值</summary>
@@ -944,7 +944,7 @@
                 /// <param name="_source" type="Object">之名该变化是由哪个个源事件引起</param>
                 /// <returns type="Object">监听器本身</returns>
                 //get
-                var targ = this["@observable.object"], name = this["@observable.name"];
+                var targ = this["@model.object"], name = this["@model.name"];
                 
                 //获取旧值，如果跟新值一样就直接拿返回
                 if (!_nocompare) {
@@ -956,55 +956,55 @@
                 
                 //表示不需要触发事件，只是设置一下值
                 //跳过后面的事件处理
-                if (this["@observable.disabledTrigger"]) return this;
+                if (this["@model.disabledTrigger"]) return this;
                 //构建事件参数
                 var evtArgs = { type: "valuechange", sender: this, value: new_v,old:_old, reason: (reason || "value.set"), source: _source };
 
                 //获取到该监听上的所有下级监听器
-                var props = this["@observable.props"];
+                var props = this["@model.props"];
 
                 if (props) for (var n in props) props[n].object(new_v, evtArgs);
-                var items = this["@observable.items"];
+                var items = this["@model.items"];
                 if (items) {
                     for (var i in items) {
                         var it = items[i];
                         var it_evt = { type: "valuechange", sender: it, value: it.getValue(),index:i, reason: "array.reset", source: evtArgs, index: i };
                         it.trigger(it_evt,false);
                     }
-                    //this._initArrayData(this["@observable.itemTemplate"], this.value);
+                    //this._initArrayData(this["@model.itemTemplate"], this.value);
                 }
-                this.trigger("valuechange", evtArgs, this["observable.bubble"]);
+                this.trigger("valuechange", evtArgs, this["model.bubble"]);
                 //this.childchange(evtArgs);
                 return this;
             },
             
             bubble: function (value) {
-                if (value === undefine) return this["@observable.bubble"];
-                this["@observable.bubble"] = value; return this;
+                if (value === undefine) return this["@model.bubble"];
+                this["@model.bubble"] = value; return this;
             },
             subscribe: function (evtname, callback) {
                 if (callback === undefined) { callback = evtname; evtname = "valuechange";}
                 if(typeof callback!=='function') throw new Error("invalid argument");
-                var obs = this['@observable.subscribers'] || (this['@observable.subscribers'] =[]);
+                var obs = this['@model.subscribers'] || (this['@model.subscribers'] =[]);
                 (obs[evtname]|| (obs[evtname]=[])).push(callback);
                 return this;
             },
             unsubscribe: function (evtname, callback) {
-                var obs = this['@observable.subscribers'], its,it;
+                var obs = this['@model.subscribers'], its,it;
                 if (!(its = obs[evtname])) return this;
                 for (var i = 0, j = its.length; i < j; i++) if ((it = its.shift()) !== callback) its.push(it);
                 return this;
             },
             enableTrigger: function () { 
                 //启用事件触发
-                this["@observable.triggerDisabled"] = false;
-                if (this["@observable.triggler"]) this.trigger = this["@observable.triggler"];
+                this["@model.triggerDisabled"] = false;
+                if (this["@model.triggler"]) this.trigger = this["@model.triggler"];
                 return this;
             },
             disableTrigger: function () {
                 //禁用事件触发
-                this["@observable.triggerDisabled"] = true;
-                this["@observable.triggler"] = this.trigger;
+                this["@model.triggerDisabled"] = true;
+                this["@model.triggler"] = this.trigger;
                 this.trigger = function () { return this; };
                 return this;
             },
@@ -1014,8 +1014,8 @@
                 /// <param name="evt" type="Object">事件对象</param>
                 /// <returns type="Object">监听器本身</returns>
                 
-                if (this["@observable.triggerDisabled"]) return this;
-                var obs = this['@observable.subscribers'], its, it;
+                if (this["@model.triggerDisabled"]) return this;
+                var obs = this['@model.subscribers'], its, it;
                 if (!obs) return this;
                 if (its = obs[evtname]) for (var i = 0, j = its.length; i < j; i++) {
                     var it = its.shift();
@@ -1023,7 +1023,7 @@
                     if (result !== '%discard' && result !== '%discard&interrupt') its.push(it);
                     if (result === '%interrupt' || result === '%discard&interrupt' && result === false) break;
                 }
-                if (bubble === undefined) bubble = this["@observable.bubble"];
+                if (bubble === undefined) bubble = this["@model.bubble"];
                 //如果没有禁用bubble,事件本身也没有取消冒泡
                 if (bubble !== false && !args.cancelBubble) {
                     var sup = this.subject();
@@ -1036,12 +1036,12 @@
             },
 
             prop: function (names, value) {
-                var props = this["@observable.props"], target;
+                var props = this["@model.props"], target;
                 if (props) {
-                    target = this["@observable.object"][this["@observable.name"]];
+                    target = this["@model.object"][this["@model.name"]];
                 } else {
-                    props = this["@observable.props"] = {};
-                    target = this["@observable.object"][this["@observable.name"]] = {};
+                    props = this["@model.props"] = {};
+                    target = this["@model.object"][this["@model.name"]] = {};
                 }
                 var isArr = false;
                 if (otoStr.call(names) === '[object Array]') {
@@ -1054,10 +1054,10 @@
                     var name = names[i];
                     var prop = props[name];
                     if (!prop) {
-                        prop = props[name] = new Observable(name, target);
+                        prop = props[name] = new Model(name, target);
                         var aname = reservedPropertyNames[name] || name;
-                        this["@observable.accessor"][aname] = prop["@observable.accessor"];
-                        prop["@observable.subject"] = this;
+                        this["@model.accessor"][aname] = prop["@model.accessor"];
+                        prop["@model.subject"] = this;
                         if (otoStr.call(value) === '[object Array]') prop.asArray();
                     }
                     if (isArr) rs[name] = prop;
@@ -1068,12 +1068,12 @@
             },
             asArray: function (define) {
                 var value = this.getValue();
-                if (otoStr.call(value) !== '[object Array]') this["@observable.object"][this["@observable.name"]] = [];
-                ObservableArray.call(this);
-                ObservableArray.call(this["@observable.accessor"]);
+                if (otoStr.call(value) !== '[object Array]') this["@model.object"][this["@model.name"]] = [];
+                ModelArray.call(this);
+                ModelArray.call(this["@model.accessor"]);
                 this.asArray = function (def) {
                     if (def) {
-                        if (def["@observable.object"]) {
+                        if (def["@model.object"]) {
                             return this.template(def);
                         } else {
                             return this.template().define(def);
@@ -1086,10 +1086,10 @@
             },
 
             validate: function (onlyme) {
-                var def = this["@observable.define"], rules;
+                var def = this["@model.define"], rules;
                 if (!def) return true;
                 if (rules = def.rules) {
-                    var val = this["@observable.object"][this["@observable.name"]];
+                    var val = this["@model.object"][this["@model.name"]];
                     if (rules["trim"]) {
                         if (val === undefined || val === null) val = "";
                         else val = val.toString().replace(/(^\s+)|(\s+$)/g, "");
@@ -1105,20 +1105,20 @@
                     }
                 }
                 if (onlyme) return true;
-                var props = this["@observable.props"], result = true;
+                var props = this["@model.props"], result = true;
                 if (props) for (var n in props) {
                     var prop = props[n];
                     var result = result && prop.validate();
                 }
                 return result;
             },
-            define: Observable.define,
+            define: Model.define,
 
             clone: function (object, evtInc) {
-                object || (object = this["@observable.object"]);
-                var name = this["@observable.name"];
-                var clone = new Observable(name, object);
-                var props = this["@observable.props"];
+                object || (object = this["@model.object"]);
+                var name = this["@model.name"];
+                var clone = new Model(name, object);
+                var props = this["@model.props"];
                 var target = clone.getValue();
                 
                 if (props) {
@@ -1127,13 +1127,13 @@
                     for (var propname in props) {
                         var prop = props[propname];
                         var cloneProp = cloneProps[propname] = prop.clone(target);
-                        clone.accessor[reservedPropertyNames[propname] || propname] = cloneProp["@observable.accessor"];
-                        cloneProp["@observable.subject"] = clone;
+                        clone.accessor[reservedPropertyNames[propname] || propname] = cloneProp["@model.accessor"];
+                        cloneProp["@model.subject"] = clone;
                     }
-                    clone["@observable.props"] = cloneProps;
+                    clone["@model.props"] = cloneProps;
                 }
                 if (evtInc) {
-                    var subsers = this["@observable.subscribers"];
+                    var subsers = this["@model.subscribers"];
                     if (subsers) {
                         var newSubs = {};
                         for (var n in subsers) {
@@ -1142,58 +1142,58 @@
                             for (var i = 0, j = lsns.length; i < j; i++) clonelsns.push(lsns[i]);
                             newSubs[n] = clonelsns;
                         }
-                        clone["@observable.subscribers"] = newSubs;
+                        clone["@model.subscribers"] = newSubs;
                     }
                 }
-                if (this.isArray) clone.asArray(this["@observable.template"]);
+                if (this.isArray) clone.asArray(this["@model.template"]);
                 return clone;
             }
         };
         var Accessor = function () {
-            //this["@observable.accessor"] = accor["@observable.accessor"] = accor;
+            //this["@model.accessor"] = accor["@model.accessor"] = accor;
             this.subscribe = function (evtname, subscriber) {
-                this["@observable.observable"].subscribe(evtname, subscriber);
-                return this["@observable.accessor"];
+                this["@model.model"].subscribe(evtname, subscriber);
+                return this["@model.accessor"];
             }
             this.unsubscribe = function (evtname, subscriber) {
-                this["@observable.observable"].unsubscribe(evtname, subscriber);
-                return this["@observable.accessor"];
+                this["@model.model"].unsubscribe(evtname, subscriber);
+                return this["@model.accessor"];
             }
             this.asArray = function (template) {
-                var me = this["@observable.observable"];
+                var me = this["@model.model"];
                 me.asArray(template);
-                return this["@observable.accessor"];
+                return this["@model.accessor"];
             }
             this.define = function (model) {
-                var me = this["@observable.observable"];
+                var me = this["@model.model"];
                 if (!model) return me["@observer.define"];
                 me.define(model);
-                return this["@observable.accessor"];
+                return this["@model.accessor"];
             }
             this.validate = function (onlyme) {
-                var me = this["@observable.observable"];
-                return this["@observable.accessor"];
+                var me = this["@model.model"];
+                return this["@model.accessor"];
             }
             return this;
         }
         
-        var ObservableArray = function () {
+        var ModelArray = function () {
 
             this.template = function (v) {
-                var me = this["@observable.observable"];
+                var me = this["@model.model"];
                 if (v === undefined) {
-                    return me["@observable.template"] || (me["@observable.template"] = new Observable(0, []));
+                    return me["@model.template"] || (me["@model.template"] = new Model(0, []));
                 }
-                this["@observable.template"] = v;
+                this["@model.template"] = v;
                 return this;
             }
             this.count = function () {
-                var me = this["@observable.observable"];
-                return me["@observable.object"][me["@observable.name"]].length;
+                var me = this["@model.model"];
+                return me["@model.object"][me["@model.name"]].length;
             }
             this.push = function (item) {
-                var me = this["@observable.observable"],
-                    arr = me["@observable.object"][me["@observable.name"]];//, items = me["@observable.items"], item;
+                var me = this["@model.model"],
+                    arr = me["@model.object"][me["@model.name"]];//, items = me["@model.items"], item;
                 arr.push(item);
                 //var it_evt = { sender: item, value: it, reason: "array.push" };
                 var arr_evt = { type: "valuechange", sender: me, value: arr, reason: "array.push" };
@@ -1201,9 +1201,9 @@
                 return this;
             }
             this.pop= function () {
-                var me = this["@observable.observable"],
-                    arr = me["@observable.object"][me["@observable.name"]],
-                    items = me["@observable.props"];
+                var me = this["@model.model"],
+                    arr = me["@model.object"][me["@model.name"]],
+                    items = me["@model.props"];
                 var it = arr.pop();
                 if (items) {
                     var item = items[arr.length], it_evt;
@@ -1218,9 +1218,9 @@
                 return it;
             }
             this.unshift = function (it) {
-                var me = this["@observable.observable"],
-                    arr = me["@observable.object"][me["@observable.name"]],
-                    items = me["@observable.props"];
+                var me = this["@model.model"],
+                    arr = me["@model.object"][me["@model.name"]],
+                    items = me["@model.props"];
                 arr.unshift(it);
                 if (items) {
                     for (var n in items) {
@@ -1241,9 +1241,9 @@
             }
 
             this.shift = function (it) {
-                var me = this["@observable.observable"],
-                    arr = me["@observable.object"][me["@observable.name"]],
-                    items = me["@observable.props"];
+                var me = this["@model.model"],
+                    arr = me["@model.object"][me["@model.name"]],
+                    items = me["@model.props"];
                 var it = arr.shift(), cancled = false;
                 if (items) {
                     var item = items[0], rmv_evt;
@@ -1274,9 +1274,9 @@
                 return it;
             }
             this.removeAt= function (at) {
-                var me = this["@observable.observable"],
-                    arr = me["@observable.object"][me["@observable.name"]],
-                    items = me["@observable.props"];
+                var me = this["@model.model"],
+                    arr = me["@model.object"][me["@model.name"]],
+                    items = me["@model.props"];
                 if (at<0 || arr.length <= at) return this;
                 var it;
                 for (var i = 0, j = arr.length; i < j; i++) {
@@ -1312,9 +1312,9 @@
             }
 
             this.clear =function () {
-                var me = this["@observable.observable"],
-                    arr = me["@observable.object"][me["@observable.name"]],
-                    items = me["@observable.props"];
+                var me = this["@model.model"],
+                    arr = me["@model.object"][me["@model.name"]],
+                    items = me["@model.props"];
                 for (var i = 0, j = arr.length; i < j; i++) arr.pop();
                 if (items) {
                     for (var i = 0, j = items.length; i < j; i++) {
@@ -1322,7 +1322,7 @@
                         //不冒泡，处理完成后统一给array发送消息
                         items[i].publish("remove", it_evt, false);
                     }
-                    me["@observable.props"] = null;
+                    me["@model.props"] = null;
                 }
                 
                 var arr_evt = { type: "valuechange", sender: me, value: it, reason: "array.clear" };
@@ -1330,24 +1330,24 @@
                 return this;
             }
             this.valueAt = function (at) {
-                var me = this["@observable.observable"],
-                    arr = me["@observable.object"][me["@observable.name"]];
+                var me = this["@model.model"],
+                    arr = me["@model.object"][me["@model.name"]];
                 if (at < 0 || at >= arr.length) throw new Error("InvalidArguments:Out of range");
                 return arr[at];
             }
             
             this.getItemAt = function (at, cache) {
-                var me = this["@observable.observable"],
-                    arr = me["@observable.object"][me["@observable.name"]],
-                    items = me["@observable.props"];
+                var me = this["@model.model"],
+                    arr = me["@model.object"][me["@model.name"]],
+                    items = me["@model.props"];
                 if (at<0 || at >= arr.length) throw new Error("InvalidArguments:Out of range");
 
-                if (!items) items = me["@observable.props"] = {};
+                if (!items) items = me["@model.props"] = {};
                 var item = items[at];
                 if (item) return item;
                 item = me.itemTemplate().clone();
-                item["@observable.name"] = at;
-                item["@observable.subject"] = me;
+                item["@model.name"] = at;
+                item["@model.subject"] = me;
                 item.disableTrigger();
                 item.object(arr);
                 item.enableTrigger();
@@ -1355,11 +1355,11 @@
                 return item;
             }
             this.setItemAt = function (at, value,cache) {
-                var me = this["@observable.observable"],
-                    arr = me["@observable.object"][me["@observable.name"]],
-                    items = me["@observable.props"], item;
+                var me = this["@model.model"],
+                    arr = me["@model.object"][me["@model.name"]],
+                    items = me["@model.props"], item;
                 if (at < 0 || at >= arr.length) throw new Error("InvalidArguments:Out of range");
-                if (!items) items = me["@observable.props"] = {};
+                if (!items) items = me["@model.props"] = {};
                 if (item = items[at]) {
                     item.setValue(value,"array.item");
                     return this;
@@ -1370,8 +1370,8 @@
                     me.trigger("valuechange", arr_evt);
                     if (cache) {
                         item = me.itemTemplate().clone();
-                        item["@observable.name"] = at;
-                        item["@observable.subject"] = me;
+                        item["@model.name"] = at;
+                        item["@model.subject"] = me;
                         item.disableTrigger();
                         item.object(arr,arr_evt);
                         item.enableTrigger();
@@ -1381,13 +1381,13 @@
                 return this;
             }
         }
-        Observable.ObservableArray = ObservableArray;
-        Observable.Accessor = Accessor;
-        yi.observable = function (value) {
+        Model.ModelArray = ModelArray;
+        Model.Accessor = Accessor;
+        yi.model = function (value) {
             var ret = new Observer("",{"":value});
-            return ret["@observable.accessor"];
+            return ret["@model.accessor"];
         }
-        return Observable;
+        return Model;
     })(yi, otoStr, override);
 
 
