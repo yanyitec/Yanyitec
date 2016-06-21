@@ -8,7 +8,14 @@
     var otoStr = objProto.toString;
     var invalid = yi.invalid = function () { throw new Error("Invalid operation."); }
     var each = yi.each = function (obj, cb, arg) { for (var n in obj) if (cb.call(obj, obj[n], n, arg) === false) break; }
-
+    var override = yi.override = function (dest) {
+        if (!dest) dest = {};
+        for (var i = 1, j = arguments.length; i < j; i++) {
+            var src = arguments[i];
+            if(src) for(var n in src) dest[n] = src[n];
+        }
+        return dest;
+    }
     if (!yi.log) {
         var log = yi.log = Global.$log = function () { console.log.apply(console, arguments); }
         var emptyLog = function () { };
@@ -821,7 +828,7 @@
         return Require;
     })(yi, yi.Promise.Whenable, yi.Uri, yi.async);
 
-    yi.Observable = (function (yi) {
+    yi.Observable = (function (yi, otoStr, override) {
         var seed = 1;
         //兼容google 的代码，google的函数这些文字在function中是保留属性名
         var reservedPropertyNames = {
@@ -845,11 +852,34 @@
                 return self["@observable.accessor"];
             }
             Accessor.call(accessor);
-            accessor.toString = function () { return me.getValue(); }
+            accessor.toString = function () { var v = me.getValue(); if (v === null || v === undefined) return ""; return v.toString();}
             accessor["@object-like"] = true;
             this.accessor = this["@observable.accessor"] = accessor["@observable.accessor"] = accessor;
             this["@observable.observable"] = accessor["@observable.observable"] = this;
         }
+        Observable.define = function (defination) {
+            if (defination === null) return this["@observable.define"];
+            var def = this["@observable.define"] = override(this["@observable.define"], defination);
+            var type = def.$ob_type;
+            if (type === 'object') {
+                for (var n in def) {
+                    if (n === '$ob_type') continue;
+                    var subdef = def[n];
+                    var prop = this.prop(n);
+                    prop.define(subdef);
+                }
+                return this;
+            } else if (type === 'array') {
+                return this.asArray(defination.template);
+            }
+            var rules = defination.rules;
+            if (rules) {
+                if (type) rules[type] = true;
+                this["@observable.rules"] = rules;
+            }
+            return this;
+        }
+
         Observable.prototype = {
             $type: "yi.Observable",
             toString : function(){return "[object yi.Observable]";},
@@ -1038,14 +1068,20 @@
             },
             asArray: function (define) {
                 var value = this.getValue();
-                if (otoStr.call(value) !== '[object Array]') this["@observable.object"] = [];
+                if (otoStr.call(value) !== '[object Array]') this["@observable.object"][this["@observable.name"]] = [];
                 ObservableArray.call(this);
                 ObservableArray.call(this["@observable.accessor"]);
                 this.asArray = function (def) {
-                    if (def) this.template().define(def);
+                    if (def) {
+                        if (def["@observable.object"]) {
+                            return this.template(def);
+                        } else {
+                            return this.template().define(def);
+                        }
+                    }
                     return this;
                 }
-                if (define) this.template().define(define);
+                return this.asArray(define);
                 return this;
             },
 
@@ -1076,83 +1112,7 @@
                 }
                 return result;
             },
-            define: function (defination) {
-                var df = {
-                    $type : "object",
-                    conditions: {
-                        $type: "object",
-                        name: {
-                            $type: "text",
-                            rules: {
-                                "require": true,
-                                "trim": true,
-                                "length": [5, 20]
-                            }
-                        },
-                        email: {
-                            $type: "email",
-                            rules: {
-                                "require": true,
-                                "trim": true,
-                                "email": true
-                            }
-                        },
-                        gender: {
-                            $type: "enums",
-                            enums: {
-                                0: "male",
-                                1: "female"
-                            }
-                        },
-                        marraged: {
-                            $type: "boolean"
-                        }
-                    },
-                    rows: {
-                        $type: "array",
-                        id: {
-                            $type: "number"
-                        },
-                        name: {
-                            $type:"text"
-                        }
-                    },
-                    recordCount: {
-                        $type: "number",
-                        readonly: true
-                    },
-                    pagecount: {
-                        $type: "number",
-                        readonly: true
-                    },
-                    pageno: {
-                        $type: "number",
-                        readonly: true
-                    }
-                };
-                if (!defination) return this["@observable.define"];
-                if (defination.$defination) {
-                    this["@observable.define"] = defination;
-                    defination = defination.value;
-                }
-                if (!defination) return this;
-                var props = this["@observable.props"] || (this["@observable.props"] = {});
-                for (var pname in defination) {
-                    var member = defination[n];
-                    var prop = props[name] = new Observable(pname, {}).subject(this);
-
-                    if (typeof member === 'object') {
-                        if (member.length !== undefined) {
-                            var tmp;
-                            if (member.length > 0) tmp = new Observable(0, []).define(member[0]);
-                            prop.asArray(tmp);
-                        } else {
-                            prop.define(member);
-                        }
-                    }
-                }
-                return this;
-            },
+            define: Observable.define,
 
             clone: function (object, evtInc) {
                 object || (object = this["@observable.object"]);
@@ -1193,26 +1153,26 @@
             //this["@observable.accessor"] = accor["@observable.accessor"] = accor;
             this.subscribe = function (evtname, subscriber) {
                 this["@observable.observable"].subscribe(evtname, subscriber);
-                return accor;
+                return this["@observable.accessor"];
             }
             this.unsubscribe = function (evtname, subscriber) {
                 this["@observable.observable"].unsubscribe(evtname, subscriber);
-                return accor;
+                return this["@observable.accessor"];
             }
             this.asArray = function (template) {
                 var me = this["@observable.observable"];
                 me.asArray(template);
-                return accor;
+                return this["@observable.accessor"];
             }
             this.define = function (model) {
                 var me = this["@observable.observable"];
                 if (!model) return me["@observer.define"];
                 me.define(model);
-                return actor;
+                return this["@observable.accessor"];
             }
             this.validate = function (onlyme) {
                 var me = this["@observable.observable"];
-                return me.validate(onlyme);
+                return this["@observable.accessor"];
             }
             return this;
         }
@@ -1369,8 +1329,14 @@
                 me.trigger("valuechange", arr_evt);
                 return this;
             }
+            this.valueAt = function (at) {
+                var me = this["@observable.observable"],
+                    arr = me["@observable.object"][me["@observable.name"]];
+                if (at < 0 || at >= arr.length) throw new Error("InvalidArguments:Out of range");
+                return arr[at];
+            }
             
-            this.getItem = function (at, cache) {
+            this.getItemAt = function (at, cache) {
                 var me = this["@observable.observable"],
                     arr = me["@observable.object"][me["@observable.name"]],
                     items = me["@observable.props"];
@@ -1388,7 +1354,7 @@
                 if(cache)items[at] = item;
                 return item;
             }
-            this.setItem = function (at, value,cache) {
+            this.setItemAt = function (at, value,cache) {
                 var me = this["@observable.observable"],
                     arr = me["@observable.object"][me["@observable.name"]],
                     items = me["@observable.props"], item;
@@ -1415,12 +1381,14 @@
                 return this;
             }
         }
+        Observable.ObservableArray = ObservableArray;
+        Observable.Accessor = Accessor;
         yi.observable = function (value) {
             var ret = new Observer("",{"":value});
             return ret["@observable.accessor"];
         }
         return Observable;
-    })(yi);
+    })(yi, otoStr, override);
 
 
 

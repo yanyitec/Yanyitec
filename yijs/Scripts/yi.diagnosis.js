@@ -348,21 +348,42 @@
         exists || (exists = []);
 		deep || (deep=1);
         if (t === "object" || t === 'function') {
-            if (o === null || (t==='function' && !o["@object-like"])) {
-                var elem = document.createElement("span");
-                elem.innerHTML = "null"; elem.className = "object null";
-                return elem;
+            if (o === null) {
+                var divnull = document.createElement("div");
+                divnull.className = "object null";
+                divnull.innerHTML = "null";
+                return divnull;
             }
-            //去重
-            for (var i = 0, j = exists.length; i < j; i++) {
-                if (exists[i] === o) {
-                    var e = document.createElement("span");
-                    e.className = "cuit";
-                    e.innerHTML = "[cuit ref]";
-                    return e;
+            var valuehtml;
+            if (t !== 'function') {
+                //去重
+                for (var i = 0, j = exists.length; i < j; i++) {
+                    if (exists[i] === o) {
+                        var e = document.createElement("div");
+                        e.className = "cuit";
+                        e.innerHTML = "[cuit ref]";
+                        return e;
+                    }
                 }
+                exists.push(o);
+                valuehtml = htmlEncode(o.toString());
+            } else {
+                //var elem = document.createElement("div");
+                var code = o.toString();
+                var at = code.indexOf(")");
+                if (at <= 0) {
+                    var divfn = document.createElement("div");
+                    divfn.className = "function value-like";
+                    divfn.innerHTML = code;
+                    return divfn;
+                }
+                var df = code.substring(0, at + 1);
+                //var cd = code.substring(at+1);//
+                valuehtml = "<span style='text-decoration:underline;' onclick=\"this.nextSibling.style.display=this.nextSibling.style.display==='none'?'block':'none'\">" + df + "</span><div style='float:left;display:none;'>" + htmlEncode(code) + "</div>";
+                //elem.innerHTML = html; elem.className = "function";
+
             }
-            exists.push(o);
+            
             var elem = document.createElement("table");
 			elem.style.cssText ="text-align:left;";;
             if (Object.prototype.toString.call(o) === '[object Array]') elem.className = "object array";
@@ -388,7 +409,8 @@
             }
             hdTr.appendChild(preElem);
             var nmTd = document.createElement("td");
-            nmTd.innerHTML = "<div class='value'>" + htmlEncode(o.toString()) + "</div>"; nmTd.setAttribute("colspan", 2); hdTr.appendChild(nmTd);
+            
+            nmTd.innerHTML = "<div class='value'>" + valuehtml + "</div>"; nmTd.setAttribute("colspan", 2); hdTr.appendChild(nmTd);
 
             var bd = document.createElement("tbody");
             bd.style.display = "none";
