@@ -844,6 +844,7 @@
             name || (name = '@model.prop-' + (seed == 210000000 ? 1 : seed++));
             this["@model.object"] = target;
             this["@model.name"] = name;
+            this["@model.bubble"] = true;
             var me = this;
             var accessor = function (value) {
                 var self = me;
@@ -856,22 +857,25 @@
             accessor["@object-like"] = true;
             this.accessor = this["@model.accessor"] = accessor["@model.accessor"] = accessor;
             this["@model.model"] = accessor["@model.model"] = this;
+           
         }
         Model.define = function (defination) {
             if (defination === null) return this["@model.define"];
+            var type = defination.$model_type;
+            if (!type) throw new Error("Model.define require $model_type in it's argument.");
             var def = this["@model.define"] = override(this["@model.define"], defination);
-            var type = def.$ob_type;
-            if (type === 'object') {
+            
+            if (type === 'array') {                
+                return this.asArray(defination.template);
+            }else if (type === 'object') {
                 for (var n in def) {
-                    if (n === '$ob_type') continue;
+                    if (n === '$model_type') continue;
                     var subdef = def[n];
                     var prop = this.prop(n);
                     prop.define(subdef);
                 }
                 return this;
-            } else if (type === 'array') {
-                return this.asArray(defination.template);
-            }
+            } 
             var rules = defination.rules;
             if (rules) {
                 if (type) rules[type] = true;
@@ -1028,8 +1032,8 @@
                 if (bubble !== false && !args.cancelBubble) {
                     var sup = this.subject();
                     if (sup) {
-                        var evtArgs = { type: args.type, sender: this, value: args.value, reason: "bubble", source: (args.source || args) };
-                        sup.trigger(name, evtArgs, bubble);
+                        var evtArgs = { type: "valuechange", sender: this, value: sup.getValue(), reason: "bubble", source: (args.source || args) };
+                        sup.trigger("valuechange", evtArgs, bubble);
                     }
                 }
                 return this;

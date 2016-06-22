@@ -17,7 +17,7 @@
     <h1>yi.Model</h1>
     <fieldset>
         <legend>描述</legend>
-        可观察的数据项
+        可观察的数据模型
     </fieldset>
     <fieldset class='descriptor'>
         <legend><h2>yi.Model.setValue/yi.Model.getValue</h2></legend>
@@ -375,25 +375,44 @@ $assert.scope(function($assert,log){
                 <script subtype='test'>
 $assert.scope(function($assert,log){
     var ob = new yi.Model();
-    ob.asArray();
-    var arr = ob.accessor;
-    $assert(0,arr.count());
-    ob.push(1);
-    log("value at 0:",arr.valueAt(0));
-    $assert(1, ob.valueAt(0));
-    $assert(1, ob.count());
-    arr.unshift(2);
-    log("value at 0:", arr.valueAt(0));
-    $assert(2, ob.valueAt(0));
-    $assert(2, ob.count());
-    log("value at 1:", ob.valueAt(1));
-    $assert(1, arr.valueAt(1));
-    arr.subscribe("valuechange", function (evt) {
-        log("evt:", evt);
+    ob.define({
+        $model_type: "object",
+        condiction: {
+            $model_type: "object",
+            keyword: {
+                $model_type: "text",
+            }
+        },
+        rows: {
+            $model_type: "array",
+            template: {
+                $model_type: "object",
+                Id: { $model_type: "number" },
+                Name: { $model_type: "text" }
+            }
+        },
+        recordCount: {
+            $model_type: "number",
+            readonly: true
+        },
+        pageNo: {
+            $model_type: "number"
+        },
+        pageCount: {
+            $model_type: "number",
+            readonly:true
+        },
+        pageSize: {
+            $model_type: "number"
+        }
     });
-    var val = arr.pop();
-    log("pop:", val);
-    $assert(1,val);
+    var val = ob.getValue();
+    var acc = ob.accessor;
+    acc.recordCount(10);
+    acc.condiction.keyword("yi");
+    acc.rows.push({Id:1,Name:"yiy"});
+    log("the value of Model after define:", val);
+    
 });//$assert
 
                 </script>

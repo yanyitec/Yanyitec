@@ -5,6 +5,7 @@
     var arrProto = Array.prototype;
     var aslice = arrProto.slice;
     var otoStr = objProto.toString;
+    var ftoStr = Function.prototype.toString;
 	var noop  =function(){};
 
     var Logger = function (_opts) {
@@ -163,7 +164,7 @@
         try {
             params || (params = []);
             var t = new Date();
-            var s = lv || "#debug";
+            var s = lv || "##debug";
 			if(typeof params !=='object'){ console.log(s,params);return this;}
 			if(start){
 				if(!params.shift)params = aslice.call(params);
@@ -354,29 +355,29 @@
                 divnull.innerHTML = "null";
                 return divnull;
             }
-            var valuehtml;
-            if (t !== 'function') {
-                //去重
-                for (var i = 0, j = exists.length; i < j; i++) {
-                    if (exists[i] === o) {
-                        var e = document.createElement("div");
-                        e.className = "cuit";
-                        e.innerHTML = "[cuit ref]";
-                        return e;
-                    }
+            //去重
+            for (var i = 0, j = exists.length; i < j; i++) {
+                if (exists[i] === o) {
+                    var e = document.createElement("div");
+                    e.className = "cuit";
+                    e.innerHTML = "[cuit ref]";
+                    return e;
                 }
-                exists.push(o);
+            }
+            exists.push(o);
+            var valuehtml;
+            if (t !== 'function') { 
                 valuehtml = htmlEncode(o.toString());
             } else {
                 //var elem = document.createElement("div");
-                var code = o.toString();
+                var code = ftoStr.call(o);
                 var at = code.indexOf(")");
-                if (at <= 0) {
-                    var divfn = document.createElement("div");
-                    divfn.className = "function value-like";
-                    divfn.innerHTML = code;
-                    return divfn;
-                }
+                //if (at <= 0) {
+                //    var divfn = document.createElement("div");
+                //    divfn.className = "function value-like";
+                //    divfn.innerHTML = code;
+                //    return divfn;
+                //}
                 var df = code.substring(0, at + 1);
                 //var cd = code.substring(at+1);//
                 valuehtml = "<span style='text-decoration:underline;' onclick=\"this.nextSibling.style.display=this.nextSibling.style.display==='none'?'block':'none'\">" + df + "</span><div style='float:left;display:none;'>" + htmlEncode(code) + "</div>";
